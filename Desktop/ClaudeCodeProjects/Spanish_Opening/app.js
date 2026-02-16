@@ -1130,7 +1130,11 @@ async function updatePositionEval() {
             const data = await response.json();
             if (data.pvs && data.pvs[0] && data.pvs[0].cp !== undefined) {
                 evalCp = data.pvs[0].cp;
-                console.log('Position eval from cloud:', evalCp);
+                // Lichess returns eval from side-to-move perspective, flip if Black to move
+                if (fen.includes(' b ')) {
+                    evalCp = -evalCp;
+                }
+                console.log('Position eval from cloud (adjusted for White):', evalCp);
             }
         }
     } catch (e) {
