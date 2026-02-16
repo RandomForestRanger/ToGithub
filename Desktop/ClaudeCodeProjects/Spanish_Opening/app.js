@@ -142,79 +142,97 @@ const BADGES = {
         title: 'Worrall Aanval',
         description: 'Wit speel 6.Qe2 - \'n rustiger benadering waar die dame die e4-pion steun! Dit is vernoem na die Engelse speler Thomas Worrall. Die idee is om vinnig te rokeer en dan \'n langsame aanval te bou. \'n Goeie keuse as jy van strategiese spel hou!'
     },
+    anti_marshall: {
+        name: 'Anti-Marshall',
+        icon: '🛑',
+        title: 'Anti-Marshall Stelsel',
+        description: 'Wit speel 8.a4 om die gevaarlike Marshall Aanval te vermy! Baie topspelers verkies hierdie benadering omdat die Marshall so gevaarlik is. Met a4 stop Wit die ...b5 uitbreiding en hou die spel in rustiger waters. \'n Slim, praktiese keuse wat dikwels in grootmeester-spelle gesien word!'
+    },
+    delayed_exchange: {
+        name: 'Uitg. Ruil',
+        icon: '⏳',
+        title: 'Uitgestelde Ruil Variasie',
+        description: 'Wit speel Bxc6 eers ná ...a6 is gespeel! Anders as die gewone Ruil Variasie, wag Wit eers vir Swart se ...a6 voordat die loper geruil word. Dit gee Wit \'n effens ander pion-struktuur en strategiese moontlikhede. Bobby Fischer het hierdie lyn gereeld gebruik!'
+    },
 
-    // Achievement Badges (10) - Spanish themed
+    // Achievement Badges (13) - Spanish themed with Afrikaans descriptions
     queen_capture: {
         name: 'Paella!',
         icon: '🥘',
-        title: 'Paella! Dame Gevang!',
-        description: 'Jy het Swart se dame gevang - die kragtigste stuk op die bord! Soos \'n heerlike Spaanse paella vol lekker bestanddele, is hierdie oorwinning \'n fees vir jou spel. Die dame is 9 punte werd, so dit is \'n groot prestasie! Olé!'
+        title: 'Dame Gevang - ¡Paella!',
+        description: 'Jy het die opponent se dame gevang - ¡Olé! Geniet nou \'n lekker Spaanse paella! Die dame is die kragtigste stuk op die bord (9 punte werd), so hierdie vangs is soos \'n heerlike fees. In Spanje vier hulle sulke oomblikke met \'n groot paella vol rys, seekos en saffraan. ¡Muy delicioso!'
     },
     first_blood: {
         name: 'Toro!',
         icon: '🐂',
-        title: 'Toro! Eerste Bloed',
-        description: 'Soos \'n matador in die arena van Sevilla, het jy die eerste stuk van die spel gevang! In skaak is dit belangrik om materiaal te wen wanneer jy kan. Hierdie kenteken vier jou eerste suksesvolle vangs in die spel. ¡Olé, torero!'
+        title: 'Eerste Vangs - ¡Toro!',
+        description: 'Soos \'n dapper matador in die arena van Sevilla, het jy die eerste stuk gevang! ¡Olé, torero! In \'n bulgeveg moet die matador moedig en vinnig wees - net soos jy nou was. Hierdie kenteken vier jou eerste suksesvolle vangs. Die bul is nie meer so gevaarlik nie!'
     },
     seven_perfect: {
         name: '7 Perfek',
         icon: '🌟',
-        title: 'Siete Estrellas!',
-        description: 'Jy het 5 punte op 7 verskillende skuiwe gekry - sewe sterre van uitnemendheid! Dit wys dat jy konsekwent die beste of mees populêre skuiwe speel. In Spanje sê hulle "siete estrellas" vir iets wat werklik uitmuntend is. Jy speel soos \'n meester!'
+        title: 'Sewe Sterre - ¡Siete Estrellas!',
+        description: 'Jy het 5 punte op 7 verskillende skuiwe gekry - sewe sterre van uitnemendheid! ¡Increíble! Dit wys dat jy konsekwent die beste skuiwe speel. In Spanje sê hulle "siete estrellas" vir iets wat werklik uitmuntend is. Jy speel soos \'n ware meester van die Ruy Lopez!'
+    },
+    sixteen_perfect: {
+        name: '16 Perfek',
+        icon: '⭐',
+        title: 'Sestien Sterre - ¡Dieciséis Estrellas!',
+        description: 'Jy het 5 punte op 16 verskillende skuiwe gekry - sestien sterre van grootmeester-vlak spel! ¡Extraordinario! Dit is \'n ongelooflike prestasie wat wys dat jy byna elke skuif perfek gespeel het. Jy speel soos die legendariese Spaanse grootmeesters! ¡Eres una estrella!'
     },
     perfect_game: {
         name: 'Perfecto!',
         icon: '💯',
-        title: 'El Perfecto!',
-        description: 'Jy het 100 punte gekry - \'n absoluut perfekte spel! Elke skuif was die beste of mees populêre keuse. Dit is uiters moeilik om te bereik en wys dat jy die Ruy Lopez werklik verstaan. ¡Muy bien, campeón! Jy speel soos \'n grootmeester!'
+        title: 'Perfekte Spel - ¡El Perfecto!',
+        description: 'Jy het 100 punte gekry - \'n absoluut perfekte spel! ¡Increíble, muy bien, campeón! Elke enkele skuif was die beste of mees populêre keuse. Dit is uiters moeilik om te bereik en wys dat jy die Ruy Lopez opening werklik verstaan. Jy speel soos \'n ware grootmeester!'
     },
     castled: {
         name: 'Castillo',
         icon: '🏰',
-        title: 'El Castillo',
-        description: 'Jy het gerokeer en jou koning is nou veilig in die kasteel! Rokering is een van die belangrikste beginsels in skaak - dit beskerm jou koning en aktiveer jou toring. Soos die pragtige kastele van Spanje (soos die Alhambra), is jou koning nou goed beskerm!'
+        title: 'Gerokeer - ¡El Castillo!',
+        description: 'Jy het gerokeer en jou koning is nou veilig in die kasteel! ¡Muy seguro! Rokering is een van die belangrikste beginsels in skaak - dit beskerm jou koning en aktiveer jou toring. Soos die pragtige Alhambra-kasteel in Granada, is jou koning nou goed beskerm agter sterk mure!'
     },
     center_control: {
         name: 'Sentrum',
         icon: '🌻',
-        title: 'Plaza Mayor',
-        description: 'Jy het pionne op e4 EN d4 - jy beheer die sentrum soos die Plaza Mayor in Madrid! In skaak is sentrumbeheer uiters belangrik. Jou pionne in die middel beheer sleutelvelde en gee jou stukke meer ruimte en aktiwiteit. \'n Klassieke strategie van die ou meesters!'
+        title: 'Sentrumbeheer - ¡Plaza Mayor!',
+        description: 'Jy het pionne op e4 EN d4 - jy beheer die sentrum soos die Plaza Mayor in Madrid! ¡Fantástico! In skaak is sentrumbeheer uiters belangrik. Jou pionne in die middel beheer sleutelvelde en gee jou stukke meer ruimte. Die ou meesters het altyd gesê: beheer die sentrum, beheer die spel!'
     },
     checkmate: {
         name: 'Campeón!',
         icon: '🏆',
-        title: 'El Campeón!',
-        description: 'Jy het skaakmat gegee voor skuif 20 - jy is die kampioen! Dit is \'n groot prestasie om so vinnig te wen. Dit wys dat jy takties sterk is en kanse kan raaksien. Soos die Real Madrid-spelers wat die Champions League wen, is jy nou El Campeón van hierdie spel!'
+        title: 'Skaakmat - ¡El Campeón!',
+        description: 'Jy het skaakmat gegee voor skuif 20 - jy is die kampioen! ¡Olé, olé, olé! Dit is \'n groot prestasie om so vinnig te wen. Dit wys dat jy takties baie sterk is. Soos die Real Madrid-spelers wat die Champions League wen, is jy nou El Campeón - die kampioen van hierdie spel!'
     },
     noahs_ark: {
         name: 'Noah\'s Ark',
         icon: '🚢',
-        title: 'Arca de Noé',
-        description: 'Jy het die beroemde Noah\'s Ark-val vermy en jou loper gered! Hierdie val vang Wit se loper met ...a6, ...b5, en ...c4. Dit is een van die oudste en bekendste valle in die Ruy Lopez. Deur dit te vermy, wys jy dat jy die opening se gevare ken. Slim gespeel!'
+        title: 'Ark Oorleef - ¡Arca de Noé!',
+        description: 'Jy het die beroemde Noah\'s Ark-val vermy en jou loper gered! ¡Muy inteligente! Hierdie ou val probeer Wit se loper vang met ...a6, ...b5, en ...c4. Dit is een van die oudste en bekendste valle in die Ruy Lopez. Deur dit te vermy, wys jy dat jy die opening se gevare ken!'
     },
     gajewski: {
         name: 'Fuego!',
         icon: '🔥',
-        title: 'Fuego! Gajewski Gambiet',
-        description: 'Jy het die vurige Gajewski Gambiet posisie bereik - vol vuur en passie! Hierdie moderne gambiet is vernoem na die Poolse grootmeester Grzegorz Gajewski. Dit offer materiaal vir inisiatief en aanvalskanse. Soos die flamenco-dansers van Andalusië, is hierdie spel vol energie!'
+        title: 'Vuur & Passie - ¡Fuego!',
+        description: 'Jy het die vurige Gajewski Gambiet posisie bereik - vol vuur en passie! ¡Qué fuego! Hierdie moderne gambiet is vernoem na die Poolse grootmeester Grzegorz Gajewski. Soos die flamenco-dansers van Andalusië wat met vuur dans, is hierdie spel vol energie en opwinding!'
     },
     cinderella: {
         name: 'Flamenco',
         icon: '💃',
-        title: 'Flamenco Loper',
-        description: 'Jou ligte loper dans soos \'n flamenco-danser na a5 of a6 met tempo! Hierdie maneuver is elegant en effektief - die loper bereik \'n aktiewe vierkant terwyl dit \'n bedreiging maak. Soos die pragtige flamenco-dans van Spanje, is hierdie skuif vol grasie en krag!'
+        title: 'Dansende Loper - ¡Flamenco!',
+        description: 'Jou ligte loper dans soos \'n flamenco-danser na a5 of a6 met tempo! ¡Qué elegante! Hierdie maneuver is elegant en effektief - die loper bereik \'n aktiewe vierkant terwyl dit \'n bedreiging maak. Soos die pragtige flamenco-dans van Spanje, is hierdie skuif vol grasie en krag!'
     },
     carbon: {
         name: 'Carbón',
         icon: '⚫',
-        title: 'Carbón - Steenkool',
-        description: 'Jy het minder as 50 punte gekry... soos steenkool in jou kous op Drie Konings-dag! In Spanje kry stoute kinders carbón (steenkool) in plaas van geskenke. Maar moenie moed verloor nie - elke spel is \'n leerervaring. Probeer weer en verbeter jou telling!'
+        title: 'Steenkool - ¡Carbón!',
+        description: 'Jy het minder as 50 punte gekry... soos steenkool in jou kous! In Spanje, op Drie Konings-dag, kry stoute kinders carbón (steenkool) in plaas van geskenke. Maar moenie bekommerd wees nie - elke meester het ook swak spelle gehad! Probeer weer en jy sal beslis beter doen. ¡Ánimo!'
     },
     chorizo: {
         name: 'Chorizo',
         icon: '🌶️',
-        title: 'Chorizo Meester',
-        description: 'Jy het 5 spelle gespeel en is nou \'n Chorizo-kenner! Soos die heerlike Spaanse worst wat tyd neem om te maak, het jy tyd belê om die Ruy Lopez te leer. Met elke spel word jy beter. Hou aan oefen en jy sal binnekort \'n ware meester word! ¡Buen provecho!'
+        title: 'Chorizo Meester - ¡Buen Provecho!',
+        description: 'Jy het 5 spelle gespeel en is nou \'n Chorizo-kenner! ¡Buen provecho! Soos die heerlike Spaanse worst wat tyd neem om te maak, het jy tyd belê om die Ruy Lopez te leer. Met elke spel word jy beter en sterker. Hou aan oefen en jy sal binnekort \'n ware grootmeester word!'
     }
 };
 
@@ -286,6 +304,7 @@ let reviewPosition = 0;
 let selectedSquare = null;  // For tap-to-move
 let firstCaptureOccurred = false;
 let perfectMoves = 0;
+let lastHintInfo = null;  // Track hint for debugging
 
 // Track specific variations
 let variationState = {
@@ -722,6 +741,7 @@ function startNewGame() {
     positionHistory = [game.fen()];
     sessionBadges = [];
     isGameActive = true;
+    lastHintInfo = null;
     isReviewMode = false;
     firstCaptureOccurred = false;
     perfectMoves = 0;
@@ -901,7 +921,17 @@ async function handlePlayerMove(move) {
 
 async function scoreMove(move, positionBefore) {
     try {
-        console.log('Scoring move:', move.san, 'from position:', positionBefore.split(' ')[0].substring(0, 20) + '...');
+        console.log('=== SCORING MOVE ===');
+        console.log('Move played:', move.san);
+        console.log('Position FEN:', positionBefore);
+        if (lastHintInfo) {
+            console.log('Last hint was for FEN:', lastHintInfo.fen);
+            console.log('FENs MATCH:', positionBefore === lastHintInfo.fen);
+            console.log('Hint engine moves were:', lastHintInfo.engineMoves.join(', '));
+            console.log('Move is #1 engine?', lastHintInfo.engineMoves[0] === move.san);
+        } else {
+            console.log('No hint was requested for this position');
+        }
 
         // Get both Cloud Eval and Lichess Opening Explorer data
         const [cloudEvalResult, lichessResult] = await Promise.all([
@@ -1391,6 +1421,16 @@ function checkBadges(move, isBlackMove = false) {
             awardBadge('worrall');
         }
 
+        // Anti-Marshall (8.a4 to prevent Marshall Attack)
+        if (moveNum === 8 && san === 'a4') {
+            awardBadge('anti_marshall');
+        }
+
+        // Delayed Exchange (Bxc6 after ...a6 has been played - Morphy variation)
+        if (san === 'Bxc6' && variationState.morphyPlayed) {
+            awardBadge('delayed_exchange');
+        }
+
         // Center Control (pawns on e4 AND d4)
         const e4Piece = game.get('e4');
         const d4Piece = game.get('d4');
@@ -1554,7 +1594,7 @@ function updateUI() {
     }
 
     // Enable hint button after forced moves
-    $('#hint-btn').prop('disabled', currentMoveNumber < 3 || !isGameActive);
+    $('#hint-btn').prop('disabled', !canUseHint());
 }
 
 function addMoveToHistory(moveNum, san, score, isForced) {
@@ -1636,8 +1676,28 @@ function showEducationalMessage() {
 // HINTS
 // ============================================
 
+function getHintLimit() {
+    // J and L can only use hints until move 10
+    // Other players can use hints until move 16
+    if (currentPlayer === 'J' || currentPlayer === 'L') {
+        return 10;
+    }
+    return 16;
+}
+
+function canUseHint() {
+    const hintLimit = getHintLimit();
+    return isGameActive && currentMoveNumber >= 3 && currentMoveNumber <= hintLimit;
+}
+
 async function showHint() {
-    if (!isGameActive || currentMoveNumber < 3) return;
+    if (!canUseHint()) {
+        const hintLimit = getHintLimit();
+        if (currentMoveNumber > hintLimit) {
+            showMessage(`Wenke is nie beskikbaar na skuif ${hintLimit} nie. Jy moet self dink!`);
+        }
+        return;
+    }
 
     $('#hint-btn').prop('disabled', true);
     showMessage('Soek wenke...');
@@ -1652,17 +1712,26 @@ async function showHint() {
     console.log('Positions match:', fen === positionCheck);
 
     try {
-        // Get both data sources
+        // Get both data sources - use same multiPv=4 as scoring for consistency
         const [engineResult, lichessResult] = await Promise.all([
-            getStockfishEval(fen, 2),
+            getStockfishEval(fen, 4),
             getLichessPopularity(fen)
         ]);
 
-        console.log('Hint - Engine result:', engineResult ? engineResult.moves?.map(m => m.san).join(', ') : 'none');
-        console.log('Hint - Lichess result:', lichessResult ? lichessResult.moves?.slice(0, 3).map(m => m.san).join(', ') : 'none');
+        console.log('=== HINT ANALYSIS ===');
+        console.log('Position FEN:', fen);
+        console.log('Engine moves:', engineResult ? engineResult.moves?.map(m => m.san).join(', ') : 'none');
+        console.log('Lichess moves:', lichessResult ? lichessResult.moves?.slice(0, 5).map(m => m.san).join(', ') : 'none');
 
         let engineBestMove = null;
         let popularBestMove = null;
+
+        // Store hint info for debugging
+        lastHintInfo = {
+            fen: fen,
+            engineMoves: engineResult?.moves?.map(m => m.san) || [],
+            lichessMoves: lichessResult?.moves?.slice(0, 5).map(m => m.san) || []
+        };
         let engineInfo = '';
         let popularInfo = '';
 
@@ -1706,7 +1775,7 @@ async function showHint() {
         setTimeout(() => {
             removeBestMoveHighlights();
             hideHintMessage();
-            $('#hint-btn').prop('disabled', false);
+            $('#hint-btn').prop('disabled', !canUseHint());
         }, 3000);
 
     } catch (e) {
@@ -1770,6 +1839,11 @@ function endGame() {
     // Check for 7 perfect moves badge
     if (perfectMoves >= 7) {
         awardBadge('seven_perfect');
+    }
+
+    // Check for 16 perfect moves badge
+    if (perfectMoves >= 16) {
+        awardBadge('sixteen_perfect');
     }
 
     // Carbón badge for low score (less than 50%)
