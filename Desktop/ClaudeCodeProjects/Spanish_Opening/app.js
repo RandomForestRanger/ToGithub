@@ -262,6 +262,14 @@ let stockfishEngine = null;
 let stockfishReady = false;
 let stockfishQueue = [];
 
+// API response cache to reduce duplicate calls
+const apiCache = {
+    lichess: new Map(),
+    cloudEval: new Map()
+};
+const CACHE_MAX_SIZE = 50;
+const CACHE_TTL = 300000; // 5 minutes
+
 let currentPlayer = 'J';
 let currentMoveNumber = 0;
 let currentScore = 0;
@@ -442,10 +450,10 @@ function initGame() {
         position: 'start',
         draggable: false,  // Click-only, no dragging
         pieceTheme: 'https://chessboardjs.com/img/chesspieces/wikipedia/{piece}.png',
-        moveSpeed: 400,     // Slower piece movement
-        snapbackSpeed: 300,
-        snapSpeed: 150,
-        appearSpeed: 300
+        moveSpeed: 250,     // Faster, smoother movement
+        snapbackSpeed: 200,
+        snapSpeed: 100,
+        appearSpeed: 200
     });
 
     // Click-to-move only
@@ -837,13 +845,13 @@ async function handlePlayerMove(move) {
         if (FORCED_MOVES[moveNum].black) {
             setTimeout(() => {
                 makeBlackMove(FORCED_MOVES[moveNum].black);
-            }, 1200);  // Smooth delay before opponent responds
+            }, 800);  // Quick response for forced moves
         } else {
             // Move 3 complete - Ruy Lopez reached!
             showMessage('Ruy Lopez bereik! Nou kies jy jou eie skuiwe.');
             setTimeout(() => {
                 makeAIBlackMove();
-            }, 1800);  // Slightly longer for the message to be read
+            }, 1200);  // Brief pause for message
         }
 
         return;
@@ -881,10 +889,10 @@ async function handlePlayerMove(move) {
         return;
     }
 
-    // Get black's move after a natural delay
+    // Get black's move after a brief delay
     setTimeout(() => {
         makeAIBlackMove();
-    }, 1800);  // 1.8 seconds feels natural
+    }, 1000);  // 1 second - responsive but not rushed
 }
 
 // ============================================
@@ -893,24 +901,30 @@ async function handlePlayerMove(move) {
 
 async function scoreMove(move, positionBefore) {
     try {
+        console.log('Scoring move:', move.san, 'from position:', positionBefore.split(' ')[0].substring(0, 20) + '...');
+
         // Get both Cloud Eval and Lichess Opening Explorer data
         const [cloudEvalResult, lichessResult] = await Promise.all([
             getStockfishEval(positionBefore, 4),
             getLichessPopularity(positionBefore)
         ]);
 
-        let engineScore = 1;
-        let lichessScore = 1;
+        let engineScore = 0;  // Start at 0, not 1 - we'll set properly below
+        let lichessScore = 0;
         let analysisHtml = '';
 
         // Score based on Lichess Cloud Eval (engine analysis)
         if (cloudEvalResult && cloudEvalResult.moves && cloudEvalResult.moves.length > 0) {
+            console.log('Engine moves:', cloudEvalResult.moves.map(m => m.san).join(', '));
             const moveRank = cloudEvalResult.moves.findIndex(m => m.san === move.san);
+            console.log('Player move', move.san, 'rank:', moveRank);
+
             if (moveRank === 0) engineScore = 5;
             else if (moveRank === 1) engineScore = 4;
             else if (moveRank === 2) engineScore = 3;
             else if (moveRank === 3) engineScore = 2;
-            else engineScore = 1;
+            else if (moveRank >= 0) engineScore = 1;  // Found but low ranked
+            // If moveRank === -1 (not found), engineScore stays 0
 
             analysisHtml += '<p style="color:var(--spanish-red);margin-bottom:5px;"><strong>Enjin Analise:</strong></p>';
             cloudEvalResult.moves.slice(0, 3).forEach((m, i) => {
@@ -932,7 +946,9 @@ async function scoreMove(move, positionBefore) {
                 (b.white + b.draws + b.black) - (a.white + a.draws + a.black)
             );
 
+            console.log('Popular moves:', sortedMoves.slice(0, 5).map(m => m.san).join(', '));
             const moveIndex = sortedMoves.findIndex(m => m.san === move.san);
+            console.log('Player move', move.san, 'popularity rank:', moveIndex, 'total games:', totalGames);
 
             // Score based on popularity ranking
             if (totalGames >= 20) {
@@ -941,6 +957,7 @@ async function scoreMove(move, positionBefore) {
                 else if (moveIndex <= 4) lichessScore = 3;
                 else if (moveIndex <= 6) lichessScore = 2;
                 else if (moveIndex >= 0) lichessScore = 1;
+                // If moveIndex === -1 (not found), lichessScore stays 0
             } else if (moveIndex >= 0) {
                 // Less data, but move is in database - give partial credit
                 lichessScore = 3;
@@ -958,8 +975,19 @@ async function scoreMove(move, positionBefore) {
             });
         }
 
-        // Take the MAX of the two scores
-        const finalScore = Math.max(engineScore, lichessScore);
+        // Take the MAX of the two scores, with minimum of 1 if any data exists
+        let finalScore;
+        if (engineScore === 0 && lichessScore === 0) {
+            // No data from either source - give benefit of doubt
+            finalScore = 3;
+            console.log('No data from either source, defaulting to 3');
+        } else {
+            finalScore = Math.max(engineScore, lichessScore);
+            // Ensure at least 1 point if we had data
+            if (finalScore === 0) finalScore = 1;
+        }
+
+        console.log('Final score:', finalScore, '(engine:', engineScore, ', popular:', lichessScore, ')');
 
         // Show analysis
         if (analysisHtml) {
@@ -985,6 +1013,13 @@ async function scoreMove(move, positionBefore) {
 }
 
 async function getStockfishEval(fen, multiPv = 4) {
+    // Check cache first
+    const cacheKey = fen.split(' ').slice(0, 4).join(' ') + '_' + multiPv;
+    const cached = apiCache.cloudEval.get(cacheKey);
+    if (cached && Date.now() - cached.time < CACHE_TTL) {
+        return cached.data;
+    }
+
     // Try Lichess Cloud Eval first (fast, cached positions)
     try {
         const response = await fetch(`https://lichess.org/api/cloud-eval?fen=${encodeURIComponent(fen)}&multiPv=${multiPv}`);
@@ -994,7 +1029,14 @@ async function getStockfishEval(fen, multiPv = 4) {
                 const moves = convertPvsToMoves(data.pvs, fen);
                 if (moves.length > 0) {
                     console.log('Lichess cloud eval:', moves.map(m => m.san).join(', '));
-                    return { moves, source: 'cloud' };
+                    const result = { moves, source: 'cloud' };
+                    // Cache the result
+                    if (apiCache.cloudEval.size >= CACHE_MAX_SIZE) {
+                        const firstKey = apiCache.cloudEval.keys().next().value;
+                        apiCache.cloudEval.delete(firstKey);
+                    }
+                    apiCache.cloudEval.set(cacheKey, { data: result, time: Date.now() });
+                    return result;
                 }
             }
         }
@@ -1050,12 +1092,26 @@ function convertPvsToMoves(pvs, fen) {
 }
 
 async function getLichessPopularity(fen) {
+    // Check cache first
+    const cacheKey = fen.split(' ').slice(0, 4).join(' '); // Normalize FEN for caching
+    const cached = apiCache.lichess.get(cacheKey);
+    if (cached && Date.now() - cached.time < CACHE_TTL) {
+        return cached.data;
+    }
+
     try {
         const response = await fetch(
             `https://explorer.lichess.ovh/lichess?variant=standard&speeds=blitz,rapid,classical&ratings=1600,2000,2500&fen=${encodeURIComponent(fen)}`
         );
         if (response.ok) {
-            return await response.json();
+            const data = await response.json();
+            // Cache the result
+            if (apiCache.lichess.size >= CACHE_MAX_SIZE) {
+                const firstKey = apiCache.lichess.keys().next().value;
+                apiCache.lichess.delete(firstKey);
+            }
+            apiCache.lichess.set(cacheKey, { data, time: Date.now() });
+            return data;
         }
     } catch (e) {
         console.log('Lichess explorer failed:', e);
@@ -1064,24 +1120,122 @@ async function getLichessPopularity(fen) {
 }
 
 async function updatePositionEval() {
+    const fen = game.fen();
+    let evalCp = null;
+
+    // Try Lichess Cloud Eval first (fast)
     try {
-        const response = await fetch(`https://lichess.org/api/cloud-eval?fen=${encodeURIComponent(game.fen())}`);
+        const response = await fetch(`https://lichess.org/api/cloud-eval?fen=${encodeURIComponent(fen)}`);
         if (response.ok) {
             const data = await response.json();
-            if (data.pvs && data.pvs[0]) {
-                const cp = data.pvs[0].cp;
-                if (cp !== undefined) {
-                    const evalValue = (cp / 100).toFixed(1);
-                    const display = cp >= 0 ? `+${evalValue}` : evalValue;
-                    $('#position-eval').text(display);
-                    $('#position-eval').removeClass('positive negative');
-                    $('#position-eval').addClass(cp >= 0 ? 'positive' : 'negative');
-                }
+            if (data.pvs && data.pvs[0] && data.pvs[0].cp !== undefined) {
+                evalCp = data.pvs[0].cp;
+                console.log('Position eval from cloud:', evalCp);
             }
         }
     } catch (e) {
-        console.log('Eval update failed');
+        console.log('Cloud eval failed, trying local Stockfish');
     }
+
+    // Fallback to local Stockfish if cloud eval didn't work
+    if (evalCp === null && stockfishEngine && stockfishReady) {
+        try {
+            const result = await getLocalStockfishEvalForDisplay(fen);
+            if (result !== null) {
+                evalCp = result;
+                console.log('Position eval from local Stockfish:', evalCp);
+            }
+        } catch (e) {
+            console.log('Local Stockfish eval failed:', e);
+        }
+    }
+
+    // Update display
+    if (evalCp !== null) {
+        const evalValue = (evalCp / 100).toFixed(1);
+        const display = evalCp >= 0 ? `+${evalValue}` : evalValue;
+        $('#position-eval').text(display);
+        $('#position-eval').removeClass('positive negative');
+        $('#position-eval').addClass(evalCp >= 0 ? 'positive' : 'negative');
+    } else {
+        $('#position-eval').text('...');
+        $('#position-eval').removeClass('positive negative');
+    }
+}
+
+// Lighter version of Stockfish eval just for position display
+function getLocalStockfishEvalForDisplay(fen) {
+    return new Promise((resolve) => {
+        if (!stockfishEngine || !stockfishReady) {
+            resolve(null);
+            return;
+        }
+
+        let bestCp = null;
+        let resolved = false;
+
+        const callback = (line) => {
+            if (resolved) return;
+
+            // Parse info lines for score
+            if (line.startsWith && line.startsWith('info') && line.includes('score cp')) {
+                const depthMatch = line.match(/depth (\d+)/);
+                const scoreMatch = line.match(/score cp (-?\d+)/);
+
+                if (depthMatch && scoreMatch) {
+                    const depth = parseInt(depthMatch[1]);
+                    if (depth >= 6) {  // Only use results from decent depth
+                        bestCp = parseInt(scoreMatch[1]);
+                        // Flip sign if Black to move
+                        if (fen.includes(' b ')) {
+                            bestCp = -bestCp;
+                        }
+                    }
+                }
+            }
+
+            // Check for mate score
+            if (line.startsWith && line.startsWith('info') && line.includes('score mate')) {
+                const mateMatch = line.match(/score mate (-?\d+)/);
+                if (mateMatch) {
+                    const mateIn = parseInt(mateMatch[1]);
+                    // Convert mate to large centipawn value
+                    bestCp = mateIn > 0 ? 10000 - (mateIn * 10) : -10000 + (mateIn * 10);
+                    if (fen.includes(' b ')) {
+                        bestCp = -bestCp;
+                    }
+                }
+            }
+
+            // Bestmove signals end of analysis
+            if (line.startsWith && line.startsWith('bestmove')) {
+                resolved = true;
+                const idx = stockfishQueue.findIndex(q => q.callback === callback);
+                if (idx >= 0) stockfishQueue.splice(idx, 1);
+                resolve(bestCp);
+            }
+        };
+
+        // Add to queue
+        stockfishQueue.push({ callback });
+
+        // Quick analysis - depth 8 is fast but reasonable
+        stockfishEngine.postMessage('ucinewgame');
+        stockfishEngine.postMessage('setoption name MultiPV value 1');
+        stockfishEngine.postMessage(`position fen ${fen}`);
+        stockfishEngine.postMessage('go depth 8');
+
+        // Timeout after 3 seconds
+        setTimeout(() => {
+            if (!resolved) {
+                resolved = true;
+                stockfishEngine.postMessage('stop');
+                const idx = stockfishQueue.findIndex(q => q.callback === callback);
+                if (idx >= 0) stockfishQueue.splice(idx, 1);
+                resolve(bestCp);
+            }
+        }, 3000);
+    });
 }
 
 // ============================================
@@ -1458,13 +1612,15 @@ function showScorePopup(score, isForced = false) {
         popup.removeClass('score-1 score-2 score-3 score-4 score-5 score-forced').addClass(`score-${score}`);
     }
 
-    // Show popup
-    popup.removeClass('hidden');
+    // Show popup using requestAnimationFrame for smoother rendering
+    requestAnimationFrame(() => {
+        popup.removeClass('hidden');
+    });
 
-    // Hide after 1.5 seconds
+    // Hide after 1.2 seconds
     setTimeout(() => {
         popup.addClass('hidden');
-    }, 1500);
+    }, 1200);
 }
 
 function showEducationalMessage() {
@@ -1482,7 +1638,14 @@ async function showHint() {
     $('#hint-btn').prop('disabled', true);
     showMessage('Soek wenke...');
 
+    // Use the current game position (should match what will be used for scoring)
     const fen = game.fen();
+    const positionCheck = positionHistory[positionHistory.length - 1];
+
+    console.log('=== HINT REQUEST ===');
+    console.log('game.fen():', fen.split(' ')[0].substring(0, 30) + '...');
+    console.log('positionHistory[last]:', positionCheck ? positionCheck.split(' ')[0].substring(0, 30) + '...' : 'undefined');
+    console.log('Positions match:', fen === positionCheck);
 
     try {
         // Get both data sources
@@ -1490,6 +1653,9 @@ async function showHint() {
             getStockfishEval(fen, 2),
             getLichessPopularity(fen)
         ]);
+
+        console.log('Hint - Engine result:', engineResult ? engineResult.moves?.map(m => m.san).join(', ') : 'none');
+        console.log('Hint - Lichess result:', lichessResult ? lichessResult.moves?.slice(0, 3).map(m => m.san).join(', ') : 'none');
 
         let engineBestMove = null;
         let popularBestMove = null;
