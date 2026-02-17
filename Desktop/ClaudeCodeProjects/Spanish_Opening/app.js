@@ -761,6 +761,14 @@ function startNewGame() {
     $('#move-suggestions').html('<p class="waiting-message">Speel e4 om te begin...</p>');
     $('#hint-btn').prop('disabled', true);
 
+    // Reset position eval to starting position (slight advantage for White)
+    $('#position-eval').text('+0.3');
+    $('#position-eval').removeClass('negative').addClass('positive');
+
+    // Clear API cache for fresh game
+    apiCache.cloudEval.clear();
+    apiCache.lichess.clear();
+
     showEducationalMessage();
 }
 
@@ -858,6 +866,9 @@ async function handlePlayerMove(move) {
         addMoveToHistory(moveNum, move.san, 5, true);
         updateUI();
 
+        // Update position eval after the move
+        updatePositionEval();
+
         // Check for badges
         checkBadges(move);
 
@@ -896,19 +907,14 @@ async function handlePlayerMove(move) {
     // Check for badges
     checkBadges(move);
 
-    // Check for checkmate
+    // Check for checkmate (White checkmated Black)
     if (game.in_checkmate()) {
         awardBadge('checkmate');
-        endGame();
+        endGame('Skaakmat! Jy het gewen! 🏆');
         return;
     }
 
-    // Check for game end (move 20)
-    if (moveNum >= MAX_MOVES) {
-        endGame();
-        return;
-    }
-
+    // After move 20, Black still gets to respond - checkGameEnd will handle the ending
     // Get black's move after a brief delay
     setTimeout(() => {
         makeAIBlackMove();
@@ -924,13 +930,18 @@ async function scoreMove(move, positionBefore) {
         console.log('=== SCORING MOVE ===');
         console.log('Move played:', move.san);
         console.log('Position FEN:', positionBefore);
-        if (lastHintInfo) {
-            console.log('Last hint was for FEN:', lastHintInfo.fen);
-            console.log('FENs MATCH:', positionBefore === lastHintInfo.fen);
-            console.log('Hint engine moves were:', lastHintInfo.engineMoves.join(', '));
-            console.log('Move is #1 engine?', lastHintInfo.engineMoves[0] === move.san);
-        } else {
-            console.log('No hint was requested for this position');
+
+        // Check if this position matches a recent hint
+        const hintMatches = lastHintInfo && lastHintInfo.fen === positionBefore;
+        if (hintMatches) {
+            console.log('Position MATCHES last hint!');
+            console.log('Hint said best engine move was:', lastHintInfo.engineMoves[0]);
+            console.log('Player played:', move.san);
+            console.log('Player played the #1 engine move?', lastHintInfo.engineMoves[0] === move.san);
+        } else if (lastHintInfo) {
+            console.log('WARNING: Position does NOT match hint!');
+            console.log('Hint FEN:', lastHintInfo.fen);
+            console.log('Score FEN:', positionBefore);
         }
 
         // Get both Cloud Eval and Lichess Opening Explorer data
@@ -938,6 +949,17 @@ async function scoreMove(move, positionBefore) {
             getStockfishEval(positionBefore, 4),
             getLichessPopularity(positionBefore)
         ]);
+
+        // Extra validation: compare scoring engine result with hint
+        if (hintMatches && cloudEvalResult?.moves?.length > 0) {
+            const scoringBest = cloudEvalResult.moves[0].san;
+            const hintBest = lastHintInfo.engineMoves[0];
+            if (scoringBest !== hintBest) {
+                console.log('WARNING: Scoring engine best differs from hint!');
+                console.log('Hint best:', hintBest);
+                console.log('Scoring best:', scoringBest);
+            }
+        }
 
         let engineScore = 0;  // Start at 0, not 1 - we'll set properly below
         let lichessScore = 0;
@@ -988,36 +1010,48 @@ async function scoreMove(move, positionBefore) {
                 else if (moveIndex <= 6) lichessScore = 2;
                 else if (moveIndex >= 0) lichessScore = 1;
                 // If moveIndex === -1 (not found), lichessScore stays 0
-            } else if (moveIndex >= 0) {
-                // Less data, but move is in database - give partial credit
-                lichessScore = 3;
+            } else if (totalGames >= 5 && moveIndex >= 0) {
+                // Some data (5-19 games) - only give partial credit if move is top 3
+                if (moveIndex === 0) lichessScore = 4;
+                else if (moveIndex <= 2) lichessScore = 2;
+                else lichessScore = 1;
             }
+            // If < 5 games, don't use Lichess data (not reliable)
 
-            analysisHtml += '<p style="color:var(--spanish-yellow);margin-top:10px;margin-bottom:5px;"><strong>Populêr:</strong></p>';
-            sortedMoves.slice(0, 3).forEach((m, i) => {
-                const games = m.white + m.draws + m.black;
-                const pts = i === 0 ? 5 : (i <= 2 ? 4 : 3);
-                const highlight = (m.san === move.san) ? 'style="background:rgba(255,196,0,0.3);"' : '';
-                analysisHtml += `<div class="suggestion-row lichess" ${highlight}>
-                    <span class="suggestion-move">${m.san}</span>
-                    <span class="suggestion-info">${games} spelle</span>
-                </div>`;
-            });
+            if (totalGames >= 5) {
+                analysisHtml += '<p style="color:var(--spanish-yellow);margin-top:10px;margin-bottom:5px;"><strong>Populêr:</strong></p>';
+                sortedMoves.slice(0, 3).forEach((m, i) => {
+                    const games = m.white + m.draws + m.black;
+                    const highlight = (m.san === move.san) ? 'style="background:rgba(255,196,0,0.3);"' : '';
+                    analysisHtml += `<div class="suggestion-row lichess" ${highlight}>
+                        <span class="suggestion-move">${m.san}</span>
+                        <span class="suggestion-info">${games} spelle</span>
+                    </div>`;
+                });
+            }
         }
 
-        // Take the MAX of the two scores, with minimum of 1 if any data exists
+        // Take the MAX of the two scores
         let finalScore;
         if (engineScore === 0 && lichessScore === 0) {
-            // No data from either source - give benefit of doubt
-            finalScore = 3;
-            console.log('No data from either source, defaulting to 3');
+            // No data from either source - this shouldn't happen often
+            // Give minimum score since we can't verify the move quality
+            finalScore = 1;
+            console.log('WARNING: No data from either source, giving 1 point');
         } else {
             finalScore = Math.max(engineScore, lichessScore);
-            // Ensure at least 1 point if we had data
+            // If move wasn't found in any ranking, give 1 point
             if (finalScore === 0) finalScore = 1;
         }
 
-        console.log('Final score:', finalScore, '(engine:', engineScore, ', popular:', lichessScore, ')');
+        // SAFEGUARD: If player followed the hint's #1 engine move, ensure they get full credit
+        if (hintMatches && lastHintInfo.engineMoves[0] === move.san && finalScore < 5) {
+            console.log('SAFEGUARD: Player played hint #1 move but scored', finalScore, '- upgrading to 5');
+            finalScore = 5;
+            engineScore = 5;  // For display purposes
+        }
+
+        console.log('Final score:', finalScore, '(engine:', engineScore, ', lichess:', lichessScore, ')');
 
         // Show analysis
         if (analysisHtml) {
@@ -1038,7 +1072,7 @@ async function scoreMove(move, positionBefore) {
 
     } catch (error) {
         console.error('Scoring error:', error);
-        return 3; // Default middle score on error
+        return 1; // Minimum score on error - we can't verify move quality
     }
 }
 
@@ -1286,6 +1320,9 @@ function makeBlackMove(san) {
         updateMoveHistoryWithBlack(lastMoveNum, san);
 
         checkBadges(move, true); // Check badges for black's move too
+
+        // Update eval after Black's move
+        updatePositionEval();
     }
 }
 
@@ -1321,6 +1358,7 @@ async function makeAIBlackMove() {
                         updateMoveHistoryWithBlack(lastMoveNum, m.san);
 
                         checkBadges(move, true);
+                        updatePositionEval();  // Update eval after Black's move
                         checkGameEnd();
                         return;
                     }
@@ -1350,6 +1388,7 @@ async function makeAIBlackMove() {
             updateMoveHistoryWithBlack(lastMoveNum, move.san);
 
             checkBadges(move, true);
+            updatePositionEval();  // Update eval after Black's move
             checkGameEnd();
             return;
         }
@@ -1368,6 +1407,7 @@ async function makeAIBlackMove() {
             updateMoveHistoryWithBlack(lastMoveNum, randomMove);
 
             checkBadges(move, true);
+            updatePositionEval();  // Update eval after Black's move
             checkGameEnd();
         }
     }
@@ -1375,10 +1415,23 @@ async function makeAIBlackMove() {
 
 function checkGameEnd() {
     if (game.game_over() || currentMoveNumber >= MAX_MOVES) {
-        if (game.in_checkmate() && game.turn() === 'b') {
-            awardBadge('checkmate');
+        // Check for checkmate
+        let checkmateMessage = null;
+        if (game.in_checkmate()) {
+            if (game.turn() === 'b') {
+                // Black is checkmated - White wins!
+                awardBadge('checkmate');
+                checkmateMessage = 'Skaakmat! Jy het gewen! 🏆';
+            } else {
+                // White is checkmated - Black wins
+                checkmateMessage = 'Skaakmat! Swart het gewen.';
+            }
         }
-        endGame();
+
+        // Wait 2 seconds after Black's last move before showing modal
+        setTimeout(() => {
+            endGame(checkmateMessage);
+        }, 2000);
     }
 }
 
@@ -1828,7 +1881,7 @@ function hideHintMessage() {
 // GAME END & REVIEW
 // ============================================
 
-function endGame() {
+function endGame(checkmateMessage = null) {
     isGameActive = false;
 
     // Check for perfect game badge
@@ -1855,10 +1908,18 @@ function endGame() {
     incrementGamesPlayed();
 
     savePlayerData();
-    showGameOverModal();
+    showGameOverModal(checkmateMessage);
 }
 
-function showGameOverModal() {
+function showGameOverModal(checkmateMessage = null) {
+    // Update modal title based on checkmate
+    if (checkmateMessage) {
+        $('#modal-title').text(checkmateMessage);
+    } else {
+        $('#modal-title').text('Spel Klaar!');
+    }
+
+    // Show score prominently
     $('#final-score').text(currentScore);
 
     // High score message
