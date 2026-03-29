@@ -1,0 +1,48 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Chessground styles — brown board + cburnett piece set.
+   Alternative piece sets (e.g. merida, alpha) can be swapped by changing the last import. */
+@import 'chessground/assets/chessground.base.css';
+@import 'chessground/assets/chessground.brown.css';
+@import 'chessground/assets/chessground.cburnett.css';
+
+@layer base {
+  body {
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+    min-height: 100vh;
+    color: #e8e8e8;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  }
+}
+
+@layer components {
+  /* Reusable frosted-glass panel — matches Bird_Opening aesthetic */
+  .glass-panel {
+    background: rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(10px);
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  /* Chessground container — must be a positioned block with explicit dimensions */
+  .cg-container {
+    position: relative;
+    display: block;
+  }
+
+  /* Arrow/hint highlight override colour for "best move" hints */
+  .cg-wrap canvas {
+    pointer-events: none;
+  }
+
+  /* Bronze / Silver / Gold badge ring colours */
+  .tier-bronze  { border-color: #cd7f32; }
+  .tier-silver  { border-color: #a8a8a8; }
+  .tier-gold    { border-color: #ffd700; }
+
+  .tier-bronze-bg  { background-color: rgba(205, 127, 50, 0.25); }
+  .tier-silver-bg  { background-color: rgba(168, 168, 168, 0.25); }
+  .tier-gold-bg    { background-color: rgba(255, 215, 0, 0.25); }
+}

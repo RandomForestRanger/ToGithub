@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="af">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Skaakmat Afrigter</title>
+
+  <!-- chessboard.js styles (brown board, Wikipedia pieces) -->
+  <link rel="stylesheet"
+    href="https://unpkg.com/@chrisoakman/chessboardjs@1.0.0/dist/chessboard-1.0.0.min.css">
+
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<!-- ─── Screen 1: Tuis / Kentekens ──────────────────────────────────────────── -->
+<div id="screen-badges" class="screen">
+  <div class="container">
+    <header>
+      <h1>♟ Skaakmat Afrigter</h1>
+      <p>Bemeester die eindspel — een mat op 'n slag</p>
+    </header>
+
+    <div class="glass stats-bar" id="stats-bar">
+      <div class="stat"><span class="stat-label">Brons</span><span class="stat-value bronze" id="stat-bronze">0</span></div>
+      <div class="stat"><span class="stat-label">Silwer</span><span class="stat-value silver" id="stat-silver">0</span></div>
+      <div class="stat"><span class="stat-label">Goud</span><span class="stat-value gold" id="stat-gold">0</span></div>
+      <div class="stat"><span class="stat-label">Totaal</span><span class="stat-value total" id="stat-total">0/60</span></div>
+      <div class="player-wrap">
+        <label class="stat-label" for="player-select">Speler</label>
+        <select id="player-select" class="player-select">
+          <option>Besoeker</option>
+          <option>Jacobus</option>
+          <option>Thomas</option>
+          <option>Nasionale Eenheid</option>
+          <option>Coach</option>
+        </select>
+      </div>
+      <div style="margin-left: auto;">
+        <button class="btn btn-primary" id="play-btn">⚡ Speel</button>
+      </div>
+    </div>
+
+    <div class="badge-grid" id="badge-grid">
+      <!-- Rendered by JS -->
+    </div>
+  </div>
+</div>
+
+<!-- ─── Screen 2: Spelskerm ──────────────────────────────────────────────────── -->
+<div id="screen-game" class="screen">
+  <div class="game-layout">
+
+    <!-- Sybalk: kentekens -->
+    <div class="badge-sidebar glass" id="game-badge-sidebar"></div>
+
+    <!-- Hoofinhoud -->
+    <div class="game-main">
+
+      <div class="glass game-header">
+        <div>
+          <div class="game-type" id="game-type-name"></div>
+          <div class="game-subtype" id="game-type-sub"></div>
+        </div>
+        <div class="tier-badge" id="game-tier-badge"></div>
+        <div class="turns-display">
+          <div class="turns-label">Skuiwe oor</div>
+          <div class="turns-value" id="turns-value">12</div>
+        </div>
+      </div>
+
+      <div class="board-wrap">
+        <div id="board"></div>
+        <!-- SVG arrow overlay: coordinate space is 8×8 (one unit = one square).
+             Rank 1 at bottom (y=7), rank 8 at top (y=0). File a at left (x=0). -->
+        <svg id="arrow-svg" class="arrow-svg" viewBox="0 0 8 8" preserveAspectRatio="none"
+             xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <marker id="ah-green" markerWidth="0.5" markerHeight="0.4"
+                    refX="0.45" refY="0.2" orient="auto" markerUnits="userSpaceOnUse">
+              <polygon points="0,0 0.5,0.2 0,0.4" fill="rgba(46,204,113,0.9)" />
+            </marker>
+            <marker id="ah-blue" markerWidth="0.5" markerHeight="0.4"
+                    refX="0.45" refY="0.2" orient="auto" markerUnits="userSpaceOnUse">
+              <polygon points="0,0 0.5,0.2 0,0.4" fill="rgba(52,152,219,0.9)" />
+            </marker>
+          </defs>
+        </svg>
+      </div>
+
+      <div class="glass game-message" id="game-message">Laai...</div>
+
+      <div class="controls" id="hint-controls">
+        <!-- Wenk-knoppie word deur JS bygevoeg -->
+      </div>
+
+    </div><!-- /game-main -->
+  </div><!-- /game-layout -->
+</div>
+
+<!-- ─── Screen 3: Uitslag ─────────────────────────────────────────────────────── -->
+<div id="screen-result" class="screen">
+  <div class="container">
+    <div class="glass result-card">
+      <div class="result-icon" id="result-icon">🎉</div>
+      <h2 class="result-heading" id="result-heading">Skaakmat!</h2>
+      <p class="result-message" id="result-message"></p>
+      <p class="result-sub">Herspeel laai nou...</p>
+    </div>
+  </div>
+</div>
+
+<!-- ─── Screen 4: Herspeel ────────────────────────────────────────────────────── -->
+<div id="screen-replay" class="screen">
+  <div class="game-layout">
+
+    <!-- Sybalk: kentekens -->
+    <div class="badge-sidebar glass" id="replay-badge-sidebar"></div>
+
+    <!-- Hoofinhoud -->
+    <div class="game-main">
+
+      <div class="glass replay-label" id="replay-label">
+        Perfekte spel vanaf hierdie posisie
+      </div>
+
+      <div class="board-wrap">
+        <div id="replay-board"></div>
+        <svg id="replay-arrow-svg" class="arrow-svg" viewBox="0 0 8 8" preserveAspectRatio="none"
+             xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <marker id="rah-green" markerWidth="0.5" markerHeight="0.4"
+                    refX="0.45" refY="0.2" orient="auto" markerUnits="userSpaceOnUse">
+              <polygon points="0,0 0.5,0.2 0,0.4" fill="rgba(46,204,113,0.9)" />
+            </marker>
+            <marker id="rah-blue" markerWidth="0.5" markerHeight="0.4"
+                    refX="0.45" refY="0.2" orient="auto" markerUnits="userSpaceOnUse">
+              <polygon points="0,0 0.5,0.2 0,0.4" fill="rgba(52,152,219,0.9)" />
+            </marker>
+          </defs>
+        </svg>
+      </div>
+
+      <div class="glass replay-status" id="replay-status">Bereken perfekte spel...</div>
+      <div class="glass move-list" id="move-list"></div>
+
+      <div class="controls" id="replay-skip-controls">
+        <button class="btn btn-secondary" id="skip-replay-btn">⏩ Slaan Oor</button>
+      </div>
+
+      <div class="controls" id="replay-buttons" style="display:none;">
+        <button class="btn btn-primary" id="next-round-btn">Terug na die Hoofskerm</button>
+        <button class="btn btn-secondary" id="retry-btn">↺ Probeer Weer</button>
+      </div>
+
+    </div><!-- /game-main -->
+  </div><!-- /game-layout -->
+</div>
+
+<!-- ─── Screen 5: Kenteken Ontsluit ──────────────────────────────────────────── -->
+<div id="screen-badge-unlock" class="screen">
+  <div class="container">
+    <div class="glass unlock-card">
+      <div class="unlock-icon-ring" id="unlock-ring">
+        <span id="unlock-type-icon"></span>
+      </div>
+      <div class="unlock-tier-label">Nuwe vlak ontsluit</div>
+      <div class="unlock-tier" id="unlock-tier-name"></div>
+      <div class="unlock-type-name" id="unlock-type-name"></div>
+      <div class="unlock-ramkat" id="unlock-ramkat">Ramkat! 🔥</div>
+      <button class="btn btn-primary" id="unlock-done-btn">Terug na Kentekens</button>
+      <div class="unlock-auto">(Gaan outomaties in 4 sekondes)</div>
+    </div>
+  </div>
+</div>
+
+<!-- ─── Libraries ─────────────────────────────────────────────────────────────── -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js"></script>
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script src="https://unpkg.com/@chrisoakman/chessboardjs@1.0.0/dist/chessboard-1.0.0.min.js"></script>
+
+<!-- App data + logic -->
+<script src="positions.js"></script>
+<script src="app.js"></script>
+
+</body>
+</html>
