@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useGame, PHASES } from '../hooks/useGame.js';
 import { useBadges } from '../hooks/useBadges.js';
-import { scoreToExpression, getGiacomoLine } from '../data/giacomoLines.js';
+import { scoreToExpression, getGiacomoLine, getRandomItalyFact } from '../data/giacomoLines.js';
 import GameTitle    from './GameTitle.jsx';
 import ScoreBar     from './ScoreBar.jsx';
 import Board        from './Board.jsx';
@@ -19,7 +19,7 @@ export default function GameScreen({ profileData, onGameEnd, onAddBadges, onRemo
     popupData, explanationData, lastBestMove,
     hintTreeMove, hintEngineMove, hintLoading, hintUsed, hintActive,
     game,
-    startGame, onSquareClick, dismissExplanation, useHint,
+    startGame, onSquareClick, dismissExplanation, dismissPopup, useHint,
   } = useGame({ explanationsAnswered: profileData?.uitlegtellings ?? 0 });
 
   const { sessionBadges, resetSession, checkMoveBadges, checkGameEndBadges } = useBadges();
@@ -29,6 +29,11 @@ export default function GameScreen({ profileData, onGameEnd, onAddBadges, onRemo
   const motivTriggers = useRef([]);
   const shownMotivRef = useRef(new Set());
   const motivTimerRef = useRef(null);
+
+  // Option B — idle mouse easter egg (desktop only, player's turn only)
+  const [idleItalyFact, setIdleItalyFact] = useState(null);
+  const idleTimerRef   = useRef(null);
+  const idleDismissRef = useRef(null);
 
   // Pick a fresh random thinking comment each time Black starts thinking
   useEffect(() => {
@@ -74,6 +79,39 @@ export default function GameScreen({ profileData, onGameEnd, onAddBadges, onRemo
     clearTimeout(motivTimerRef.current);
     motivTimerRef.current = setTimeout(() => setMotivMsg(null), 5000);
   }, [phase, whiteMovesPlayed]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ── Option B idle easter egg — 3 min no mouse movement during player's turn ──
+  useEffect(() => {
+    const isDesktop = window.matchMedia('(pointer: fine)').matches;
+    if (!isDesktop || phase !== PHASES.PLAYER_TURN) {
+      clearTimeout(idleTimerRef.current);
+      clearTimeout(idleDismissRef.current);
+      setIdleItalyFact(null);
+      return;
+    }
+
+    function showFact() {
+      setIdleItalyFact(getRandomItalyFact());
+      clearTimeout(idleDismissRef.current);
+      idleDismissRef.current = setTimeout(() => setIdleItalyFact(null), 18000);
+    }
+
+    function resetIdle() {
+      setIdleItalyFact(null);
+      clearTimeout(idleTimerRef.current);
+      clearTimeout(idleDismissRef.current);
+      idleTimerRef.current = setTimeout(showFact, 180000); // 3 minutes
+    }
+
+    window.addEventListener('mousemove', resetIdle);
+    resetIdle();
+
+    return () => {
+      window.removeEventListener('mousemove', resetIdle);
+      clearTimeout(idleTimerRef.current);
+      clearTimeout(idleDismissRef.current);
+    };
+  }, [phase]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Badge checks ───────────────────────────────────────────────────────
   // After each move popup appears, check move-time badges
@@ -243,11 +281,27 @@ export default function GameScreen({ profileData, onGameEnd, onAddBadges, onRemo
       {popupData && (
         <MovePopup
           data={popupData}
-          onDismiss={() => {/* auto-dismiss handled by useGame timeout */}}
+          onDismiss={dismissPopup}
         />
       )}
 
       <SuggestionBox bestMove={showSuggestion ? lastBestMove : null} />
+
+      {/* Option B — idle Italy fact overlay */}
+      {idleItalyFact && (
+        <div
+          className="italy-fact-overlay glass"
+          onClick={() => {
+            clearTimeout(idleDismissRef.current);
+            setIdleItalyFact(null);
+          }}
+        >
+          <div className="italy-fact-overlay__flag">🇮🇹</div>
+          <div className="italy-fact-overlay__kategorie">{idleItalyFact.kategorie}</div>
+          <div className="italy-fact-overlay__feit">{idleItalyFact.feit}</div>
+          <div className="italy-fact-overlay__dismiss">Klik om toe te maak</div>
+        </div>
+      )}
     </div>
   );
 }

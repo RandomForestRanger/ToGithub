@@ -22,7 +22,7 @@ import { Chess } from 'chess.js';
 import { scoreWhiteMove, getEngineHintMove, evalFen, sanToSquares, uciToSquares } from '../data/scoringRules.js';
 import { detectLayerComplete, getTreeHintMove, detectNewMidgamePanel } from '../data/openingTree.js';
 import { selectBlackMove, rollTrap, checkTrapTrigger } from '../engine/moveSelector.js';
-import { getGiacomoLine, scoreToExpression, LAYER_ANNOUNCEMENTS, MIDGAME_PANELS } from '../data/giacomoLines.js';
+import { getGiacomoLine, scoreToExpression, LAYER_ANNOUNCEMENTS, MIDGAME_PANELS, getRandomItalyFact } from '../data/giacomoLines.js';
 
 export const PHASES = {
   IDLE:           'idle',
@@ -99,6 +99,8 @@ export function useGame({ onBadgeUnlock, onGameEnd, explanationsAnswered = 0 } =
   // randomAt     (20–25): Black plays a random legal move that turn
   const imperfectionsRef = useRef(null);
   const announcedPanelsRef = useRef(new Set()); // tracks which mid-game panels have fired
+  const popupTimerRef = useRef(null);    // cancelable handle for the popup auto-dismiss
+  const popupAfterRef = useRef(null);    // { isCheckmate, isGameOver } captured for early dismiss
 
   // Internal: data pending while explanation modal is open
   const pendingRef = useRef(null);
@@ -327,6 +329,12 @@ export function useGame({ onBadgeUnlock, onGameEnd, explanationsAnswered = 0 } =
     const midgamePanel = (!focusMode && !layerJustComplete && newMidgamePanelId)
       ? (MIDGAME_PANELS[newMidgamePanelId] ?? null) : null;
 
+    // Option C easter egg: 1-in-300 chance of an Italy fact appearing in the popup.
+    // Only on desktop (pointer:fine), not during focus mode, not on checkmate.
+    const isDesktop = typeof window !== 'undefined' && window.matchMedia('(pointer: fine)').matches;
+    const italyFact = (!focusMode && !isCheckmate && isDesktop && Math.random() < 1 / 300)
+      ? getRandomItalyFact() : null;
+
     // Build popup data
     const popup = {
       san,
@@ -342,8 +350,9 @@ export function useGame({ onBadgeUnlock, onGameEnd, explanationsAnswered = 0 } =
       source:              result.source,
       layerAnnouncement:   (focusMode || !layerJustComplete) ? null : LAYER_ANNOUNCEMENTS[layerJustComplete],
       midgamePanel,
+      italyFact,
       focusMode,
-      duration:            layerJustComplete && !focusMode ? 28000 : midgamePanel ? 28000 : focusMode ? 3000 : POPUP_DURATION,
+      duration:            layerJustComplete && !focusMode ? 28000 : midgamePanel ? 28000 : italyFact ? 20000 : focusMode ? 3000 : POPUP_DURATION,
     };
     setPopupData(popup);
     if (cappedScore < 4 && result.bestMoveSan) setLastBestMove(result.bestMoveSan);
@@ -375,12 +384,24 @@ export function useGame({ onBadgeUnlock, onGameEnd, explanationsAnswered = 0 } =
     if (isCheckmate) setMateDelivered(true);
 
     setPhase(PHASES.POPUP);
+    popupAfterRef.current = { isCheckmate, isGameOver };
 
-    // Auto-dismiss popup (longer when a layer announcement is shown)
-    setTimeout(() => {
+    // Auto-dismiss popup — timer stored so the click handler can cancel it early
+    clearTimeout(popupTimerRef.current);
+    popupTimerRef.current = setTimeout(() => {
       setPopupData(null);
       _afterPopup(isCheckmate, isGameOver);
     }, popup.duration);
+  }
+
+  function dismissPopup() {
+    clearTimeout(popupTimerRef.current);
+    setPopupData(null);
+    if (popupAfterRef.current) {
+      const { isCheckmate, isGameOver } = popupAfterRef.current;
+      popupAfterRef.current = null;
+      _afterPopup(isCheckmate, isGameOver);
+    }
   }
 
   // ── After popup auto-dismisses ────────────────────────────────────────
@@ -442,10 +463,22 @@ export function useGame({ onBadgeUnlock, onGameEnd, explanationsAnswered = 0 } =
                 : blackModeRef.current === 'coasting'  ? 5
                 : scheduledDepth;
 
-    // Minimum thinking pause (only up to BLACK_THINK_CUTOFF half-moves = move 40)
-    const thinkDelay = blackMoveNum < BLACK_THINK_CUTOFF
-      ? new Promise(r => setTimeout(r, BLACK_THINK_MIN + Math.random() * (BLACK_THINK_MAX - BLACK_THINK_MIN)))
-      : Promise.resolve();
+    // Thinking schedule:
+    //   1–4 : 3s (opening book, fast)
+    //   5   : 10–20s (tournament pace)
+    //   6–10: 7s (early middlegame, still brisk)
+    //  11–30: 10–20s (full tournament pace)
+    //  31–39: 1–10s (endgame urgency)
+    //  40+  : instant (BLACK_THINK_CUTOFF)
+    const thinkDelay = blackMoveNum <= 4
+      ? new Promise(r => setTimeout(r, 3000))
+      : blackMoveNum >= 6 && blackMoveNum <= 10
+        ? new Promise(r => setTimeout(r, 7000))
+        : blackMoveNum <= 30
+          ? new Promise(r => setTimeout(r, BLACK_THINK_MIN + Math.random() * (BLACK_THINK_MAX - BLACK_THINK_MIN)))
+          : blackMoveNum < BLACK_THINK_CUTOFF
+            ? new Promise(r => setTimeout(r, 1000 + Math.random() * 9000))
+            : Promise.resolve();
 
     let san;
     try {
@@ -573,6 +606,7 @@ export function useGame({ onBadgeUnlock, onGameEnd, explanationsAnswered = 0 } =
     startGame,
     onSquareClick,
     dismissExplanation,
+    dismissPopup,
     markTrapEscaped,
     useHint,
   };

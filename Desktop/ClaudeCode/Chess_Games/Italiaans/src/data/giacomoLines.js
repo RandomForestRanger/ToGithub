@@ -98,7 +98,7 @@ const LINES = {
     "Swart moet nou eers 'n plan maak...",
     "Swart bedink die situasie...",
     "Swart beraam sy plan...",
-    "Swart weeg sy opsies...",
+    "Swart weeg sy opsies op...",
   ],
 
   // Motivational asides — shown 3× per game at random moments during player's turn
@@ -212,6 +212,94 @@ export function getGiacomoLine(key, substitutions = {}) {
     line = line.replace(`{${token}}`, value);
   }
   return line;
+}
+
+// ── Italië Feite — Paasei (B: muisstil; C: 1-in-300 per skuif) ──────────────
+export const ITALY_FACTS = [
+  {
+    kategorie: '⛰️ Berge',
+    feit: "Die Dolomiete in noordoos-Italië was vroeër 'n tropiese koraalrif — vandag is dit 'n UNESCO-Wêrelderfenisgebied.",
+  },
+  {
+    kategorie: '⛰️ Berge',
+    feit: "Monte Bianco (4 808 m) staan op die Italiaans-Franse grens as die hoogste berg in die Alpe.",
+  },
+  {
+    kategorie: '⛰️ Berge',
+    feit: "Italië het drie aktiewe vulkane: Etna — Europa se grootste — Stromboli en Vesuvius, wat Pompeji in 79 n.C. onder lawa en as begrawe het.",
+  },
+  {
+    kategorie: '🏛️ Geskiedenis',
+    feit: "Italië is eers in 1861 as eenheidstaat gestig — vir meer as duisend jaar tevore was dit 'n lappieskombers van stadstate, koninkryke en pouslike gebiede.",
+  },
+  {
+    kategorie: '🏛️ Geskiedenis',
+    feit: "Op sy hoogtepunt het die Romeinse Ryk van Skotland tot in Mesopotamië gestrek — alles vanuit een stad regeer.",
+  },
+  {
+    kategorie: '🏛️ Geskiedenis',
+    feit: "Die Vatikaan, volledig binne Rome geleë, is die kleinste onafhanklike staat ter wêreld — net 44 hektaar groot.",
+  },
+  {
+    kategorie: '🏙️ Stede',
+    feit: "Venesië is op 118 eilande gebou wat deur meer as 400 brûe verbind word — geen paaie nie, net kanale en voetpaaie.",
+  },
+  {
+    kategorie: '🏙️ Stede',
+    feit: "Florence het Leonardo da Vinci, Michelangelo, Botticelli én Dante voortgebring — almal binne 'n paar stadsblokke van mekaar gebore.",
+  },
+  {
+    kategorie: '🏙️ Stede',
+    feit: "Napels herberg die wêreld se eerste pizzeria — Antica Pizzeria Port'Alba, wat reeds in 1738 sy deure oopgemaak het.",
+  },
+  {
+    kategorie: '🗣️ Taal',
+    feit: "Italiaans is die lewende taal wat die naaste aan Latyn staan — sowat 82% van sy woordeskat spruit regstreeks daaruit.",
+  },
+  {
+    kategorie: '🗣️ Taal',
+    feit: "Meer as 350 verskillende pastavormes bestaan in die Italiaanse kookkuns — meer benoemde vorme as byna enige ander voedselkategorie in enige taal.",
+  },
+  {
+    kategorie: '🗣️ Taal',
+    feit: "Italianers gebaar so uitbundig dat die Italiaanse Gebaretaal gedeeltelik uit alledaagse handgebare ontwikkel het.",
+  },
+  {
+    kategorie: '🎭 Kultuur',
+    feit: "Italië besit meer UNESCO-Wêrelderfenisgebiede as enige ander land ter wêreld — 58 tot op hede.",
+  },
+  {
+    kategorie: '🎭 Kultuur',
+    feit: "Die espressomajien is in 1884 in Turyn deur Angelo Moriondo uitgevind.",
+  },
+  {
+    kategorie: '🎭 Kultuur',
+    feit: "Italianers verbruik gemiddeld 14 kg pasta per persoon per jaar — meer as enige ander volk op aarde.",
+  },
+  {
+    kategorie: '🎵 Musiek',
+    feit: "Die eerste opera ooit was Dafne — omstreeks 1597 in Florence opgevoer.",
+  },
+  {
+    kategorie: '🎵 Musiek',
+    feit: "Musiekterme wat wêreldwyd deur elke orkes gebruik word — allegro, forte, piano, crescendo, sopraan — is almal gewone Italiaanse woorde.",
+  },
+  {
+    kategorie: '😄 Weet Jy?',
+    feit: "Italië vervaardig meer as 400 soorte kaas — meer selfs as Frankryk.",
+  },
+  {
+    kategorie: '😄 Weet Jy?',
+    feit: "Abbiocco is 'n Italiaanse woord waarvoor geen Afrikaanse of Engelse eweknie bestaan nie: die slaaperige gevoel wat 'n groot middagete volg.",
+  },
+  {
+    kategorie: '⚽ Sport',
+    feit: "Italië het die FIFA Wêreldbeker vier keer gewen (1934, 1938, 1982, 2006) — net Brasilië en Duitsland het dit ook meer as twee keer reggekry.",
+  },
+];
+
+export function getRandomItalyFact() {
+  return ITALY_FACTS[Math.floor(Math.random() * ITALY_FACTS.length)];
 }
 
 // Map score (1–4) to the expression key for GiacomoFace

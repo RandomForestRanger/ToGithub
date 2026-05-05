@@ -95,7 +95,7 @@ Node.js path workaround (Mac): `PATH="/usr/local/opt/node/bin:$PATH"` voor alle 
 
 **Swart se beurt (rekenaar):**
 1. Fase: `BLACK_THINKING` — Giacomo wys willekeurige denkkommentaar ("Swart krap bietjie kop...", ens.)
-2. **Denkpouse:** skuiwe 1–40: 10–20 sekondes willekeurig; na skuif 40: onmiddellik
+2. **Denkpouse:** sien denkvertraging skedule hieronder; na skuif 40: onmiddellik
 3. Skuif word gekies (sien Swart Sterkte hieronder)
 4. 800ms animasievertraging, dan bord opdateer
 
@@ -195,18 +195,18 @@ Alle modi is tydelik — hulle reset as die evaluasie verskuif. `fighting` verdw
 
 ## Swart se Denkvertraging
 
-Implementeer in `_playBlackMove` met `Promise.all`:
+Implementeer in `_playBlackMove` met `Promise.all` — skuif-seleksie en denkpouse loop parallel, geen ekstra wag nie.
 
-```js
-const thinkDelay = blackMoveNum < 40
-  ? new Promise(r => setTimeout(r, 10000 + Math.random() * 10000))
-  : Promise.resolve();
-const [san] = await Promise.all([selectBlackMove(...), thinkDelay]);
-```
+### Denkvertraging skedule
 
-- Skuiwe 1–40: 10–20 sekondes willekeurig
-- Na skuif 40: onmiddellik
-- Skuif-seleksie en denkpouse loop parallel — geen ekstra wag nie
+| Skuiwe | Vertraging |
+|--------|-----------|
+| 1–4 | 3s (opening, vinnig) |
+| 5 | 10–20s (toernooi-pas) |
+| 6–10 | 7s (vroeë middelspel, kort) |
+| 11–30 | 10–20s (volle toernooi-pas) |
+| 31–39 | 1–10s willekeurig (eindspel-dringendheid) |
+| 40+ | Onmiddellik (geen pouse) |
 
 ---
 
@@ -350,12 +350,14 @@ ctx.profile          // { speleGespeel, badges, besteTelling }
 *Nota oor variasie-badges: h[] is 0-geïndekseer SAN geskiedenisreeks. h[0]=e4, h[1]=e5, h[2]=Nf3, h[3]=Nc6, h[4]=Bc4 is die Italianer opening.*
 
 ### Medium Badges — Struktuur (4)
-| Emoji | ID | Kriterium |
-|-------|----|-----------|
-| 🔺 | `die_driehoek` | layerStatus >= 1 |
-| 🗺️ | `perd_pad_meester` | layerStatus >= 2 |
-| 💥 | `sentrum_breuk` | layerStatus >= 3 |
-| 🏯 | `laag_drie_bereik` | layerStatus >= 3 (game_end) |
+| Emoji | ID | Vertoonnaam | Kriterium |
+|-------|----|-------------|-----------|
+| 🔺 | `die_driehoek` | Die Driehoek | layerStatus >= 1 |
+| 🗺️ | `perd_pad_meester` | Perd Pad Meester | layerStatus >= 2 |
+| 💥 | `sentrum_breuk` | Middelbord | layerStatus >= 3 |
+| 🏯 | `laag_drie_bereik` | Laag Drie Bereik | layerStatus >= 3 (game_end) |
+
+`wenWenrig` én `beskrywing` vir hierdie drie bevat pedagogiese verduideliking van die skuiwe/idees, sodat die wenk sigbaar is ongeag of die badge gesluit of verdiend is.
 
 ### Moeilike Badges (8)
 | Emoji | ID | Kriterium |
@@ -454,10 +456,12 @@ downloadGameLog()            // laai JSON-lêer af na gebruiker se rekenaar
 | Skuif | Modus | Inhoud | Duur |
 |-------|-------|--------|------|
 | 1–2 | Stil | Net punte + sterre | 7.5s |
-| 3–29 | Normaal | Gesig + kommentaar + variasinaam + laag / middelspel paneel | 7.5s (28s as laag of middelspel paneel) |
+| 3–29 | Normaal | Gesig + kommentaar + variasinaam + laag / middelspel paneel | 7.5s (28s as laag of middelspel paneel; 20s as Italië-feit) |
 | 30+ | Fokus | Net `N / 4 ⭐⭐⭐` kompakte pil | 3s |
 
 Fokus modus: geen Giacomo gesig, geen teks, geen variasinaam, geen laag-aankondiging. Die `focusMode: true` vlag in popup data dryf die `move-popup--focus` CSS klas.
+
+**Klik om toe te maak:** `dismissPopup()` in `useGame.js` kanselleer die outomatiese timer via `popupTimerRef` en roep `_afterPopup()` onmiddellik. Die leë `onDismiss` patroon moet NOOIT gebruik word nie — dit sal die spel vaspen.
 
 ---
 
@@ -485,7 +489,7 @@ Fokus modus: geen Giacomo gesig, geen teks, geen variasinaam, geen laag-aankondi
 5. **Fokus na skuif 30** — geen teks-afleidinge; net punte
 6. **Motiverende boodskappe** — 3× per spel, willekeurig
 7. **Trap verbaas** — 15% kans, seldsaam maar onvergeetlik
-8. **Swart dink** — 10–20s pouse vir realisme (net skuiwe 1–40)
+8. **Swart dink** — gedifferensieerde denkpouses per fase (sien denkvertraging skedule)
 9. **Badge name altyd sigbaar** — gesluit maar leesbaar; speler leer variasie-name
 
 ---
@@ -501,6 +505,29 @@ Sigbaar slegs tydens `PLAYER_TURN` fase (veilig — geen asinkrone operasies in 
 4. Kies nuwe motiverende skuifnommers
 
 **Waarskuwing:** Enige badges wat die speler in hierdie sessie verdien het, gaan verlore. Die telling, laag-status en spellog word nie gestoor nie. `removeBadges()` in `useProfile.js` doen die omgekeerde van `addBadges()`.
+
+---
+
+## Italië Feite Paasei (Easter Egg)
+
+Slegs op **rekenaar** (`window.matchMedia('(pointer: fine)').matches`). Twee onafhanklike snellers:
+
+### Opsie B — Muisstil (idle)
+- Tydens `PLAYER_TURN` fase: as die muis **3 minute** (180 000ms) nie beweeg nie, verskyn 'n klein paneel (`italy-fact-overlay`) onder-regs op die skerm.
+- Verdwyn na 18 sekondes, of onmiddellik as die speler klik.
+- Muisbeweging reset die timer — brand nooit tydens aktiewe spel nie.
+- Implementeer in `GameScreen.jsx` via `idleTimerRef` + `idleDismissRef`.
+
+### Opsie C — Seldsame skuif-sneller
+- By elke Wit skuif: **1-in-300 kans** (`Math.random() < 1/300`) dat 'n Italië-feit in die MovePopup verskyn.
+- Gesuprimeer in fokus modus (skuif 30+) en by mat.
+- Popup duur vergroot na **20 sekondes** as 'n feit ingesluit is.
+- Implementeer in `_applyScoreAndContinue` in `useGame.js` via `italyFact` veld in popup data.
+
+### Data
+`ITALY_FACTS` (20 feite) en `getRandomItalyFact()` is in `giacomoLines.js`. Elke feit het `{ kategorie, feit }`. Kategorieë: ⛰️ Berge, 🏛️ Geskiedenis, 🏙️ Stede, 🗣️ Taal, 🎭 Kultuur, 🎵 Musiek, 😄 Weet Jy?, ⚽ Sport.
+
+Alle feite is in korrekte Germaanse Afrikaans geskryf — ondergeskikte sinne met werkwoord aan die einde, pronominale bywoorde (`waarvoor`, `waaruit`), dubbele ontkenning, skeibare werkwoorde.
 
 ---
 

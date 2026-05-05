@@ -16,7 +16,7 @@ export default function MovePopup({ data, onDismiss }) {
 
   if (!data) return null;
 
-  const { score, commentaar, variationName, expression, layerAnnouncement, midgamePanel, focusMode } = data;
+  const { score, commentaar, variationName, expression, layerAnnouncement, midgamePanel, italyFact, focusMode } = data;
   const expr = expression ?? scoreToExpression(score, score === 'mate');
   const safeScore = Math.max(1, Math.min(4, score ?? 1));
 
@@ -79,6 +79,15 @@ export default function MovePopup({ data, onDismiss }) {
               <li key={i}>{p}</li>
             ))}
           </ul>
+        </div>
+      )}
+
+      {italyFact && (
+        <div className="move-popup__italy-fact">
+          <div className="move-popup__italy-header">
+            🇮🇹 <span className="move-popup__italy-kategorie">{italyFact.kategorie}</span>
+          </div>
+          <div className="move-popup__italy-feit">{italyFact.feit}</div>
         </div>
       )}
 

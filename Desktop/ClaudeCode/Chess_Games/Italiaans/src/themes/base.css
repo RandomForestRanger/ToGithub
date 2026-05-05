@@ -1292,3 +1292,76 @@ body.font-comic     { font-family: 'Comic Sans MS', 'Chalkboard SE', cursive !im
   transition: opacity 0.15s, transform 0.15s;
 }
 .intro-btn:hover { transform: scale(1.04); opacity: 0.92; }
+
+/* ══════════════════════════════════════════════════════════════════════
+   ITALY FACT — popup panel (Option C: rare per-move) + idle overlay (Option B)
+   ══════════════════════════════════════════════════════════════════════ */
+
+/* In-popup panel (Option C) */
+.move-popup__italy-fact {
+  margin-top: 0.9rem;
+  padding: 0.75rem 1rem;
+  border-left: 3px solid #009246; /* Italian green */
+  border-right: 3px solid #ce2b37; /* Italian red */
+  background: rgba(255,255,255,0.06);
+  border-radius: 6px;
+  text-align: left;
+}
+.move-popup__italy-header {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #f5c842;
+  margin-bottom: 0.35rem;
+}
+.move-popup__italy-kategorie {
+  margin-left: 0.25rem;
+}
+.move-popup__italy-feit {
+  font-size: 0.88rem;
+  color: #e8e8e8;
+  line-height: 1.5;
+}
+
+/* Full idle overlay (Option B) */
+.italy-fact-overlay {
+  position: fixed;
+  bottom: 2rem;
+  right: 2rem;
+  width: clamp(260px, 28vw, 360px);
+  padding: 1.2rem 1.4rem;
+  border-top: 3px solid #009246;
+  border-bottom: 3px solid #ce2b37;
+  border-left: 1px solid rgba(255,255,255,0.15);
+  border-right: 1px solid rgba(255,255,255,0.15);
+  background: rgba(20, 20, 40, 0.92);
+  backdrop-filter: blur(12px);
+  border-radius: 10px;
+  z-index: 200;
+  cursor: pointer;
+  animation: slideUp 0.4s ease;
+}
+.italy-fact-overlay__flag {
+  font-size: 1.8rem;
+  margin-bottom: 0.3rem;
+}
+.italy-fact-overlay__kategorie {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #f5c842;
+  margin-bottom: 0.5rem;
+}
+.italy-fact-overlay__feit {
+  font-size: 0.9rem;
+  color: #e8e8e8;
+  line-height: 1.55;
+  margin-bottom: 0.8rem;
+}
+.italy-fact-overlay__dismiss {
+  font-size: 0.68rem;
+  color: rgba(255,255,255,0.35);
+  text-align: right;
+}
