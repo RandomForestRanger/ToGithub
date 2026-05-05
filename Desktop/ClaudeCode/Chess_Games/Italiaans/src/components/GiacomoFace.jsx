@@ -4,17 +4,20 @@ import React, { useState, useEffect } from 'react';
 // All coordinates are on an 8-pixel grid (32×32 logical pixels).
 // Usage: <GiacomoFace expression="ecstatic" size={96} />
 //
-// 10 expressions:
-//   ecstatic   — 4pt excellent  (star eyes, huge grin, sparkles)
-//   pleased    — 3pt good       (happy squint, smile)
-//   neutral    — 2pt mediocre   (flat stare, thin line mouth)
-//   frustrated — 1pt bad        (angry brows, frown)
-//   waiting    — player's turn  (raised brows, small open mouth)
-//   celebrating— checkmate/bonus(closed crescents, huge laugh)
-//   shocked    — trap triggered  (huge eyes, O mouth, !!)
-//   warning    — trap incoming   (Spock brow, smirk)
-//   proud      — badge unlock    (lidded eyes, knowing smile)
-//   thinking   — evaluating      (eyes up-right, pursed mouth)
+// 13 expressions:
+//   ecstatic         — 4pt (star eyes, huge grin, sparkles)          common
+//   ecstatic_hearts  — 4pt (heart eyes, big grin, corner hearts)     common
+//   ecstatic_approva — 4pt (deep squint, wide smug smile, no extras) common
+//   ecstatic_confetti— 4pt (eyes shut laughing, full confetti shower) 1-in-20 rare
+//   pleased          — 3pt good       (happy squint, smile)
+//   neutral          — 2pt mediocre   (flat stare, thin line mouth)
+//   frustrated       — 1pt bad        (angry brows, frown)
+//   waiting          — player's turn  (raised brows, small open mouth)
+//   celebrating      — checkmate/bonus(closed crescents, huge laugh)
+//   shocked          — trap triggered  (huge eyes, O mouth, !!)
+//   warning          — trap incoming   (Spock brow, smirk)
+//   proud            — badge unlock    (lidded eyes, knowing smile)
+//   thinking         — evaluating      (eyes up-right, pursed mouth)
 //
 // 5 idle animations (trigger randomly ~every 2 minutes):
 //   look_up    — eyes drift upward, brows raise
@@ -104,6 +107,103 @@ const EXPRESSIONS = {
       r(2, 3, 1, 3, GD), r(1, 4, 3, 1, GD),
       r(29, 3, 1, 3, GD), r(28, 4, 3, 1, GD),
       r(3, 7, 1, 1, GD), r(28, 7, 1, 1, GD),
+    ],
+  },
+
+  // ── 4pt variant: heart eyes ──────────────────────────────────────────
+  // Red pixel-art hearts fill each eye socket. Mini hearts float in both
+  // upper corners. Same huge grin as ecstatic.
+  ecstatic_hearts: {
+    eyebrows: [
+      r(8, 9, 5, 1, HR), r(19, 9, 5, 1, HR),
+    ],
+    eyes: [
+      // Left eye — white background then heart shape
+      r(8, 10, 6, 4, EW),
+      r(9, 10, 2, 1, '#e74c3c'), r(12, 10, 2, 1, '#e74c3c'), // two bumps, gap at x=11
+      r(8, 11, 6, 1, '#e74c3c'),                               // widest row
+      r(9, 12, 4, 1, '#e74c3c'),                               // narrowing
+      r(10, 13, 2, 1, '#e74c3c'),                              // point
+      // Right eye — mirrored heart
+      r(18, 10, 6, 4, EW),
+      r(19, 10, 2, 1, '#e74c3c'), r(22, 10, 2, 1, '#e74c3c'), // two bumps, gap at x=21
+      r(18, 11, 6, 1, '#e74c3c'),
+      r(19, 12, 4, 1, '#e74c3c'),
+      r(20, 13, 2, 1, '#e74c3c'),
+    ],
+    mouth: [
+      r(9, 24, 14, 3, MR),
+      r(10, 25, 12, 1, TH), r(11, 26, 10, 1, TH),
+      r(9, 23, 1, 1, MR), r(22, 23, 1, 1, MR),
+    ],
+    extras: [
+      // Mini heart — top left
+      r(2, 4, 1, 1, '#e74c3c'), r(4, 4, 1, 1, '#e74c3c'),
+      r(1, 5, 4, 1, '#e74c3c'),
+      r(2, 6, 2, 1, '#e74c3c'),
+      r(3, 7, 1, 1, '#e74c3c'),
+      // Mini heart — top right
+      r(27, 4, 1, 1, '#e74c3c'), r(29, 4, 1, 1, '#e74c3c'),
+      r(26, 5, 4, 1, '#e74c3c'),
+      r(27, 6, 2, 1, '#e74c3c'),
+      r(28, 7, 1, 1, '#e74c3c'),
+    ],
+  },
+
+  // ── 4pt variant: approving maestro ───────────────────────────────────
+  // Deeply satisfied heavy-lidded squint. Asymmetric brows (left raised).
+  // Very wide closed-lip cat smile — no teeth, pure dignity.
+  ecstatic_approva: {
+    eyebrows: [
+      r(8, 8, 5, 1, HR),   // left brow raised one unit higher
+      r(19, 9, 5, 1, HR),
+    ],
+    eyes: [
+      // Left eye — 2-row skin lid, 2-row white beneath, pupil visible
+      r(8, 12, 6, 2, EW), r(8, 10, 6, 2, SK),
+      r(10, 12, 2, 2, PU), r(11, 12, 1, 1, WH),
+      // Right eye — same
+      r(18, 12, 6, 2, EW), r(18, 10, 6, 2, SK),
+      r(20, 12, 2, 2, PU), r(21, 12, 1, 1, WH),
+    ],
+    mouth: [
+      r(9, 24, 14, 1, MR),                           // wide main line
+      r(8, 25, 1, 1, MR), r(23, 25, 1, 1, MR),      // corners drop slightly outward
+    ],
+    extras: [],
+  },
+
+  // ── 4pt variant: confetti shower (1-in-20 rare) ──────────────────────
+  // Eyes squeezed completely shut with joy. Widest possible laugh.
+  // Multi-colour confetti dots scattered all around the face.
+  ecstatic_confetti: {
+    eyebrows: [
+      r(8, 8, 5, 1, HR), r(19, 8, 5, 1, HR),
+    ],
+    eyes: [
+      // Closed-crescent eyes (same construction as celebrating)
+      r(8, 12, 6, 1, HR), r(9, 11, 4, 1, HR),
+      r(18, 12, 6, 1, HR), r(19, 11, 4, 1, HR),
+    ],
+    mouth: [
+      r(8, 23, 16, 4, MR),
+      r(9, 24, 14, 2, TH),
+      r(13, 26, 6, 1, PU, 0.5),
+      r(8, 23, 1, 1, SK), r(23, 23, 1, 1, SK),
+    ],
+    extras: [
+      // Confetti scattered around all four edges
+      r(1,  2, 1, 1, GD),           r(5,  1, 1, 1, '#e74c3c'),
+      r(9,  0, 1, 1, '#2ecc71'),    r(14, 1, 1, 1, '#3498db'),
+      r(19, 0, 1, 1, '#9b59b6'),    r(25, 1, 1, 1, '#f39c12'),
+      r(29, 2, 1, 1, GD),
+      r(0,  8, 1, 1, '#e74c3c'),    r(1, 14, 1, 1, '#3498db'),
+      r(0, 20, 1, 1, '#2ecc71'),
+      r(30, 8, 1, 1, '#9b59b6'),    r(31, 14, 1, 1, GD),
+      r(30, 20, 1, 1, '#e74c3c'),
+      r(2, 26, 1, 1, GD),           r(29, 26, 1, 1, '#2ecc71'),
+      // Intensified cheeks flush with joy
+      r(7, 15, 4, 3, CK, 0.65),    r(21, 15, 4, 3, CK, 0.65),
     ],
   },
 

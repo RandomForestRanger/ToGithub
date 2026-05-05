@@ -218,5 +218,12 @@ export function getGiacomoLine(key, substitutions = {}) {
 export function scoreToExpression(score, isCheckmate = false, isThinking = false) {
   if (isThinking) return 'thinking';
   if (isCheckmate) return 'celebrating';
-  return { 4: 'ecstatic', 3: 'pleased', 2: 'neutral', 1: 'frustrated' }[score] ?? 'neutral';
+  if (score === 4) {
+    const r = Math.random();
+    if (r < 0.05)   return 'ecstatic_confetti';   // 1-in-20 rare surprise
+    if (r < 0.367)  return 'ecstatic';
+    if (r < 0.683)  return 'ecstatic_hearts';
+    return 'ecstatic_approva';
+  }
+  return { 3: 'pleased', 2: 'neutral', 1: 'frustrated' }[score] ?? 'neutral';
 }
