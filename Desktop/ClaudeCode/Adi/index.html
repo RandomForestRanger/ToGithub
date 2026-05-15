@@ -1456,11 +1456,6 @@ let moveHistory = [];
 const P2_DISPLAY_ORDER = [11,10,9,8,7,6];
 const P1_DISPLAY_ORDER = [0,1,2,3,4,5];
 
-function setDifficulty(d) {
-  difficulty = d;
-  document.getElementById('btn-easy').classList.toggle('active', d === 'easy');
-  document.getElementById('btn-hard').classList.toggle('active', d === 'hard');
-}
 
 function startNewGame() {
   game        = new GameState();
