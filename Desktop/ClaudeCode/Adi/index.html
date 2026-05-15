@@ -548,6 +548,39 @@ header p {
 }
 .history-item.capture { border-color: rgba(243,156,18,0.4); color: #f39c12; }
 
+/* ── Character cards (left sidebar) ───────────────────────────────────────── */
+.char-cards { display: flex; flex-direction: column; gap: 7px; }
+.char-card {
+  display: flex; align-items: center; gap: 10px;
+  padding: 7px 9px; border-radius: 10px;
+  background: rgba(255,255,255,0.04);
+  border: 2px solid rgba(255,255,255,0.08);
+  cursor: pointer; transition: all 0.2s;
+}
+.char-card:hover { background: rgba(243,156,18,0.08); border-color: rgba(243,156,18,0.3); }
+.char-card.selected { background: rgba(243,156,18,0.13); border-color: rgba(243,156,18,0.65); box-shadow: 0 0 14px rgba(243,156,18,0.15); }
+.char-thumb { width: 46px; height: 58px; flex-shrink: 0; border-radius: 7px; overflow: hidden; background: rgba(0,0,0,0.2); }
+.char-thumb svg { width: 100%; height: 100%; display: block; }
+.char-card-info { flex: 1; }
+.char-card-name { font-size: 0.84rem; font-weight: 700; color: #e8e8e8; }
+.char-card-title-sm { font-size: 0.68rem; color: #888; margin-top: 1px; }
+.char-card-diff { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.8px; font-weight: 700; margin-top: 3px; }
+.char-card-diff.easy   { color: #2ecc71; }
+.char-card-diff.medium { color: #f39c12; }
+.char-card-diff.hard   { color: #e74c3c; }
+
+/* ── Character portrait (right sidebar) ────────────────────────────────────── */
+.char-portrait-panel { text-align: center; padding: 14px 14px 10px; }
+#char-portrait-svg { display: inline-block; }
+#char-portrait-svg svg { width: 112px; height: 140px; border-radius: 14px; filter: drop-shadow(0 4px 14px rgba(0,0,0,0.5)); }
+.char-display-name { font-size: 1rem; font-weight: 700; color: #e8e8e8; margin-top: 8px; }
+.char-display-title { font-size: 0.7rem; color: #888; text-transform: uppercase; letter-spacing: 0.8px; margin-top: 2px; }
+.char-quote {
+  margin-top: 8px; font-size: 0.78rem; color: #aaa; font-style: italic;
+  background: rgba(255,255,255,0.05); border-radius: 8px; padding: 5px 9px;
+  min-height: 30px; line-height: 1.45; transition: opacity 0.3s;
+}
+
 /* ── Hole tooltip ──────────────────────────────────────────────────────────── */
 .hole-tooltip {
   position: fixed;
@@ -633,10 +666,32 @@ header p {
     </div>
 
     <div class="glass guide-section">
-      <h3>Difficulty</h3>
-      <div class="diff-row">
-        <button class="diff-btn active" id="btn-easy" onclick="setDifficulty('easy')">Easy</button>
-        <button class="diff-btn" id="btn-hard" onclick="setDifficulty('hard')">Hard</button>
+      <h3>Choose Opponent</h3>
+      <div class="char-cards">
+        <div class="char-card selected" data-char="kofi" onclick="selectCharacter('kofi')">
+          <div class="char-thumb" id="thumb-kofi"></div>
+          <div class="char-card-info">
+            <div class="char-card-name">Kofi</div>
+            <div class="char-card-title-sm">Village Champion</div>
+            <div class="char-card-diff easy">Easy</div>
+          </div>
+        </div>
+        <div class="char-card" data-char="nefertari" onclick="selectCharacter('nefertari')">
+          <div class="char-thumb" id="thumb-nefertari"></div>
+          <div class="char-card-info">
+            <div class="char-card-name">Nefertari</div>
+            <div class="char-card-title-sm">Princess of the Nile</div>
+            <div class="char-card-diff medium">Medium</div>
+          </div>
+        </div>
+        <div class="char-card" data-char="professor" onclick="selectCharacter('professor')">
+          <div class="char-thumb" id="thumb-professor"></div>
+          <div class="char-card-info">
+            <div class="char-card-name">Prof. Addo</div>
+            <div class="char-card-title-sm">Grand Scholar</div>
+            <div class="char-card-diff hard">Hard</div>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -705,6 +760,14 @@ header p {
 
   <!-- ── Right sidebar: computer reasoning ─────────────────────────────── -->
   <aside class="explain-panel">
+    <!-- Character portrait -->
+    <div class="glass char-portrait-panel">
+      <div id="char-portrait-svg"></div>
+      <div class="char-display-name" id="char-display-name">Kofi</div>
+      <div class="char-display-title" id="char-display-title">Village Champion</div>
+      <div class="char-quote" id="char-quote">"Let's play!"</div>
+    </div>
+    <!-- Reasoning -->
     <div class="glass guide-section">
       <h3>Computer's Reasoning</h3>
       <div id="explain-content">
@@ -1018,10 +1081,10 @@ function explainAIMove(stateBefore, chosenMove, difficulty, wasSlip, minimaxScor
   const hn         = `hole ${chosenMove + 1}`;
 
   const factors = [];
-  let modeLabel  = difficulty === 'easy' ? 'Easy Mode' : 'Hard Mode — Minimax';
+  let modeLabel  = difficulty === 'easy' ? 'Easy Mode' : difficulty === 'medium' ? 'Medium Mode' : 'Hard Mode — Minimax';
 
   /* ── Easy mode ── */
-  if (difficulty === 'easy') {
+  if (difficulty === 'easy' || (difficulty === 'medium' && wasSlip)) {
     if (chosen.captured > 0) {
       factors.push({ icon: '⚔️', text: `${cap(hn)} sows the last seed onto your side, hitting exactly 3 — a capture of ${chosen.captured} seeds. Easy mode grabs captures when it sees them.` });
       if (capturers.length > 1) factors.push({ icon: '📋', text: `${capturers.length} captures were available; one was picked at random.` });
@@ -1107,6 +1170,279 @@ function setExplanation(html) {
   if (el) el.innerHTML = html;
 }
 
+function mediumMove(state) {
+  if (Math.random() < 0.30) return easyMove(state);
+  const moves = state.validMoves(AI_PLAYER);
+  if (!moves.length) return null;
+  let best = -Infinity, bestMove = moves[0];
+  for (const m of moves) {
+    const c = state.clone(); c.makeMove(m);
+    const val = minimax(c, 2, -Infinity, Infinity, AI_PLAYER);
+    if (val > best) { best = val; bestMove = m; }
+  }
+  return bestMove;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   CHARACTERS — SVG sprites + expression system
+═══════════════════════════════════════════════════════════════════════════ */
+
+let currentCharId = 'kofi';
+
+const QUOTES = {
+  kofi:      { idle:"Let's play! 🎮", thinking:"Hmm… let me think…", happy:"Got you! 😄", excited:"CHAIN CAPTURE! 🎉", sad:"Nice move! 😅", taunting:"You can't stop me! 😏" },
+  nefertari: { idle:"Your move, mortal.", thinking:"Calculating…", happy:"As predicted. ✨", excited:"Magnificent! 🌟", sad:"Cleverly done.", taunting:"Bow before my wisdom." },
+  professor: { idle:"Observe carefully.", thinking:"Fascinating…", happy:"Textbook play. ✓", excited:"Exceptional! 📚", sad:"Well played, student.", taunting:"I've seen better from my students." }
+};
+
+/* ── Kofi: African boy, easy ── */
+function kofiSVG(e) {
+  const sk='#9B6B3A', hc='#1A0A00';
+  const EYES={
+    idle:`<circle cx="46" cy="70" r="5.5" fill="white"/><circle cx="47.5" cy="70" r="3.5" fill="${hc}"/><circle cx="48.8" cy="68.8" r="1.3" fill="white"/>
+          <circle cx="74" cy="70" r="5.5" fill="white"/><circle cx="75.5" cy="70" r="3.5" fill="${hc}"/><circle cx="76.8" cy="68.8" r="1.3" fill="white"/>`,
+    thinking:`<circle cx="46" cy="70" r="5.5" fill="white"/><circle cx="46" cy="67" r="3.5" fill="${hc}"/><circle cx="47" cy="66" r="1.3" fill="white"/>
+              <circle cx="74" cy="70" r="5.5" fill="white"/><circle cx="74" cy="67" r="3.5" fill="${hc}"/><circle cx="75" cy="66" r="1.3" fill="white"/>`,
+    happy:`<path d="M40 67 Q46 74 52 67" stroke="${hc}" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+           <path d="M68 67 Q74 74 80 67" stroke="${hc}" stroke-width="2.5" fill="none" stroke-linecap="round"/>`,
+    excited:`<circle cx="46" cy="70" r="7" fill="white"/><circle cx="46" cy="70" r="5" fill="${hc}"/><circle cx="48" cy="68" r="1.8" fill="white"/>
+             <circle cx="74" cy="70" r="7" fill="white"/><circle cx="74" cy="70" r="5" fill="${hc}"/><circle cx="76" cy="68" r="1.8" fill="white"/>
+             <text x="28" y="62" font-size="11" fill="#FFD700">★</text><text x="81" y="62" font-size="11" fill="#FFD700">★</text>`,
+    sad:`<ellipse cx="46" cy="71" rx="5.5" ry="4" fill="white"/><circle cx="46" cy="72.5" r="3" fill="${hc}"/>
+         <ellipse cx="74" cy="71" rx="5.5" ry="4" fill="white"/><circle cx="74" cy="72.5" r="3" fill="${hc}"/>`,
+    taunting:`<circle cx="46" cy="70" r="5.5" fill="white"/><circle cx="47.5" cy="70" r="3.5" fill="${hc}"/><circle cx="48.8" cy="68.8" r="1.3" fill="white"/>
+              <ellipse cx="74" cy="70" rx="5.5" ry="3.5" fill="white"/><circle cx="75" cy="70" r="2.5" fill="${hc}"/>
+              <line x1="68" y1="67.5" x2="80" y2="67.5" stroke="${sk}" stroke-width="2.5"/>`
+  };
+  const BROWS={
+    idle:`<path d="M39 61 Q46 58 52 60" stroke="${hc}" stroke-width="2" fill="none" stroke-linecap="round"/>
+          <path d="M68 60 Q74 58 81 61" stroke="${hc}" stroke-width="2" fill="none" stroke-linecap="round"/>`,
+    thinking:`<path d="M39 60 Q46 55 52 58" stroke="${hc}" stroke-width="2" fill="none" stroke-linecap="round"/>
+              <path d="M68 56 Q74 53 81 59" stroke="${hc}" stroke-width="2.5" fill="none" stroke-linecap="round"/>`,
+    happy:`<path d="M39 58 Q46 54 52 57" stroke="${hc}" stroke-width="2" fill="none" stroke-linecap="round"/>
+           <path d="M68 57 Q74 54 81 58" stroke="${hc}" stroke-width="2" fill="none" stroke-linecap="round"/>`,
+    excited:`<path d="M38 55 Q46 50 53 54" stroke="${hc}" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+             <path d="M67 54 Q74 50 82 55" stroke="${hc}" stroke-width="2.5" fill="none" stroke-linecap="round"/>`,
+    sad:`<path d="M39 63 Q46 61 52 64" stroke="${hc}" stroke-width="2" fill="none" stroke-linecap="round"/>
+         <path d="M68 64 Q74 61 81 63" stroke="${hc}" stroke-width="2" fill="none" stroke-linecap="round"/>`,
+    taunting:`<path d="M39 61 Q46 58 52 61" stroke="${hc}" stroke-width="2" fill="none" stroke-linecap="round"/>
+              <path d="M68 57 Q74 54 81 59" stroke="${hc}" stroke-width="2.5" fill="none" stroke-linecap="round"/>`
+  };
+  const MOUTHS={
+    idle:`<path d="M50 87 Q60 93 70 87" stroke="#5A2E10" stroke-width="2" fill="none" stroke-linecap="round"/>`,
+    thinking:`<path d="M51 88 Q60 86 69 88" stroke="#5A2E10" stroke-width="2.5" fill="none" stroke-linecap="round"/>`,
+    happy:`<path d="M45 84 Q60 98 75 84" stroke="#5A2E10" stroke-width="2" fill="none"/>
+           <path d="M45 84 Q60 99 75 84 Q60 88 45 84" fill="#C07050" stroke="none"/>
+           <path d="M47 84 Q60 89 73 84 Q60 86 47 84" fill="white" stroke="none"/>`,
+    excited:`<ellipse cx="60" cy="91" rx="13" ry="9" fill="#C07050"/>
+             <ellipse cx="60" cy="88" rx="11" ry="5" fill="white"/>
+             <path d="M53 83 Q60 81 67 83" stroke="#5A2E10" stroke-width="2" fill="none"/>`,
+    sad:`<path d="M50 92 Q60 85 70 92" stroke="#5A2E10" stroke-width="2" fill="none" stroke-linecap="round"/>`,
+    taunting:`<path d="M52 87 Q59 93 70 85" stroke="#5A2E10" stroke-width="2" fill="none" stroke-linecap="round"/>`
+  };
+  return `<svg viewBox="0 0 120 150" xmlns="http://www.w3.org/2000/svg">
+    <rect x="16" y="118" width="88" height="32" fill="#E67E22"/>
+    <ellipse cx="60" cy="148" rx="44" ry="20" fill="#E67E22"/>
+    <path d="M16 118 Q60 110 104 118" fill="#D4691A"/>
+    <rect x="52" y="106" width="16" height="16" rx="4" fill="${sk}"/>
+    <ellipse cx="25" cy="78" rx="7" ry="9" fill="${sk}"/><ellipse cx="95" cy="78" rx="7" ry="9" fill="${sk}"/>
+    <ellipse cx="60" cy="76" rx="34" ry="38" fill="${sk}"/>
+    <circle cx="36" cy="52" r="13" fill="${hc}"/><circle cx="49" cy="43" r="14" fill="${hc}"/>
+    <circle cx="60" cy="40" r="14" fill="${hc}"/><circle cx="71" cy="43" r="14" fill="${hc}"/>
+    <circle cx="84" cy="52" r="13" fill="${hc}"/>
+    <ellipse cx="60" cy="56" rx="32" ry="12" fill="${sk}"/>
+    ${BROWS[e]||BROWS.idle}${EYES[e]||EYES.idle}
+    <path d="M56 80 Q60 84 64 80" stroke="#7A4520" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+    ${MOUTHS[e]||MOUTHS.idle}
+  </svg>`;
+}
+
+/* ── Nefertari: Egyptian princess, medium ── */
+function nefertariSVG(e) {
+  const sk='#C4956A', hc='#1A0A00', gold='#D4A820';
+  const EYES={
+    idle:`<line x1="35" y1="73" x2="42" y2="73" stroke="${hc}" stroke-width="1.5"/>
+          <line x1="78" y1="73" x2="85" y2="73" stroke="${hc}" stroke-width="1.5"/>
+          <ellipse cx="48" cy="73" rx="6" ry="4" fill="white"/><ellipse cx="49" cy="73" rx="3.5" ry="3" fill="#1A1040"/><circle cx="50" cy="72" r="1.1" fill="white"/>
+          <ellipse cx="72" cy="73" rx="6" ry="4" fill="white"/><ellipse cx="73" cy="73" rx="3.5" ry="3" fill="#1A1040"/><circle cx="74" cy="72" r="1.1" fill="white"/>`,
+    thinking:`<line x1="35" y1="75" x2="42" y2="74" stroke="${hc}" stroke-width="1.5"/>
+              <line x1="78" y1="74" x2="85" y2="75" stroke="${hc}" stroke-width="1.5"/>
+              <ellipse cx="48" cy="74" rx="6" ry="3" fill="white"/><ellipse cx="48" cy="75" rx="3.5" ry="2.5" fill="#1A1040"/>
+              <ellipse cx="72" cy="74" rx="6" ry="3" fill="white"/><ellipse cx="72" cy="75" rx="3.5" ry="2.5" fill="#1A1040"/>`,
+    happy:`<line x1="35" y1="72" x2="42" y2="73" stroke="${hc}" stroke-width="1.5"/>
+           <line x1="78" y1="73" x2="85" y2="72" stroke="${hc}" stroke-width="1.5"/>
+           <path d="M42 71 Q48 77 54 71" stroke="${hc}" stroke-width="2" fill="none" stroke-linecap="round"/>
+           <path d="M66 71 Q72 77 78 71" stroke="${hc}" stroke-width="2" fill="none" stroke-linecap="round"/>`,
+    excited:`<line x1="34" y1="71" x2="41" y2="72" stroke="${hc}" stroke-width="1.5"/>
+             <line x1="79" y1="72" x2="86" y2="71" stroke="${hc}" stroke-width="1.5"/>
+             <ellipse cx="48" cy="72" rx="7" ry="5.5" fill="white"/><circle cx="48" cy="72" r="4" fill="#1A1040"/><circle cx="49.5" cy="70.5" r="1.4" fill="white"/>
+             <ellipse cx="72" cy="72" rx="7" ry="5.5" fill="white"/><circle cx="72" cy="72" r="4" fill="#1A1040"/><circle cx="73.5" cy="70.5" r="1.4" fill="white"/>
+             <text x="84" y="64" font-size="9" fill="${gold}">✦</text>`,
+    sad:`<line x1="35" y1="75" x2="42" y2="74" stroke="${hc}" stroke-width="1.5"/>
+         <line x1="78" y1="74" x2="85" y2="75" stroke="${hc}" stroke-width="1.5"/>
+         <ellipse cx="48" cy="74" rx="6" ry="3.5" fill="white"/><ellipse cx="48" cy="75" rx="3.5" ry="2.5" fill="#1A1040"/>
+         <ellipse cx="72" cy="74" rx="6" ry="3.5" fill="white"/><ellipse cx="72" cy="75" rx="3.5" ry="2.5" fill="#1A1040"/>`,
+    taunting:`<line x1="35" y1="73" x2="42" y2="73" stroke="${hc}" stroke-width="1.5"/>
+              <line x1="78" y1="73" x2="85" y2="73" stroke="${hc}" stroke-width="1.5"/>
+              <ellipse cx="48" cy="73" rx="6" ry="4" fill="white"/><ellipse cx="49" cy="73" rx="3.5" ry="3" fill="#1A1040"/>
+              <line x1="42" y1="71" x2="54" y2="71" stroke="${sk}" stroke-width="2.5"/>
+              <ellipse cx="72" cy="73" rx="6" ry="4" fill="white"/><ellipse cx="73" cy="73" rx="3.5" ry="3" fill="#1A1040"/>`
+  };
+  const BROWS={
+    idle:`<path d="M41 64 Q48 62 55 64" stroke="${hc}" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+          <path d="M65 64 Q72 62 79 64" stroke="${hc}" stroke-width="1.8" fill="none" stroke-linecap="round"/>`,
+    thinking:`<path d="M41 64 Q48 60 55 63" stroke="${hc}" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+              <path d="M65 63 Q72 60 79 64" stroke="${hc}" stroke-width="2" fill="none" stroke-linecap="round"/>`,
+    happy:`<path d="M41 62 Q48 59 55 62" stroke="${hc}" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+           <path d="M65 62 Q72 59 79 62" stroke="${hc}" stroke-width="1.8" fill="none" stroke-linecap="round"/>`,
+    excited:`<path d="M40 60 Q48 56 55 60" stroke="${hc}" stroke-width="2" fill="none" stroke-linecap="round"/>
+             <path d="M65 60 Q72 56 80 60" stroke="${hc}" stroke-width="2" fill="none" stroke-linecap="round"/>`,
+    sad:`<path d="M41 65 Q48 63 55 66" stroke="${hc}" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+         <path d="M65 66 Q72 63 79 65" stroke="${hc}" stroke-width="1.8" fill="none" stroke-linecap="round"/>`,
+    taunting:`<path d="M41 64 Q48 62 55 64" stroke="${hc}" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+              <path d="M65 61 Q72 58 79 63" stroke="${hc}" stroke-width="2" fill="none" stroke-linecap="round"/>`
+  };
+  const MOUTHS={
+    idle:`<path d="M51 93 Q60 97 69 93" stroke="#8B5030" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+          <path d="M51 93 Q60 95 69 93" fill="#C0714A" stroke="none"/>`,
+    thinking:`<path d="M53 93 Q60 91 67 93" stroke="#8B5030" stroke-width="2" fill="none" stroke-linecap="round"/>`,
+    happy:`<path d="M49 90 Q60 100 71 90" stroke="#8B5030" stroke-width="1.8" fill="none"/>
+           <path d="M49 90 Q60 101 71 90 Q60 94 49 90" fill="#C0714A" stroke="none"/>
+           <path d="M51 90 Q60 94 69 90 Q60 92 51 90" fill="white" stroke="none"/>`,
+    excited:`<path d="M50 89 Q60 101 70 89" stroke="#8B5030" stroke-width="1.8" fill="none"/>
+             <ellipse cx="60" cy="94" rx="9" ry="6" fill="#C0714A"/>
+             <ellipse cx="60" cy="92" rx="7" ry="3.5" fill="white"/>`,
+    sad:`<path d="M52 96 Q60 90 68 96" stroke="#8B5030" stroke-width="1.8" fill="none" stroke-linecap="round"/>`,
+    taunting:`<path d="M52 92 Q60 97 70 90" stroke="#8B5030" stroke-width="1.8" fill="none" stroke-linecap="round"/>`
+  };
+  return `<svg viewBox="0 0 120 150" xmlns="http://www.w3.org/2000/svg">
+    <rect x="16" y="126" width="88" height="24" fill="white"/>
+    <ellipse cx="60" cy="148" rx="44" ry="20" fill="white"/>
+    <ellipse cx="60" cy="128" rx="30" ry="8" fill="${gold}"/>
+    <rect x="52" y="110" width="16" height="18" rx="4" fill="${sk}"/>
+    <rect x="22" y="55" width="15" height="68" rx="5" fill="${hc}"/>
+    <rect x="83" y="55" width="15" height="68" rx="5" fill="${hc}"/>
+    <ellipse cx="27" cy="80" rx="5" ry="7" fill="${sk}"/>
+    <ellipse cx="93" cy="80" rx="5" ry="7" fill="${sk}"/>
+    <ellipse cx="60" cy="80" rx="32" ry="37" fill="${sk}"/>
+    <ellipse cx="60" cy="47" rx="30" ry="12" fill="${hc}"/>
+    <rect x="28" y="43" width="64" height="10" rx="4" fill="${gold}"/>
+    <rect x="55" y="25" width="10" height="21" rx="4" fill="${gold}"/>
+    <ellipse cx="60" cy="25" rx="7" ry="5" fill="${gold}"/>
+    <ellipse cx="60" cy="22" rx="4" ry="3" fill="#e8c040"/>
+    ${BROWS[e]||BROWS.idle}${EYES[e]||EYES.idle}
+    <path d="M56 83 Q60 87 64 83" stroke="#9B6B40" stroke-width="1.3" fill="none" stroke-linecap="round"/>
+    ${MOUTHS[e]||MOUTHS.idle}
+    <circle cx="27" cy="89" r="4" fill="${gold}"/><circle cx="93" cy="89" r="4" fill="${gold}"/>
+  </svg>`;
+}
+
+/* ── Professor Addo: African scholar, hard ── */
+function professorSVG(e) {
+  const sk='#6B3D1E', hc='#9EA8A0', gc='#1A1A2E';
+  const GLASSPATH=`<circle cx="46" cy="73" r="9" fill="none" stroke="#8a8a8a" stroke-width="2"/>
+    <circle cx="74" cy="73" r="9" fill="none" stroke="#8a8a8a" stroke-width="2"/>
+    <line x1="55" y1="73" x2="65" y2="73" stroke="#8a8a8a" stroke-width="2"/>
+    <line x1="25" y1="73" x2="37" y2="73" stroke="#8a8a8a" stroke-width="1.5"/>
+    <line x1="83" y1="73" x2="95" y2="73" stroke="#8a8a8a" stroke-width="1.5"/>`;
+  const EYES={
+    idle:`${GLASSPATH}<circle cx="46" cy="73" r="5.5" fill="white"/><circle cx="47" cy="73" r="3.5" fill="#1A0A00"/><circle cx="48" cy="72" r="1.2" fill="white"/>
+          <circle cx="74" cy="73" r="5.5" fill="white"/><circle cx="75" cy="73" r="3.5" fill="#1A0A00"/><circle cx="76" cy="72" r="1.2" fill="white"/>`,
+    thinking:`${GLASSPATH}<circle cx="46" cy="73" r="5.5" fill="white"/><circle cx="45" cy="71" r="3.5" fill="#1A0A00"/><circle cx="46" cy="70" r="1.2" fill="white"/>
+              <circle cx="74" cy="73" r="5.5" fill="white"/><circle cx="73" cy="71" r="3.5" fill="#1A0A00"/><circle cx="74" cy="70" r="1.2" fill="white"/>`,
+    happy:`${GLASSPATH}<path d="M40 72 Q46 79 52 72" stroke="#1A0A00" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+           <path d="M68 72 Q74 79 80 72" stroke="#1A0A00" stroke-width="2.5" fill="none" stroke-linecap="round"/>`,
+    excited:`${GLASSPATH}<circle cx="46" cy="73" r="6" fill="white"/><circle cx="46" cy="73" r="4.5" fill="#1A0A00"/><circle cx="47.5" cy="71.5" r="1.5" fill="white"/>
+             <circle cx="74" cy="73" r="6" fill="white"/><circle cx="74" cy="73" r="4.5" fill="#1A0A00"/><circle cx="75.5" cy="71.5" r="1.5" fill="white"/>`,
+    sad:`${GLASSPATH}<ellipse cx="46" cy="74" rx="5.5" ry="4" fill="white"/><circle cx="46" cy="75" r="3" fill="#1A0A00"/>
+         <ellipse cx="74" cy="74" rx="5.5" ry="4" fill="white"/><circle cx="74" cy="75" r="3" fill="#1A0A00"/>`,
+    taunting:`<circle cx="46" cy="75" r="9" fill="none" stroke="#8a8a8a" stroke-width="2"/>
+              <circle cx="74" cy="73" r="9" fill="none" stroke="#8a8a8a" stroke-width="2"/>
+              <line x1="55" y1="74" x2="65" y2="73" stroke="#8a8a8a" stroke-width="2"/>
+              <line x1="25" y1="75" x2="37" y2="75" stroke="#8a8a8a" stroke-width="1.5"/>
+              <line x1="83" y1="73" x2="95" y2="73" stroke="#8a8a8a" stroke-width="1.5"/>
+              <circle cx="46" cy="75" r="5.5" fill="white"/><circle cx="47" cy="75" r="3.5" fill="#1A0A00"/><circle cx="48" cy="74" r="1.2" fill="white"/>
+              <ellipse cx="74" cy="73" rx="5.5" ry="3.5" fill="white"/><circle cx="75" cy="73" r="2.5" fill="#1A0A00"/>`
+  };
+  const BROWS={
+    idle:`<path d="M38 63 Q46 60 53 62" stroke="#5C4030" stroke-width="2" fill="none" stroke-linecap="round"/>
+          <path d="M67 62 Q74 60 82 63" stroke="#5C4030" stroke-width="2" fill="none" stroke-linecap="round"/>`,
+    thinking:`<path d="M38 62 Q46 57 53 61" stroke="#5C4030" stroke-width="2.2" fill="none" stroke-linecap="round"/>
+              <path d="M67 60 Q74 56 82 62" stroke="#5C4030" stroke-width="2.2" fill="none" stroke-linecap="round"/>`,
+    happy:`<path d="M38 61 Q46 58 53 60" stroke="#5C4030" stroke-width="2" fill="none" stroke-linecap="round"/>
+           <path d="M67 60 Q74 58 82 61" stroke="#5C4030" stroke-width="2" fill="none" stroke-linecap="round"/>`,
+    excited:`<path d="M37 58 Q46 54 54 58" stroke="#5C4030" stroke-width="2.2" fill="none" stroke-linecap="round"/>
+             <path d="M66 58 Q74 54 83 58" stroke="#5C4030" stroke-width="2.2" fill="none" stroke-linecap="round"/>`,
+    sad:`<path d="M38 65 Q46 62 53 66" stroke="#5C4030" stroke-width="2" fill="none" stroke-linecap="round"/>
+         <path d="M67 66 Q74 62 82 65" stroke="#5C4030" stroke-width="2" fill="none" stroke-linecap="round"/>`,
+    taunting:`<path d="M38 64 Q46 61 53 63" stroke="#5C4030" stroke-width="2" fill="none" stroke-linecap="round"/>
+              <path d="M67 60 Q74 57 82 62" stroke="#5C4030" stroke-width="2.2" fill="none" stroke-linecap="round"/>`
+  };
+  const BEARD=`<ellipse cx="60" cy="107" rx="14" ry="7" fill="${hc}" opacity="0.65"/>`;
+  const MOUTHS={
+    idle:`<path d="M50 96 Q60 101 70 96" stroke="#3A1808" stroke-width="2" fill="none" stroke-linecap="round"/>${BEARD}`,
+    thinking:`<path d="M52 97 Q60 95 68 97" stroke="#3A1808" stroke-width="2" fill="none" stroke-linecap="round"/>${BEARD}`,
+    happy:`<path d="M48 94 Q60 105 72 94" stroke="#3A1808" stroke-width="2" fill="none"/>
+           <path d="M48 94 Q60 106 72 94 Q60 98 48 94" fill="#C07050" stroke="none"/>
+           <path d="M50 94 Q60 98 70 94 Q60 96 50 94" fill="white" stroke="none"/>${BEARD}`,
+    excited:`<ellipse cx="60" cy="97" rx="12" ry="8" fill="#C07050"/>
+             <ellipse cx="60" cy="94" rx="9" ry="4" fill="white"/>
+             <path d="M52 89 Q60 87 68 89" stroke="#3A1808" stroke-width="2" fill="none"/>${BEARD}`,
+    sad:`<path d="M50 101 Q60 94 70 101" stroke="#3A1808" stroke-width="2" fill="none" stroke-linecap="round"/>${BEARD}`,
+    taunting:`<path d="M51 96 Q59 102 71 93" stroke="#3A1808" stroke-width="2" fill="none" stroke-linecap="round"/>${BEARD}`
+  };
+  return `<svg viewBox="0 0 120 150" xmlns="http://www.w3.org/2000/svg">
+    <rect x="16" y="124" width="88" height="26" fill="${gc}"/>
+    <ellipse cx="60" cy="148" rx="44" ry="20" fill="${gc}"/>
+    <path d="M44 124 L60 116 L76 124 L60 120 Z" fill="white"/>
+    <rect x="52" y="110" width="16" height="18" rx="4" fill="${sk}"/>
+    <ellipse cx="26" cy="79" rx="6" ry="8" fill="${sk}"/>
+    <ellipse cx="94" cy="79" rx="6" ry="8" fill="${sk}"/>
+    <ellipse cx="60" cy="77" rx="33" ry="37" fill="${sk}"/>
+    <ellipse cx="60" cy="43" rx="29" ry="11" fill="${hc}"/>
+    <rect x="28" y="43" width="11" height="22" rx="4" fill="${hc}"/>
+    <rect x="81" y="43" width="11" height="22" rx="4" fill="${hc}"/>
+    ${BROWS[e]||BROWS.idle}${EYES[e]||EYES.idle}
+    <path d="M56 84 Q60 89 64 84" stroke="#3A1808" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+    ${MOUTHS[e]||MOUTHS.idle}
+  </svg>`;
+}
+
+const CHARACTERS = {
+  kofi:      { name:'Kofi',       title:'Village Champion',    difficulty:'easy',   render:kofiSVG },
+  nefertari: { name:'Nefertari',  title:'Princess of the Nile', difficulty:'medium', render:nefertariSVG },
+  professor: { name:'Prof. Addo', title:'Grand Scholar',        difficulty:'hard',   render:professorSVG }
+};
+
+function selectCharacter(charId) {
+  currentCharId = charId;
+  difficulty = CHARACTERS[charId].difficulty;
+  document.querySelectorAll('.char-card').forEach(el =>
+    el.classList.toggle('selected', el.dataset.char === charId)
+  );
+  setExpression('idle');
+}
+
+function setExpression(expr) {
+  const char = CHARACTERS[currentCharId];
+  const svgEl = document.getElementById('char-portrait-svg');
+  if (svgEl) svgEl.innerHTML = char.render(expr);
+  const nameEl = document.getElementById('char-display-name');
+  if (nameEl) nameEl.textContent = char.name;
+  const titleEl = document.getElementById('char-display-title');
+  if (titleEl) titleEl.textContent = char.title;
+  const quoteEl = document.getElementById('char-quote');
+  if (quoteEl) quoteEl.textContent = '"' + (QUOTES[currentCharId][expr] || '') + '"';
+}
+
+function initCharacterSystem() {
+  for (const [id, char] of Object.entries(CHARACTERS)) {
+    const thumb = document.getElementById(`thumb-${id}`);
+    if (thumb) thumb.innerHTML = char.render('idle');
+  }
+  setExpression('idle');
+}
+
 /* ═══════════════════════════════════════════════════════════════════════════
    UI
 ═══════════════════════════════════════════════════════════════════════════ */
@@ -1133,6 +1469,7 @@ function startNewGame() {
   buildBoard();
   renderBoard();
   renderHistory();
+  setExpression('idle');
   setStatus('Your turn — click a hole to sow');
   document.getElementById('overlay').classList.remove('show');
 }
@@ -1407,6 +1744,7 @@ async function handleClick(holeIdx) {
 
   if (result.captured > 0) {
     setStatus(`You captured ${result.captured} seeds! Computer's turn…`, result.captured);
+    setExpression('sad');
   } else {
     setStatus('Computer is thinking…');
   }
@@ -1441,12 +1779,15 @@ function triggerAI() {
   }
 
   setThinking();
+  setExpression('thinking');
   setTimeout(async () => {
     const stateBefore = game.clone();
     let move, wasSlip = false, minimaxScores = null;
     if (difficulty === 'hard') {
       const ai = hardMove(game);
       move = ai.move; wasSlip = ai.slip; minimaxScores = ai.scores;
+    } else if (difficulty === 'medium') {
+      move = mediumMove(game);
     } else {
       move = easyMove(game);
     }
@@ -1487,8 +1828,11 @@ function triggerAI() {
 
     if (result.captured > 0) {
       setStatus(`Computer captured ${result.captured} seeds — your turn`);
+      setExpression(result.captured > 3 ? 'excited' : 'happy');
     } else {
       setStatus('Your turn — click a hole to sow');
+      const adv = game.p2Store - game.p1Store;
+      setExpression(adv >= 10 && Math.random() < 0.45 ? 'taunting' : 'idle');
     }
 
     if (game.validMoves(1).length === 0 && !game.over) {
@@ -1570,6 +1914,7 @@ function positionTip(e) {
 
 /* ── Boot ── */
 startNewGame();
+initCharacterSystem();
 setupHoleTooltips();
 </script>
 </body>
