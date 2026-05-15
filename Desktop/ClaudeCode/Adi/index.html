@@ -1,0 +1,1576 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Adi — West African Mancala</title>
+<style>
+/* ── Reset & base ──────────────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+  min-height: 100vh;
+  color: #e8e8e8;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── Header ────────────────────────────────────────────────────────────────── */
+header {
+  text-align: center;
+  padding: 18px 20px 10px;
+}
+header h1 {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #f39c12;
+  text-shadow: 0 2px 12px rgba(243,156,18,0.4);
+  letter-spacing: 0.04em;
+}
+header p {
+  color: #a0a0a0;
+  font-size: 0.85rem;
+  margin-top: 3px;
+}
+
+/* ── Layout ────────────────────────────────────────────────────────────────── */
+.layout {
+  display: flex;
+  flex: 1;
+  gap: 16px;
+  padding: 0 16px 24px;
+  max-width: 1480px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+/* ── Left sidebar: guide ───────────────────────────────────────────────────── */
+.guide {
+  width: 240px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* ── Right sidebar: computer reasoning ────────────────────────────────────── */
+.explain-panel {
+  width: 255px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.explain-idle {
+  color: #555;
+  font-size: 0.82rem;
+  font-style: italic;
+  line-height: 1.55;
+}
+.explain-factor {
+  display: flex;
+  gap: 9px;
+  padding: 7px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  font-size: 0.81rem;
+  color: #c0c0c0;
+  line-height: 1.6;
+}
+.explain-factor:last-child { border-bottom: none; }
+.factor-icon {
+  font-size: 1rem;
+  flex-shrink: 0;
+  width: 20px;
+  text-align: center;
+  padding-top: 1px;
+}
+.explain-mode-label {
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-weight: 700;
+  color: rgba(243,156,18,0.55);
+  margin-bottom: 8px;
+}
+
+.glass {
+  background: rgba(255,255,255,0.07);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 12px;
+  padding: 14px 16px;
+}
+
+.guide-section h3 {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: #f39c12;
+  margin-bottom: 8px;
+}
+.guide-section p, .guide-section li {
+  font-size: 0.82rem;
+  color: #c0c0c0;
+  line-height: 1.6;
+}
+.guide-section ul { padding-left: 16px; }
+.guide-section li { margin-bottom: 5px; }
+.guide-section .highlight {
+  color: #f39c12;
+  font-weight: 600;
+}
+.guide-section .rule-block {
+  background: rgba(243,156,18,0.08);
+  border-left: 3px solid #f39c12;
+  border-radius: 0 6px 6px 0;
+  padding: 7px 10px;
+  margin: 6px 0;
+  font-size: 0.8rem;
+  color: #ddd;
+  line-height: 1.55;
+}
+
+/* Difficulty */
+.diff-row {
+  display: flex;
+  gap: 8px;
+  margin-top: 4px;
+}
+.diff-btn {
+  flex: 1;
+  padding: 8px 4px;
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 8px;
+  background: rgba(255,255,255,0.06);
+  color: #c0c0c0;
+  cursor: pointer;
+  font-size: 0.8rem;
+  font-weight: 600;
+  transition: all 0.2s;
+  text-align: center;
+}
+.diff-btn:hover { background: rgba(243,156,18,0.12); border-color: #f39c12; }
+.diff-btn.active {
+  background: linear-gradient(135deg, #f39c12, #e67e22);
+  border-color: transparent;
+  color: #fff;
+  box-shadow: 0 3px 12px rgba(243,156,18,0.35);
+}
+
+.btn-new {
+  width: 100%;
+  padding: 11px;
+  background: linear-gradient(135deg, #f39c12, #e67e22);
+  border: none;
+  border-radius: 9px;
+  color: #fff;
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+  letter-spacing: 0.03em;
+  transition: all 0.2s;
+  text-transform: uppercase;
+}
+.btn-new:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 20px rgba(243,156,18,0.4);
+}
+
+/* ── Game area (center) ────────────────────────────────────────────────────── */
+.game-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+}
+
+/* Round & score strip */
+.score-strip {
+  display: flex;
+  gap: 14px;
+  width: 100%;
+  max-width: 760px;
+}
+.score-card {
+  flex: 1;
+  text-align: center;
+  padding: 10px 14px;
+  border-radius: 10px;
+}
+.score-card.p1 { background: rgba(243,156,18,0.12); border: 1px solid rgba(243,156,18,0.25); }
+.score-card.p2 { background: rgba(100,116,139,0.15); border: 1px solid rgba(100,116,139,0.3); }
+.score-card.round-card { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); }
+.score-card .label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 1px; color: #888; }
+.score-card .value { font-size: 1.6rem; font-weight: 700; margin-top: 2px; }
+.score-card.p1 .value { color: #f39c12; }
+.score-card.p2 .value { color: #94a3b8; }
+.score-card.round-card .value { color: #e8e8e8; }
+
+/* ── The Board ─────────────────────────────────────────────────────────────── */
+.board-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.board {
+  background:
+    repeating-linear-gradient(
+      90deg,
+      rgba(0,0,0,0.04) 0px, rgba(0,0,0,0.04) 1px,
+      transparent 1px, transparent 28px
+    ),
+    repeating-linear-gradient(
+      0deg,
+      rgba(0,0,0,0.04) 0px, rgba(0,0,0,0.04) 1px,
+      transparent 1px, transparent 28px
+    ),
+    linear-gradient(160deg, #a0632a 0%, #7a4118 20%, #8b4d20 40%, #9a5a2c 60%, #7a3e15 80%, #8b4520 100%);
+  border-radius: 22px;
+  padding: 18px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  box-shadow:
+    0 8px 40px rgba(0,0,0,0.7),
+    inset 0 1px 3px rgba(255,200,120,0.15),
+    inset 0 -2px 6px rgba(0,0,0,0.4);
+  border: 3px solid #5a2e0a;
+  position: relative;
+}
+
+/* Wood grain overlay */
+.board::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 20px;
+  background: repeating-linear-gradient(
+    17deg,
+    transparent, transparent 12px,
+    rgba(0,0,0,0.03) 12px, rgba(0,0,0,0.03) 13px
+  );
+  pointer-events: none;
+}
+
+.holes-row {
+  display: flex;
+  gap: 10px;
+}
+
+/* ── Hole ──────────────────────────────────────────────────────────────────── */
+.hole {
+  width: 82px;
+  height: 82px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 42% 38%, #1f0d06 0%, #120804 100%);
+  box-shadow:
+    inset 0 5px 12px rgba(0,0,0,0.85),
+    inset 0 -2px 4px rgba(160,90,40,0.2),
+    0 2px 4px rgba(0,0,0,0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  cursor: default;
+  transition: box-shadow 0.18s, transform 0.12s;
+  flex-shrink: 0;
+}
+
+.hole.clickable {
+  cursor: pointer;
+}
+.hole.clickable:hover {
+  box-shadow:
+    inset 0 5px 12px rgba(0,0,0,0.75),
+    inset 0 -2px 4px rgba(160,90,40,0.2),
+    0 0 0 3px rgba(243,156,18,0.7),
+    0 0 18px rgba(243,156,18,0.3);
+  transform: scale(1.04);
+}
+.hole.forbidden {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.hole.empty-hole { opacity: 0.6; }
+.hole.sowing-source {
+  box-shadow:
+    inset 0 5px 12px rgba(0,0,0,0.85),
+    0 0 0 4px rgba(255,220,50,0.9),
+    0 0 24px rgba(255,220,50,0.4);
+  transform: scale(0.93);
+}
+.hole.seed-landing {
+  animation: seedLand 0.6s ease-out forwards;
+}
+@keyframes seedLand {
+  0% {
+    box-shadow:
+      inset 0 5px 12px rgba(0,0,0,0.65),
+      0 0 0 5px rgba(80,190,255,0.95),
+      0 0 26px rgba(80,190,255,0.55);
+    transform: scale(1.05);
+  }
+  100% {
+    box-shadow:
+      inset 0 5px 12px rgba(0,0,0,0.85),
+      inset 0 -2px 4px rgba(160,90,40,0.2),
+      0 2px 4px rgba(0,0,0,0.5);
+    transform: scale(1);
+  }
+}
+.hole.just-captured {
+  animation: captureFlash 1.9s ease-out forwards;
+}
+@keyframes captureFlash {
+  0%, 18% {
+    box-shadow:
+      inset 0 5px 12px rgba(0,0,0,0.55),
+      0 0 0 6px rgba(243,156,18,1),
+      0 0 40px rgba(243,156,18,0.85);
+    transform: scale(1.07);
+  }
+  55% {
+    box-shadow:
+      inset 0 5px 12px rgba(0,0,0,0.75),
+      0 0 0 3px rgba(243,156,18,0.5),
+      0 0 18px rgba(243,156,18,0.3);
+    transform: scale(1.02);
+  }
+  100% {
+    box-shadow:
+      inset 0 5px 12px rgba(0,0,0,0.85),
+      inset 0 -2px 4px rgba(160,90,40,0.2),
+      0 2px 4px rgba(0,0,0,0.5);
+    transform: scale(1);
+  }
+}
+.hole.last-moved {
+  box-shadow:
+    inset 0 5px 12px rgba(0,0,0,0.75),
+    0 0 0 2px rgba(52,152,219,0.6),
+    0 0 12px rgba(52,152,219,0.2);
+}
+.hole.inactive-hole {
+  opacity: 0.25;
+  cursor: default;
+  pointer-events: none;
+}
+
+/* Seeds inside hole */
+.seeds-grid {
+  display: grid;
+  gap: 3px;
+  position: absolute;
+  pointer-events: none;
+}
+.seed {
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #f5e6c8, #c8a870);
+  box-shadow: 0 1px 2px rgba(0,0,0,0.6);
+}
+.seed-count-label {
+  position: absolute;
+  bottom: 6px;
+  right: 8px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: rgba(245,230,200,0.7);
+  pointer-events: none;
+  line-height: 1;
+}
+.count-big {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: rgba(245,230,200,0.9);
+  text-shadow: 0 1px 3px rgba(0,0,0,0.8);
+  pointer-events: none;
+}
+/* Forbidden marker */
+.hole.forbidden::after {
+  content: '✕';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 0.8rem;
+  color: rgba(239,68,68,0.5);
+  pointer-events: none;
+}
+
+/* ── Store (Kalah) ─────────────────────────────────────────────────────────── */
+.store {
+  width: 72px;
+  height: 174px;
+  border-radius: 36px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  flex-shrink: 0;
+  box-shadow:
+    inset 0 6px 14px rgba(0,0,0,0.85),
+    inset 0 -2px 4px rgba(160,90,40,0.2),
+    0 2px 4px rgba(0,0,0,0.5);
+  position: relative;
+}
+.store.p1-store {
+  background: radial-gradient(ellipse at 40% 30%, #1f0d06 0%, #0e0503 100%);
+  border: 2px solid rgba(243,156,18,0.25);
+}
+.store.p2-store {
+  background: radial-gradient(ellipse at 40% 30%, #1c1826 0%, #0e0a14 100%);
+  border: 2px solid rgba(100,116,139,0.25);
+}
+.store-count {
+  font-size: 2rem;
+  font-weight: 800;
+  line-height: 1;
+}
+.store.p1-store .store-count { color: #f39c12; }
+.store.p2-store .store-count { color: #94a3b8; }
+.store-label {
+  font-size: 0.62rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+.store.p1-store .store-label { color: rgba(243,156,18,0.6); }
+.store.p2-store .store-label { color: rgba(148,163,184,0.6); }
+
+/* Row labels */
+.row-label {
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-weight: 600;
+  margin: 0 2px;
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+}
+.row-label.p2-label { color: rgba(148,163,184,0.5); transform: rotate(180deg); }
+.row-label.p1-label { color: rgba(243,156,18,0.5); }
+
+/* ── Status bar ────────────────────────────────────────────────────────────── */
+.status-bar {
+  width: 100%;
+  max-width: 760px;
+  text-align: center;
+  padding: 12px 20px;
+  min-height: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+.status-bar .msg {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #e8e8e8;
+}
+.status-bar .capture-badge {
+  background: rgba(243,156,18,0.2);
+  border: 1px solid rgba(243,156,18,0.4);
+  border-radius: 20px;
+  padding: 3px 12px;
+  font-size: 0.82rem;
+  color: #f39c12;
+  font-weight: 700;
+}
+.thinking-dots span {
+  display: inline-block;
+  animation: blink 1.2s infinite;
+  color: #94a3b8;
+  font-size: 1.4rem;
+  line-height: 0.5;
+}
+.thinking-dots span:nth-child(2) { animation-delay: 0.2s; }
+.thinking-dots span:nth-child(3) { animation-delay: 0.4s; }
+@keyframes blink { 0%,80%,100%{opacity:0.2} 40%{opacity:1} }
+
+/* ── Game over overlay ─────────────────────────────────────────────────────── */
+.overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.75);
+  z-index: 100;
+  align-items: center;
+  justify-content: center;
+}
+.overlay.show { display: flex; }
+.modal {
+  background: linear-gradient(135deg, #1a1a2e, #16213e);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 18px;
+  padding: 36px 44px;
+  text-align: center;
+  max-width: 380px;
+  width: 90%;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.7);
+}
+.modal .winner-icon { font-size: 3.5rem; margin-bottom: 12px; }
+.modal h2 { font-size: 1.8rem; color: #f39c12; margin-bottom: 6px; }
+.modal .final-score { font-size: 1rem; color: #a0a0a0; margin-bottom: 24px; }
+.modal .final-score strong { color: #e8e8e8; }
+.modal .btn-new { max-width: 200px; margin: 0 auto; }
+
+/* ── Move history ──────────────────────────────────────────────────────────── */
+.history-wrap {
+  width: 100%;
+  max-width: 760px;
+}
+.history-wrap h3 {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: #888;
+  margin-bottom: 6px;
+}
+.history-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+.history-item {
+  font-size: 0.75rem;
+  padding: 3px 9px;
+  border-radius: 12px;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.08);
+  color: #a0a0a0;
+  font-family: monospace;
+}
+.history-item.capture { border-color: rgba(243,156,18,0.4); color: #f39c12; }
+
+/* ── Hole tooltip ──────────────────────────────────────────────────────────── */
+.hole-tooltip {
+  position: fixed;
+  background: rgba(10,10,22,0.97);
+  border: 1px solid rgba(255,255,255,0.13);
+  border-radius: 10px;
+  padding: 9px 13px;
+  font-size: 0.78rem;
+  color: #c8c8c8;
+  line-height: 1.55;
+  max-width: 230px;
+  pointer-events: none;
+  z-index: 300;
+  display: none;
+  box-shadow: 0 6px 22px rgba(0,0,0,0.6);
+}
+.hole-tooltip.show { display: block; }
+.hole-tooltip strong { color: #e8e8e8; }
+.hole-tooltip .tip-icon {
+  display: block;
+  font-size: 1rem;
+  margin-bottom: 4px;
+}
+.hole-tooltip.tip-forbidden { border-color: rgba(239,68,68,0.35); }
+.hole-tooltip.tip-inactive  { border-color: rgba(255,255,255,0.08); }
+
+/* ── Scrollbar ─────────────────────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 3px; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🪵 Adi</h1>
+  <p>A two-row mancala game of the Ewe people of Togo &amp; Ghana</p>
+</header>
+
+<div class="layout">
+
+  <!-- ── Left sidebar ──────────────────────────────────────────────────── -->
+  <aside class="guide">
+
+    <div class="glass guide-section">
+      <h3>About Adi</h3>
+      <p>Adi is played on an elaborately carved wooden board. Capture seeds from your opponent to grow your store across multiple rounds — until one player can no longer fill a row.</p>
+    </div>
+
+    <div class="glass guide-section">
+      <h3>How to Play</h3>
+      <ul>
+        <li>You are <span class="highlight">Player 1 (bottom)</span>. The computer plays the top row.</li>
+        <li>Click any hole in your row with seeds to <span class="highlight">sow anti-clockwise</span> — seeds spread right along your row, then left along the top row.</li>
+        <li>You <strong>cannot</strong> sow from the same hole twice in a row until the opponent sows into it.</li>
+        <li>Holes you cannot use show <span style="color:#ef4444">✕</span>.</li>
+      </ul>
+    </div>
+
+    <div class="glass guide-section">
+      <h3>Captures</h3>
+      <div class="rule-block">
+        If your last seed lands in an <strong>opponent's hole</strong> and makes the count exactly <span class="highlight">3</span> → capture all 3!
+      </div>
+      <div class="rule-block">
+        <strong>Chain capture:</strong> If the hole just before the captured hole <em>also</em> has exactly 3, capture that too — keep going backwards!
+      </div>
+    </div>
+
+    <div class="glass guide-section">
+      <h3>End of Round</h3>
+      <p>When <strong>no more captures are possible</strong> by either player, the round ends:</p>
+      <ul style="margin-top:6px">
+        <li>Remaining seeds on each side go to that player's store.</li>
+        <li>The player with <em>fewer</em> seeds refills holes right-to-left with 4 each.</li>
+        <li>The opponent fills the <em>same number</em> of opposite holes.</li>
+      </ul>
+    </div>
+
+    <div class="glass guide-section">
+      <h3>Winning</h3>
+      <p>The game ends when a player <strong>cannot fill even one hole</strong> (fewer than 4 seeds left). Their opponent wins!</p>
+    </div>
+
+    <div class="glass guide-section">
+      <h3>Difficulty</h3>
+      <div class="diff-row">
+        <button class="diff-btn active" id="btn-easy" onclick="setDifficulty('easy')">Easy</button>
+        <button class="diff-btn" id="btn-hard" onclick="setDifficulty('hard')">Hard</button>
+      </div>
+    </div>
+
+    <button class="btn-new" onclick="startNewGame()">▶ New Game</button>
+
+  </aside>
+
+  <!-- ── Game area ──────────────────────────────────────────────────────── -->
+  <main class="game-area">
+
+    <!-- Score strip -->
+    <div class="score-strip">
+      <div class="score-card p1">
+        <div class="label">Your Store</div>
+        <div class="value" id="p1-store-display">0</div>
+      </div>
+      <div class="score-card round-card">
+        <div class="label">Round</div>
+        <div class="value" id="round-display">1</div>
+      </div>
+      <div class="score-card p2">
+        <div class="label">Computer Store</div>
+        <div class="value" id="p2-store-display">0</div>
+      </div>
+    </div>
+
+    <!-- Board -->
+    <div class="board-wrap">
+      <!-- P2 store (left) -->
+      <div class="store p2-store" id="store-p2">
+        <div class="store-count" id="p2-store-count">0</div>
+        <div class="store-label">Computer</div>
+      </div>
+
+      <!-- Holes -->
+      <div class="board">
+        <!-- P2 row (top) — displayed right-to-left: holes 11,10,9,8,7,6 -->
+        <div class="holes-row" id="row-p2">
+          <!-- populated by JS -->
+        </div>
+        <!-- P1 row (bottom) — holes 0,1,2,3,4,5 -->
+        <div class="holes-row" id="row-p1">
+          <!-- populated by JS -->
+        </div>
+      </div>
+
+      <!-- P1 store (right) -->
+      <div class="store p1-store" id="store-p1">
+        <div class="store-count" id="p1-store-count">0</div>
+        <div class="store-label">You</div>
+      </div>
+    </div>
+
+    <!-- Status -->
+    <div class="status-bar glass" id="status-bar">
+      <span class="msg" id="status-msg">Press New Game to start</span>
+    </div>
+
+    <!-- Move history -->
+    <div class="history-wrap glass">
+      <h3>Move History</h3>
+      <div class="history-list" id="history-list"></div>
+    </div>
+
+  </main>
+
+  <!-- ── Right sidebar: computer reasoning ─────────────────────────────── -->
+  <aside class="explain-panel">
+    <div class="glass guide-section">
+      <h3>Computer's Reasoning</h3>
+      <div id="explain-content">
+        <p class="explain-idle">The computer's explanation will appear here after it chooses a move.</p>
+      </div>
+    </div>
+  </aside>
+
+</div>
+
+<!-- Hole tooltip -->
+<div id="hole-tooltip" class="hole-tooltip"></div>
+
+<!-- Game over modal -->
+<div class="overlay" id="overlay">
+  <div class="modal">
+    <div class="winner-icon" id="winner-icon">🏆</div>
+    <h2 id="winner-title">You Win!</h2>
+    <p class="final-score" id="final-score"></p>
+    <button class="btn-new" onclick="startNewGame(); document.getElementById('overlay').classList.remove('show')">Play Again</button>
+  </div>
+</div>
+
+<script>
+/* ═══════════════════════════════════════════════════════════════════════════
+   GAME STATE
+   Holes 0-5  = P1 (bottom), Holes 6-11 = P2 (top)
+   Sowing order (CCW): 0→1→2→3→4→5→6→7→8→9→10→11→0…
+   Visual display: P2 row shows as [11][10][9][8][7][6] left→right
+═══════════════════════════════════════════════════════════════════════════ */
+
+class GameState {
+  constructor() {
+    this.holes       = Array(12).fill(4);
+    this.p1Store     = 0;
+    this.p2Store     = 0;
+    this.p1Forbidden = new Set();   // holes P1 cannot sow from this turn
+    this.p2Forbidden = new Set();
+    this.p1Owned     = [0,1,2,3,4,5];  // holes P1 may sow from
+    this.p2Owned     = [6,7,8,9,10,11];
+    this.current     = 1;   // 1 = P1, 2 = P2
+    this.phase       = 'sowing';
+    this.round       = 1;
+    this.over        = false;
+    this.winner      = 0;
+  }
+
+  clone() {
+    const c = new GameState();
+    c.holes       = [...this.holes];
+    c.p1Store     = this.p1Store;
+    c.p2Store     = this.p2Store;
+    c.p1Forbidden = new Set(this.p1Forbidden);
+    c.p2Forbidden = new Set(this.p2Forbidden);
+    c.p1Owned     = [...this.p1Owned];
+    c.p2Owned     = [...this.p2Owned];
+    c.current     = this.current;
+    c.phase       = this.phase;
+    c.round       = this.round;
+    c.over        = this.over;
+    c.winner      = this.winner;
+    return c;
+  }
+
+  validMoves(player) {
+    const owned     = player === 1 ? this.p1Owned : this.p2Owned;
+    const forbidden = player === 1 ? this.p1Forbidden : this.p2Forbidden;
+    return owned.filter(h => !forbidden.has(h) && this.holes[h] > 0);
+  }
+
+  /* Simulate sow: returns last position & modified holes (non-mutating) */
+  _simulateSow(h) {
+    const seeds = this.holes[h];
+    const tmp   = [...this.holes];
+    tmp[h] = 0;
+    let pos = h;
+    for (let i = 0; i < seeds; i++) {
+      pos = (pos + 1) % 12;
+      tmp[pos]++;
+    }
+    return { lastPos: pos, tmp };
+  }
+
+  /* Would sowing from h (by player) capture anything? */
+  _wouldCapture(h, player) {
+    const { lastPos, tmp } = this._simulateSow(h);
+    const opRange = player === 1 ? (x => x >= 6) : (x => x < 6);
+    return opRange(lastPos) && tmp[lastPos] === 3;
+  }
+
+  canAnyPlayerMove() {
+    return this.validMoves(1).length > 0 || this.validMoves(2).length > 0;
+  }
+
+  /* Make a move. Returns { captured, sowPath, roundEnded, gameOver } */
+  makeMove(h) {
+    const player   = this.current;
+    const opponent = player === 1 ? 2 : 1;
+    const seeds    = this.holes[h];
+    const opRange  = player === 1 ? (x => x >= 6) : (x => x < 6);
+
+    // Sow
+    this.holes[h] = 0;
+    let pos = h;
+    const sowPath = [];
+    for (let i = 0; i < seeds; i++) {
+      pos = (pos + 1) % 12;
+      this.holes[pos]++;
+      sowPath.push(pos);
+    }
+    const lastPos = pos;
+
+    // Captures
+    let captured   = 0;
+    const captured_holes = [];
+    if (opRange(lastPos) && this.holes[lastPos] === 3) {
+      let check = lastPos;
+      while (opRange(check) && this.holes[check] === 3) {
+        captured += 3;
+        captured_holes.push(check);
+        if (player === 1) this.p1Store += 3; else this.p2Store += 3;
+        this.holes[check] = 0;
+        check = (check - 1 + 12) % 12;
+      }
+    }
+
+    // Update forbidden sets:
+    // seeds sowed into unlock the opponent's forbidden holes
+    const otherForbidden = player === 1 ? this.p2Forbidden : this.p1Forbidden;
+    const myForbidden    = player === 1 ? this.p1Forbidden : this.p2Forbidden;
+    for (const s of sowPath) otherForbidden.delete(s);
+    myForbidden.add(h);
+
+    // Check round end: round ends when neither player has a valid move
+    if (!this.canAnyPlayerMove()) {
+      this._endRound();
+      return { captured, sowPath, captured_holes, roundEnded: true, gameOver: this.over };
+    }
+
+    this.current = opponent;
+    return { captured, sowPath, captured_holes, roundEnded: false, gameOver: false };
+  }
+
+  _endRound() {
+    // Sweep remaining seeds to stores
+    for (let i = 0;  i < 6;  i++) { this.p1Store += this.holes[i]; this.holes[i] = 0; }
+    for (let i = 6; i < 12; i++) { this.p2Store += this.holes[i]; this.holes[i] = 0; }
+    this.p1Forbidden.clear();
+    this.p2Forbidden.clear();
+    this._setupNextRound();
+  }
+
+  _setupNextRound() {
+    // Who has fewer seeds goes first (fills right-to-left)
+    const first  = this.p1Store <= this.p2Store ? 1 : 2;
+    const second = first === 1 ? 2 : 1;
+    const getStore  = p => p === 1 ? this.p1Store : this.p2Store;
+    const takeStore = (p, n) => { if (p===1) this.p1Store -= n; else this.p2Store -= n; };
+
+    if (getStore(first) < 4) {
+      this.over = true; this.winner = second;
+      this.phase = 'game_over'; return;
+    }
+
+    // First player fills right-to-left
+    const firstHoles  = first === 1 ? [5,4,3,2,1,0] : [11,10,9,8,7,6];
+    const firstOwned  = [];
+    for (const h of firstHoles) {
+      if (getStore(first) >= 4) {
+        this.holes[h] = 4; takeStore(first, 4);
+        firstOwned.push(h);
+      } else break;
+    }
+
+    if (firstOwned.length === 0) {
+      this.over = true; this.winner = second;
+      this.phase = 'game_over'; return;
+    }
+
+    // Second player fills corresponding holes (hole X ↔ hole 11-X)
+    const corrHoles  = firstOwned.map(h => 11 - h);
+    const secondOwned = [];
+    for (const h of corrHoles) {
+      if (getStore(second) >= 4) {
+        this.holes[h] = 4; takeStore(second, 4);
+        secondOwned.push(h);
+      } else break;
+    }
+
+    if (secondOwned.length === 0) {
+      this.over = true; this.winner = first;
+      this.phase = 'game_over'; return;
+    }
+
+    if (first === 1) { this.p1Owned = firstOwned;  this.p2Owned = secondOwned; }
+    else             { this.p2Owned = firstOwned;  this.p1Owned = secondOwned; }
+
+    this.current = first;
+    this.phase   = 'sowing';
+    this.round++;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   AI
+═══════════════════════════════════════════════════════════════════════════ */
+
+const AI_PLAYER = 2;
+
+function easyMove(state) {
+  const moves = state.validMoves(AI_PLAYER);
+  if (!moves.length) return null;
+  // 60% of the time: pick a capturing move if available; else random
+  const capturing = moves.filter(h => state._wouldCapture(h, AI_PLAYER));
+  if (capturing.length && Math.random() < 0.6) {
+    return capturing[Math.floor(Math.random() * capturing.length)];
+  }
+  return moves[Math.floor(Math.random() * moves.length)];
+}
+
+function evaluate(state, forPlayer) {
+  if (state.over) return state.winner === forPlayer ? 100000 : -100000;
+  const opp   = forPlayer === 1 ? 2 : 1;
+  const myS   = forPlayer === 1 ? state.p1Store : state.p2Store;
+  const oppS  = forPlayer === 1 ? state.p2Store : state.p1Store;
+  const myH   = forPlayer === 1 ? [0,1,2,3,4,5] : [6,7,8,9,10,11];
+  const oppH  = forPlayer === 1 ? [6,7,8,9,10,11] : [0,1,2,3,4,5];
+  let mySeeds = 0, oppSeeds = 0;
+  for (const h of myH)  mySeeds  += state.holes[h];
+  for (const h of oppH) oppSeeds += state.holes[h];
+  const mobility = state.validMoves(forPlayer).length - state.validMoves(opp).length;
+  return (myS - oppS) * 10 + (mySeeds - oppSeeds) * 1.5 + mobility * 0.8;
+}
+
+function minimax(state, depth, alpha, beta, forPlayer) {
+  if (state.over || depth === 0) return evaluate(state, forPlayer);
+  const moves = state.validMoves(state.current);
+  if (moves.length === 0) {
+    // Current player has no valid moves: pass to opponent
+    const opp = state.current === 1 ? 2 : 1;
+    if (state.validMoves(opp).length === 0) return evaluate(state, forPlayer);
+    const c = state.clone(); c.current = opp;
+    return minimax(c, depth - 1, alpha, beta, forPlayer);
+  }
+
+  const maxing = state.current === forPlayer;
+  if (maxing) {
+    let best = -Infinity;
+    for (const m of moves) {
+      const c = state.clone(); c.makeMove(m);
+      best  = Math.max(best, minimax(c, depth-1, alpha, beta, forPlayer));
+      alpha = Math.max(alpha, best);
+      if (beta <= alpha) break;
+    }
+    return best;
+  } else {
+    let best = Infinity;
+    for (const m of moves) {
+      const c = state.clone(); c.makeMove(m);
+      best = Math.min(best, minimax(c, depth-1, alpha, beta, forPlayer));
+      beta = Math.min(beta, best);
+      if (beta <= alpha) break;
+    }
+    return best;
+  }
+}
+
+function hardMove(state) {
+  if (Math.random() < 0.10) return { move: easyMove(state), slip: true, scores: null };
+  const moves = state.validMoves(AI_PLAYER);
+  if (!moves.length) return { move: null, slip: false, scores: null };
+  let best = -Infinity, bestMove = moves[0];
+  const scores = {};
+  for (const m of moves) {
+    const c = state.clone(); c.makeMove(m);
+    const val = minimax(c, 4, -Infinity, Infinity, AI_PLAYER);
+    scores[m] = val;
+    if (val > best) { best = val; bestMove = m; }
+  }
+  return { move: bestMove, slip: false, scores };
+}
+
+/* Build the computer-reasoning explanation HTML */
+function explainAIMove(stateBefore, chosenMove, difficulty, wasSlip, minimaxScores) {
+  const moves = stateBefore.validMoves(2);
+  if (!moves.length) return '<p class="explain-idle">No moves available — the computer passes.</p>';
+
+  /* Shallow simulation of every possible move */
+  const sims = moves.map(h => {
+    const c = stateBefore.clone();
+    const res = c.makeMove(h);
+    const p1Threat = c.validMoves(1).some(ph => c._wouldCapture(ph, 1));
+    const score = evaluate(c, 2);
+    return { h, captured: res.captured, capturedHoles: res.captured_holes, p1Threat, score };
+  });
+
+  const chosen   = sims.find(s => s.h === chosenMove);
+  if (!chosen) return '<p class="explain-idle">Move data unavailable.</p>';
+
+  const capturers  = sims.filter(s => s.captured > 0);
+  const dangerous  = sims.filter(s => s.p1Threat);
+  const sorted     = [...sims].sort((a, b) => {
+    const sa = minimaxScores ? (minimaxScores[a.h] ?? a.score) : a.score;
+    const sb = minimaxScores ? (minimaxScores[b.h] ?? b.score) : b.score;
+    return sb - sa;
+  });
+  const rank       = sorted.findIndex(s => s.h === chosenMove) + 1;
+  const chosenMM   = minimaxScores ? (minimaxScores[chosenMove] ?? chosen.score) : chosen.score;
+  const secondMM   = sorted[1] ? (minimaxScores ? (minimaxScores[sorted[1].h] ?? sorted[1].score) : sorted[1].score) : chosenMM;
+  const margin     = chosenMM - secondMM;
+  const hn         = `hole ${chosenMove + 1}`;
+
+  const factors = [];
+  let modeLabel  = difficulty === 'easy' ? 'Easy Mode' : 'Hard Mode — Minimax';
+
+  /* ── Easy mode ── */
+  if (difficulty === 'easy') {
+    if (chosen.captured > 0) {
+      factors.push({ icon: '⚔️', text: `${cap(hn)} sows the last seed onto your side, hitting exactly 3 — a capture of ${chosen.captured} seeds. Easy mode grabs captures when it sees them.` });
+      if (capturers.length > 1) factors.push({ icon: '📋', text: `${capturers.length} captures were available; one was picked at random.` });
+    } else if (capturers.length > 0) {
+      factors.push({ icon: '🎲', text: `A capture was within reach, but easy mode ignores it 40% of the time — ${hn} was chosen randomly instead.` });
+    } else {
+      factors.push({ icon: '🎲', text: `No capture was available, so easy mode picked ${hn} at random from ${moves.length} option${moves.length > 1 ? 's' : ''}.` });
+    }
+    return buildExplainHTML(modeLabel, factors);
+  }
+
+  /* ── Hard mode: slip ── */
+  if (wasSlip) {
+    modeLabel = 'Hard Mode — Random Slip';
+    factors.push({ icon: '🎲', text: `Hard mode has a 10% chance of playing randomly to keep the game fair. This was one of those turns — ${hn} was chosen by chance, not by minimax.` });
+    return buildExplainHTML(modeLabel, factors);
+  }
+
+  /* ── Hard mode: minimax ── */
+
+  // Capture
+  if (chosen.captured > 0) {
+    if (chosen.capturedHoles.length > 1)
+      factors.push({ icon: '⚔️', text: `Chain capture! ${cap(hn)} triggers a cascade across ${chosen.capturedHoles.length} holes — netting ${chosen.captured} seeds in one move.` });
+    else
+      factors.push({ icon: '⚔️', text: `${cap(hn)} drops its last seed onto a hole with 2 on your side — 2 + 1 = 3, capturing ${chosen.captured} seeds.` });
+  }
+
+  // Counter-capture avoidance
+  if (!chosen.p1Threat && dangerous.length > 0) {
+    const names = dangerous.map(d => `hole ${d.h + 1}`).join(', ');
+    if (dangerous.length >= moves.length - 1)
+      factors.push({ icon: '🛡️', text: `Almost every other option (${names}) hands you a counter-capture. ${cap(hn)} was the key safe play.` });
+    else
+      factors.push({ icon: '🛡️', text: `Moves like ${names} would let you counter-capture next turn. ${cap(hn)} keeps your holes out of range.` });
+  } else if (chosen.p1Threat && dangerous.length === moves.length) {
+    factors.push({ icon: '⚠️', text: `Every available move leaves you with a capture threat — no safe option exists. ${cap(hn)} scores best despite the risk.` });
+  }
+
+  // Minimax score
+  if (moves.length > 1) {
+    if (Math.abs(margin) < 0.6)
+      factors.push({ icon: '🔢', text: `Very tight decision — all ${moves.length} moves scored within 0.6 pts at 4-move depth. ${cap(hn)} edged ahead by the narrowest margin.` });
+    else if (rank === 1)
+      factors.push({ icon: '🔢', text: `Minimax searched 4 moves deep across ${moves.length} options and ranked ${hn} first — scoring ${margin.toFixed(1)} pts ahead of the next best move.` });
+    else
+      factors.push({ icon: '🔢', text: `${cap(hn)} ranked #${rank} of ${moves.length} by raw score, but combined with other factors it was the top choice at depth 4.` });
+  }
+
+  // Store context
+  const adv = stateBefore.p2Store - stateBefore.p1Store;
+  if (adv >= 8)
+    factors.push({ icon: '📦', text: `Leading by ${adv} seeds in store — playing to hold that advantage rather than take unnecessary risks.` });
+  else if (adv <= -8)
+    factors.push({ icon: '📦', text: `Trailing by ${-adv} seeds in store — this was the most aggressive move available to close the gap.` });
+
+  // Seed density note
+  if (!chosen.captured && capturers.length === 0) {
+    const c2 = stateBefore.clone(); c2.makeMove(chosenMove);
+    const mySd = [6,7,8,9,10,11].reduce((s,h) => s + c2.holes[h], 0);
+    const yrSd = [0,1,2,3,4,5].reduce((s,h) => s + c2.holes[h], 0);
+    if (mySd > yrSd + 3)
+      factors.push({ icon: '🌱', text: `No captures possible — this leaves the computer with ${mySd} seeds in its row (you: ${yrSd}), building up for future captures.` });
+  }
+
+  if (factors.length === 0)
+    factors.push({ icon: '🔢', text: `Minimax evaluated all ${moves.length} moves 4 levels deep and found ${hn} gives the best long-term position.` });
+
+  return buildExplainHTML(modeLabel, factors);
+}
+
+function cap(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
+
+function buildExplainHTML(modeLabel, factors) {
+  let html = `<div class="explain-mode-label">${modeLabel}</div>`;
+  for (const f of factors)
+    html += `<div class="explain-factor"><span class="factor-icon">${f.icon}</span><span>${f.text}</span></div>`;
+  return html;
+}
+
+function setExplanation(html) {
+  const el = document.getElementById('explain-content');
+  if (el) el.innerHTML = html;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   UI
+═══════════════════════════════════════════════════════════════════════════ */
+
+let game       = null;
+let difficulty = 'easy';
+let inputLocked = false;
+let moveHistory = [];
+
+// P2 holes are displayed right-to-left: visual positions [0..5] → holes [11,10,9,8,7,6]
+const P2_DISPLAY_ORDER = [11,10,9,8,7,6];
+const P1_DISPLAY_ORDER = [0,1,2,3,4,5];
+
+function setDifficulty(d) {
+  difficulty = d;
+  document.getElementById('btn-easy').classList.toggle('active', d === 'easy');
+  document.getElementById('btn-hard').classList.toggle('active', d === 'hard');
+}
+
+function startNewGame() {
+  game        = new GameState();
+  moveHistory = [];
+  inputLocked = false;
+  buildBoard();
+  renderBoard();
+  renderHistory();
+  setStatus('Your turn — click a hole to sow');
+  document.getElementById('overlay').classList.remove('show');
+}
+
+/* Build DOM holes once */
+function buildBoard() {
+  const rowP2 = document.getElementById('row-p2');
+  const rowP1 = document.getElementById('row-p1');
+  rowP2.innerHTML = '';
+  rowP1.innerHTML = '';
+
+  P2_DISPLAY_ORDER.forEach((holeIdx, pos) => {
+    rowP2.appendChild(makeHoleEl(holeIdx, 'p2'));
+  });
+  P1_DISPLAY_ORDER.forEach((holeIdx, pos) => {
+    rowP1.appendChild(makeHoleEl(holeIdx, 'p1'));
+  });
+}
+
+function makeHoleEl(holeIdx, player) {
+  const d = document.createElement('div');
+  d.className   = 'hole';
+  d.id          = `hole-${holeIdx}`;
+  d.dataset.idx = holeIdx;
+  if (player === 'p1') d.onclick = () => handleClick(holeIdx);
+  return d;
+}
+
+/* Full board re-render */
+function renderBoard() {
+  if (!game) return;
+  const validMoves = game.over ? [] : game.validMoves(1);
+  const humanTurn  = game.current === 1 && !game.over && !inputLocked;
+
+  for (let i = 0; i < 12; i++) {
+    renderHole(i, game.holes[i], validMoves, humanTurn, game);
+  }
+
+  document.getElementById('p1-store-count').textContent   = game.p1Store;
+  document.getElementById('p2-store-count').textContent   = game.p2Store;
+  document.getElementById('p1-store-display').textContent = game.p1Store;
+  document.getElementById('p2-store-display').textContent = game.p2Store;
+  document.getElementById('round-display').textContent    = game.round;
+}
+
+function renderHole(i, count, validMoves, humanTurn, state) {
+  const el = document.getElementById(`hole-${i}`);
+  if (!el) return;
+
+  const isP1     = i < 6;
+  const owned    = isP1 ? state.p1Owned : state.p2Owned;
+  const forb     = isP1 ? state.p1Forbidden : state.p2Forbidden;
+  const isOwned  = owned.includes(i);
+  const isForbid = forb.has(i);
+  const isValid  = validMoves.includes(i);
+
+  el.className = 'hole';
+  if (!isOwned && count === 0) el.classList.add('inactive-hole');
+  if (isP1) {
+    if (humanTurn && isValid)      el.classList.add('clickable');
+    if (isForbid && isOwned)       el.classList.add('forbidden');
+    if (!isOwned && count === 0)   el.classList.add('inactive-hole');
+  }
+
+  // Seeds visual
+  el.innerHTML = '';
+  if (count === 0) {
+    // Empty
+  } else if (count <= 8) {
+    const grid = document.createElement('div');
+    grid.className = 'seeds-grid';
+    const cols = count <= 4 ? 2 : count <= 6 ? 3 : 4;
+    grid.style.gridTemplateColumns = `repeat(${cols}, 11px)`;
+    for (let s = 0; s < count; s++) {
+      const dot = document.createElement('div');
+      dot.className = 'seed';
+      grid.appendChild(dot);
+    }
+    el.appendChild(grid);
+    if (count > 4) {
+      const lbl = document.createElement('div');
+      lbl.className = 'seed-count-label';
+      lbl.textContent = count;
+      el.appendChild(lbl);
+    }
+  } else {
+    const n = document.createElement('div');
+    n.className   = 'count-big';
+    n.textContent = count;
+    el.appendChild(n);
+  }
+
+}
+
+function flashHoles(holes_arr, cls) {
+  for (const h of holes_arr) {
+    const el = document.getElementById(`hole-${h}`);
+    if (el) {
+      el.classList.add(cls);
+      setTimeout(() => el.classList.remove(cls), 600);
+    }
+  }
+}
+
+function setStatus(html, captureAmt) {
+  const bar = document.getElementById('status-bar');
+  bar.innerHTML = `<span class="msg">${html}</span>`;
+  if (captureAmt) {
+    bar.innerHTML += `<span class="capture-badge">+${captureAmt} seeds captured!</span>`;
+  }
+}
+
+function setThinking() {
+  document.getElementById('status-bar').innerHTML =
+    `<span class="msg" style="color:#94a3b8">Computer is thinking</span>
+     <span class="thinking-dots"><span>●</span><span>●</span><span>●</span></span>`;
+}
+
+function renderHistory() {
+  const list = document.getElementById('history-list');
+  list.innerHTML = '';
+  for (const entry of moveHistory.slice(-30)) {
+    const el = document.createElement('span');
+    el.className = 'history-item' + (entry.cap > 0 ? ' capture' : '');
+    el.textContent = entry.text;
+    list.appendChild(el);
+  }
+}
+
+function showGameOver() {
+  const overlay = document.getElementById('overlay');
+  const icon    = document.getElementById('winner-icon');
+  const title   = document.getElementById('winner-title');
+  const score   = document.getElementById('final-score');
+
+  if (game.winner === 1) {
+    icon.textContent  = '🏆';
+    title.textContent = 'You Win!';
+    title.style.color = '#f39c12';
+  } else {
+    icon.textContent  = '🤖';
+    title.textContent = 'Computer Wins!';
+    title.style.color = '#94a3b8';
+  }
+  score.innerHTML = `Final score — <strong>You: ${game.p1Store}</strong> | <strong>Computer: ${game.p2Store}</strong><br>
+    <span style="color:#888;font-size:0.85rem">Round ${game.round}</span>`;
+  overlay.classList.add('show');
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   ANIMATION HELPERS
+═══════════════════════════════════════════════════════════════════════════ */
+
+function delay(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+/* Update only the seed visuals in a hole without touching its classes */
+function renderHoleSeeds(holeIdx, count) {
+  const el = document.getElementById(`hole-${holeIdx}`);
+  if (!el) return;
+  el.querySelectorAll('.seeds-grid, .count-big, .seed-count-label').forEach(n => n.remove());
+  if (count <= 0) return;
+  if (count <= 8) {
+    const grid = document.createElement('div');
+    grid.className = 'seeds-grid';
+    const cols = count <= 4 ? 2 : count <= 6 ? 3 : 4;
+    grid.style.gridTemplateColumns = `repeat(${cols}, 11px)`;
+    for (let s = 0; s < count; s++) {
+      const dot = document.createElement('div'); dot.className = 'seed'; grid.appendChild(dot);
+    }
+    el.appendChild(grid);
+    if (count > 4) {
+      const lbl = document.createElement('div');
+      lbl.className = 'seed-count-label'; lbl.textContent = count; el.appendChild(lbl);
+    }
+  } else {
+    const n = document.createElement('div');
+    n.className = 'count-big'; n.textContent = count; el.appendChild(n);
+  }
+}
+
+/* Animate the sow one hole at a time, apply move to game state, then animate captures.
+   Returns the move result. */
+async function animateSow(holeIdx) {
+  const seedsToSow = game.holes[holeIdx];
+  const display    = [...game.holes];
+
+  // Disable all clickable holes during animation
+  document.querySelectorAll('.hole.clickable').forEach(el => el.classList.remove('clickable'));
+
+  // Source hole: glow yellow and shrink, then empty
+  const srcEl = document.getElementById(`hole-${holeIdx}`);
+  if (srcEl) srcEl.classList.add('sowing-source');
+  await delay(520);
+  display[holeIdx] = 0;
+  renderHoleSeeds(holeIdx, 0);
+  if (srcEl) srcEl.classList.remove('sowing-source');
+  await delay(200);
+
+  // Sow one seed at a time
+  const SOW_DELAY = 430;
+  let pos = holeIdx;
+  for (let i = 0; i < seedsToSow; i++) {
+    pos = (pos + 1) % 12;
+    display[pos]++;
+    renderHoleSeeds(pos, display[pos]);
+    // Blue flash on receiving hole
+    const el = document.getElementById(`hole-${pos}`);
+    if (el) {
+      el.classList.remove('seed-landing');
+      void el.offsetWidth; // restart animation if already present
+      el.classList.add('seed-landing');
+      setTimeout(() => el.classList.remove('seed-landing'), 600);
+    }
+    await delay(SOW_DELAY);
+  }
+
+  // Apply actual move (captures, forbidden sets, store update)
+  const result = game.makeMove(holeIdx);
+
+  // Capture flash: holes still show seeds visually, ring pulses, then renderBoard clears them
+  if (result.captured_holes.length) {
+    await delay(240);
+    for (const ch of result.captured_holes) {
+      const cel = document.getElementById(`hole-${ch}`);
+      if (cel) {
+        cel.classList.remove('just-captured');
+        void cel.offsetWidth;
+        cel.classList.add('just-captured');
+        setTimeout(() => cel.classList.remove('just-captured'), 1900);
+      }
+    }
+    await delay(1900);
+  }
+
+  return result;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   GAME FLOW
+═══════════════════════════════════════════════════════════════════════════ */
+
+async function handleClick(holeIdx) {
+  if (!game || inputLocked || game.over) return;
+  if (game.current !== 1) return;
+  const valid = game.validMoves(1);
+  if (!valid.includes(holeIdx)) return;
+
+  inputLocked = true;
+  setStatus('Sowing…');
+
+  const result = await animateSow(holeIdx);
+
+  moveHistory.push({
+    text: `P1: sow hole ${holeIdx + 1}${result.captured ? ` (+${result.captured})` : ''}`,
+    cap:  result.captured
+  });
+
+  renderBoard();
+  renderHistory();
+
+  if (result.gameOver || game.over) {
+    setTimeout(showGameOver, 600);
+    return;
+  }
+
+  if (result.roundEnded) {
+    const n1 = game.p1Owned.length, n2 = game.p2Owned.length;
+    setStatus(`Round ${game.round} begins — ${n1} vs ${n2} holes`);
+    setTimeout(continueAfterRound, 900);
+    return;
+  }
+
+  if (result.captured > 0) {
+    setStatus(`You captured ${result.captured} seeds! Computer's turn…`, result.captured);
+  } else {
+    setStatus('Computer is thinking…');
+  }
+
+  setTimeout(triggerAI, 350);
+}
+
+function continueAfterRound() {
+  if (game.over) { showGameOver(); return; }
+  if (game.current === 2) {
+    setStatus('Computer is thinking…');
+    setTimeout(triggerAI, 600);
+  } else {
+    // Check P1 has moves; if not, pass to AI
+    if (game.validMoves(1).length === 0 && !game.over) {
+      setStatus('No moves available — computer goes…');
+      game.current = 2;
+      setTimeout(triggerAI, 700);
+    } else {
+      setStatus('Your turn — new round started');
+      inputLocked = false;
+      renderBoard();
+    }
+  }
+}
+
+function triggerAI() {
+  if (!game || game.over || game.current !== 2) {
+    inputLocked = false;
+    setStatus('Your turn — click a hole to sow');
+    return;
+  }
+
+  setThinking();
+  setTimeout(async () => {
+    const stateBefore = game.clone();
+    let move, wasSlip = false, minimaxScores = null;
+    if (difficulty === 'hard') {
+      const ai = hardMove(game);
+      move = ai.move; wasSlip = ai.slip; minimaxScores = ai.scores;
+    } else {
+      move = easyMove(game);
+    }
+
+    if (move === null) {
+      setStatus('Computer passes — your turn');
+      game.current = 1;
+      inputLocked = false;
+      renderBoard();
+      return;
+    }
+
+    // Show explanation before sowing so player can read it
+    setExplanation(explainAIMove(stateBefore, move, difficulty, wasSlip, minimaxScores));
+
+    setStatus('Computer is sowing…');
+    const result = await animateSow(move);
+
+    moveHistory.push({
+      text: `CPU: sow hole ${move + 1}${result.captured ? ` (+${result.captured})` : ''}`,
+      cap:  result.captured
+    });
+
+    renderBoard();
+    renderHistory();
+
+    if (result.gameOver || game.over) {
+      setTimeout(showGameOver, 600);
+      return;
+    }
+
+    if (result.roundEnded) {
+      const n1 = game.p1Owned.length, n2 = game.p2Owned.length;
+      setStatus(`Round ${game.round} begins — ${n1} vs ${n2} holes`);
+      setTimeout(continueAfterRound, 900);
+      return;
+    }
+
+    if (result.captured > 0) {
+      setStatus(`Computer captured ${result.captured} seeds — your turn`);
+    } else {
+      setStatus('Your turn — click a hole to sow');
+    }
+
+    if (game.validMoves(1).length === 0 && !game.over) {
+      setStatus('No moves for you — computer goes again…');
+      game.current = 2;
+      setTimeout(triggerAI, 700);
+    } else {
+      inputLocked = false;
+      renderBoard();
+    }
+  }, difficulty === 'hard' ? 200 : 100);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   HOLE TOOLTIPS
+═══════════════════════════════════════════════════════════════════════════ */
+
+function setupHoleTooltips() {
+  const tip  = document.getElementById('hole-tooltip');
+  const board = document.querySelector('.board');
+
+  board.addEventListener('mouseover', e => {
+    const hole = e.target.closest('.hole');
+    if (!hole || !game) { tip.classList.remove('show'); return; }
+
+    const idx   = parseInt(hole.dataset.idx);
+    const isP1  = idx < 6;
+    const side  = isP1 ? 'your' : "the computer's";
+    const visNum = isP1 ? idx + 1 : 12 - idx; // 1-6 from left within each row
+    const owned  = isP1 ? game.p1Owned : game.p2Owned;
+    const forb   = isP1 ? game.p1Forbidden : game.p2Forbidden;
+
+    tip.className = 'hole-tooltip';
+    let html = '';
+
+    if (hole.classList.contains('inactive-hole')) {
+      const activeCount = owned.length;
+      html = `<span class="tip-icon">💤</span>
+        <strong>Hole ${visNum} (${side} side) — not in play</strong><br>
+        In round ${game.round}, only <strong>${activeCount} hole${activeCount !== 1 ? 's' : ''}</strong> per side are active.
+        When a round ends, the player with fewer seeds in store refills
+        fewer holes, so the board shrinks. Seeds here were swept to the
+        store at the start of the round.`;
+      tip.classList.add('tip-inactive');
+
+    } else if (hole.classList.contains('forbidden')) {
+      html = `<span class="tip-icon">🔒</span>
+        <strong>Hole ${visNum} — locked this turn</strong><br>
+        You just sowed from here. Adi's same-hole rule prevents players from
+        cycling the same hole repeatedly. It unlocks the moment the computer
+        drops a seed into it.`;
+      tip.classList.add('tip-forbidden');
+
+    } else {
+      tip.classList.remove('show'); return;
+    }
+
+    tip.innerHTML = html;
+    tip.classList.add('show');
+    positionTip(e);
+  });
+
+  board.addEventListener('mousemove', e => { if (tip.classList.contains('show')) positionTip(e); });
+  board.addEventListener('mouseleave', () => tip.classList.remove('show'));
+}
+
+function positionTip(e) {
+  const tip = document.getElementById('hole-tooltip');
+  const pad = 14;
+  let x = e.clientX + pad, y = e.clientY - 10;
+  // force a reflow so getBoundingClientRect is correct
+  tip.style.left = '0px'; tip.style.top = '0px';
+  const w = tip.offsetWidth, h = tip.offsetHeight;
+  if (x + w > window.innerWidth  - 8) x = e.clientX - w - pad;
+  if (y + h > window.innerHeight - 8) y = e.clientY - h - pad;
+  tip.style.left = Math.max(8, x) + 'px';
+  tip.style.top  = Math.max(8, y) + 'px';
+}
+
+/* ── Boot ── */
+startNewGame();
+setupHoleTooltips();
+</script>
+</body>
+</html>
