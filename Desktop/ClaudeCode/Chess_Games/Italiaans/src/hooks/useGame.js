@@ -62,6 +62,7 @@ export function useGame({ onBadgeUnlock, onGameEnd, explanationsAnswered = 0 } =
   const [moveLog,          setMoveLog]            = useState([]); // for PostGame + badge ctx
   const [layerStatus,      setLayerStatus]        = useState(0);
   const [variationName,    setVariationName]      = useState(null);
+  const [variationsHit,    setVariationsHit]      = useState(new Set());
   const [consecutivePerfect, setConsecutivePerfect] = useState(0);
 
   // Trap tracking
@@ -80,6 +81,9 @@ export function useGame({ onBadgeUnlock, onGameEnd, explanationsAnswered = 0 } =
   const [gameOverReason, setGameOverReason] = useState(null);
   const [mateDelivered,  setMateDelivered]  = useState(false);
 
+  // Take-back — one use per game
+  const [undoUsed, setUndoUsed] = useState(false);
+
   // Hint system
   const [hintTreeMove,   setHintTreeMove]   = useState(null); // {from,to} | null
   const [hintEngineMove, setHintEngineMove] = useState(null); // {from,to} | null
@@ -97,7 +101,8 @@ export function useGame({ onBadgeUnlock, onGameEnd, explanationsAnswered = 0 } =
   // Scheduled imperfections: rolled once per game
   // suboptimalAt (15–20): Black plays 3rd-best move that turn
   // randomAt     (20–25): Black plays a random legal move that turn
-  const imperfectionsRef = useRef(null);
+  const imperfectionsRef  = useRef(null);
+  const trapEvaluatedRef  = useRef(false); // true after the first White move following a trap move
   const announcedPanelsRef = useRef(new Set()); // tracks which mid-game panels have fired
   const popupTimerRef = useRef(null);    // cancelable handle for the popup auto-dismiss
   const popupAfterRef = useRef(null);    // { isCheckmate, isGameOver } captured for early dismiss
@@ -111,7 +116,13 @@ export function useGame({ onBadgeUnlock, onGameEnd, explanationsAnswered = 0 } =
   // Fires every time we enter player_turn for the first 5 White moves.
   // Loads tree hint synchronously, engine hint asynchronously.
   useEffect(() => {
-    if (phase !== PHASES.PLAYER_TURN || whiteMovesPlayed >= 10) return;
+    if (phase !== PHASES.PLAYER_TURN) return;
+
+    // Always clear penalty ref — must happen even after move 10 when hint loading is skipped.
+    // Without this, using a hint on move 9/10 (last available) would permanently cap score at 3.
+    hintPenaltyRef.current = false;
+
+    if (whiteMovesPlayed >= 10) return;
 
     const g   = gameRef.current;
     const fen = g.fen();
@@ -120,7 +131,6 @@ export function useGame({ onBadgeUnlock, onGameEnd, explanationsAnswered = 0 } =
     // Reset hint state for this turn
     setHintUsed(false);
     setHintActive(false);
-    hintPenaltyRef.current = false;
 
     // Tree hint — synchronous
     const treeSan = getTreeHintMove(history);
@@ -153,6 +163,7 @@ export function useGame({ onBadgeUnlock, onGameEnd, explanationsAnswered = 0 } =
     setMoveLog([]);
     setLayerStatus(0);
     setVariationName(null);
+    setVariationsHit(new Set());
     setConsecutivePerfect(0);
     setTrapEscaped(false);
     setTrapKey(null);
@@ -161,6 +172,7 @@ export function useGame({ onBadgeUnlock, onGameEnd, explanationsAnswered = 0 } =
     setLastBestMove(null);
     setGameOverReason(null);
     setMateDelivered(false);
+    setUndoUsed(false);
     setHintTreeMove(null);
     setHintEngineMove(null);
     setHintLoading(false);
@@ -168,6 +180,7 @@ export function useGame({ onBadgeUnlock, onGameEnd, explanationsAnswered = 0 } =
     setHintActive(false);
     hintPenaltyRef.current = false;
     blackModeRef.current = null;
+    trapEvaluatedRef.current = false;
     trapConfigRef.current = rollTrap();
     imperfectionsRef.current = {
       earlySuboptimalAt: 10 + Math.floor(Math.random() * 3), // 10–12
@@ -225,6 +238,82 @@ export function useGame({ onBadgeUnlock, onGameEnd, explanationsAnswered = 0 } =
     setHintActive(true);
     hintPenaltyRef.current = true;
   }, [phase, hintUsed, whiteMovesPlayed]);
+
+  // ── Three-move take-back ─────────────────────────────────────────────
+  // Available once per game from move 4 onwards, only during PLAYER_TURN
+  // (no async ops in flight at that point — same safety constraint as begin-oor).
+  //
+  // Target: 2*(whiteMovesPlayed - 3) half-moves, which always lands on
+  // White to move regardless of whether the current position is at an even
+  // or odd half-move count (handles "3 moves" and "3.5 moves" cases).
+  const drieSkuiweTerug = useCallback(() => {
+    if (undoUsed || whiteMovesPlayed < 4 || phase === PHASES.GAME_OVER) return;
+
+    clearTimeout(popupTimerRef.current);
+    pendingRef.current  = null;
+    popupAfterRef.current = null;
+
+    const targetLen  = 2 * (whiteMovesPlayed - 3);
+    const oldHistory = gameRef.current.history();
+    const newHistory = oldHistory.slice(0, targetLen);
+
+    const newGame = new Chess();
+    let lastMv = null;
+    for (const san of newHistory) lastMv = newGame.move(san);
+    gameRef.current = newGame;
+
+    const newMovesPlayed = whiteMovesPlayed - 3;
+    const newLog         = moveLog.slice(0, newMovesPlayed);
+    const newScore       = newLog.reduce((s, m) => s + m.score, 0);
+    const newLayer       = detectLayerComplete(newHistory);
+
+    let newStreak = 0;
+    for (let i = newLog.length - 1; i >= 0; i--) {
+      if (newLog[i].score === 4) newStreak++; else break;
+    }
+
+    setUndoUsed(true);
+    setPosition(newGame.fen());
+    setPhase(PHASES.PLAYER_TURN);
+    setSelectedSquare(null);
+    setLegalSquares([]);
+    setLastMove(lastMv ? { from: lastMv.from, to: lastMv.to } : null);
+    setWhiteMovesPlayed(newMovesPlayed);
+    setTotalScore(newScore);
+    setMoveLog(newLog);
+    setLayerStatus(newLayer);
+    setVariationName(null);
+    setVariationsHit(new Set());
+    setConsecutivePerfect(newStreak);
+    setTrapKey(null);
+    setTrapEscaped(false);
+    setPopupData(null);
+    setExplanationData(null);
+    setLastBestMove(null);
+    setGameOverReason(null);
+    setMateDelivered(false);
+    setHintUsed(false);
+    setHintActive(false);
+    hintPenaltyRef.current   = false;
+    trapEvaluatedRef.current = false;
+    announcedPanelsRef.current = new Set();
+
+    // Eagerly reload hints for the new position
+    const newFen  = newGame.fen();
+    const treeSan = getTreeHintMove(newGame.history());
+    setHintTreeMove(treeSan ? sanToSquares(newFen, treeSan) : null);
+    if (newMovesPlayed < 10) {
+      setHintLoading(true);
+      setHintEngineMove(null);
+      getEngineHintMove(newFen)
+        .then(uci => setHintEngineMove(uci ? uciToSquares(uci) : null))
+        .catch(() => setHintEngineMove(null))
+        .finally(() => setHintLoading(false));
+    } else {
+      setHintEngineMove(null);
+      setHintLoading(false);
+    }
+  }, [undoUsed, whiteMovesPlayed, moveLog, phase]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Execute White's move ─────────────────────────────────────────────
   // Capture FEN + history synchronously BEFORE mutating game state.
@@ -294,12 +383,31 @@ export function useGame({ onBadgeUnlock, onGameEnd, explanationsAnswered = 0 } =
     const isGameOver  = g.isGameOver() || g.isDraw() || g.isStalemate();
 
     // Hint penalty: when hint was used, always award exactly 3 points
-    const cappedScore   = hadHintPenalty ? 3 : result.score;
-    // Bonus for checkmate
-    const scoreThisMove = cappedScore + (isCheckmate ? MATE_BONUS : 0);
+    const cappedScore = hadHintPenalty ? 3 : result.score;
+
+    // Trap escape / fell — evaluated once on the first White move after Black plays the trap.
+    // Escape: score >= 3 → +3 bonus points + 'trap_escaped' commentary.
+    // Fell:   score < 3  → 'trap_fell' commentary, no bonus.
+    let trapCommentaarOverride = null;
+    let trapEscapeBonus = 0;
+    if (trapKey && !trapEvaluatedRef.current) {
+      trapEvaluatedRef.current = true;
+      if (cappedScore >= 3) {
+        setTrapEscaped(true);
+        trapEscapeBonus = 3;
+        trapCommentaarOverride = 'trap_escaped';
+      } else {
+        trapCommentaarOverride = 'trap_fell';
+      }
+    }
+
+    const scoreThisMove = cappedScore + (isCheckmate ? MATE_BONUS : 0) + trapEscapeBonus;
 
     // Update variation name announcement
-    if (result.variationName) setVariationName(result.variationName);
+    if (result.variationName) {
+      setVariationName(result.variationName);
+      setVariationsHit(prev => { const s = new Set(prev); s.add(result.variationName); return s; });
+    }
 
     // Update layer status — detect if this move completed a new layer
     const newLayer = detectLayerComplete(g.history());
@@ -312,17 +420,20 @@ export function useGame({ onBadgeUnlock, onGameEnd, explanationsAnswered = 0 } =
     );
 
     // When hint was used, or for the first 3 moves: no Giacomo commentary
-    const commentaarKey = isCheckmate ? 'celebrating' : String(cappedScore);
+    const commentaarKey = trapCommentaarOverride ?? (isCheckmate ? 'celebrating' : String(cappedScore));
     const silentMove = hadHintPenalty || whiteMovesPlayed < 3;
     const commentaar = silentMove ? null : getGiacomoLine(commentaarKey);
-    const expression = hadHintPenalty ? 'neutral' : scoreToExpression(cappedScore, isCheckmate);
+    const expression = hadHintPenalty ? 'neutral'
+      : trapCommentaarOverride === 'trap_escaped' ? 'ecstatic'
+      : trapCommentaarOverride === 'trap_fell'    ? 'frustrated'
+      : scoreToExpression(cappedScore, isCheckmate);
 
     // From move 30 onwards: focus mode — score only, no text distractions
     const focusMode = whiteMovesPlayed >= 29;
 
     // Mid-game theme panel — fires at most once per theme per game.
     // Suppressed in focus mode and when a layer announcement takes the popup.
-    const newMidgamePanelId = detectNewMidgamePanel(g.history(), g, announcedPanelsRef.current);
+    const newMidgamePanelId = detectNewMidgamePanel(g.history(), g, announcedPanelsRef.current, cappedScore);
     if (newMidgamePanelId) {
       announcedPanelsRef.current = new Set([...announcedPanelsRef.current, newMidgamePanelId]);
     }
@@ -384,13 +495,15 @@ export function useGame({ onBadgeUnlock, onGameEnd, explanationsAnswered = 0 } =
     if (isCheckmate) setMateDelivered(true);
 
     setPhase(PHASES.POPUP);
-    popupAfterRef.current = { isCheckmate, isGameOver };
+    const movesAfterThisMove = whiteMovesPlayed + 1;
+    popupAfterRef.current = { isCheckmate, isGameOver, movesAfterThisMove };
 
-    // Auto-dismiss popup — timer stored so the click handler can cancel it early
+    // Auto-dismiss popup — timer stored so the click handler can cancel it early.
+    // movesAfterThisMove is captured here (stale closure) so both paths use the same value.
     clearTimeout(popupTimerRef.current);
     popupTimerRef.current = setTimeout(() => {
       setPopupData(null);
-      _afterPopup(isCheckmate, isGameOver);
+      _afterPopup(isCheckmate, isGameOver, movesAfterThisMove);
     }, popup.duration);
   }
 
@@ -398,14 +511,14 @@ export function useGame({ onBadgeUnlock, onGameEnd, explanationsAnswered = 0 } =
     clearTimeout(popupTimerRef.current);
     setPopupData(null);
     if (popupAfterRef.current) {
-      const { isCheckmate, isGameOver } = popupAfterRef.current;
+      const { isCheckmate, isGameOver, movesAfterThisMove } = popupAfterRef.current;
       popupAfterRef.current = null;
-      _afterPopup(isCheckmate, isGameOver);
+      _afterPopup(isCheckmate, isGameOver, movesAfterThisMove);
     }
   }
 
   // ── After popup auto-dismisses ────────────────────────────────────────
-  function _afterPopup(isCheckmate, wasGameOver) {
+  function _afterPopup(isCheckmate, wasGameOver, movesAfterThisMove) {
     const g = gameRef.current;
 
     if (isCheckmate) {
@@ -417,7 +530,7 @@ export function useGame({ onBadgeUnlock, onGameEnd, explanationsAnswered = 0 } =
       _endGame(reason);
       return;
     }
-    if (whiteMovesPlayed + 1 >= MAX_WHITE_MOVES) {
+    if (movesAfterThisMove >= MAX_WHITE_MOVES) {
       _endGame('moves_complete');
       return;
     }
@@ -585,6 +698,7 @@ export function useGame({ onBadgeUnlock, onGameEnd, explanationsAnswered = 0 } =
     moveLog,
     layerStatus,
     variationName,
+    variationsHit,
     consecutivePerfect,
     trapEscaped,
     trapKey,
@@ -602,6 +716,9 @@ export function useGame({ onBadgeUnlock, onGameEnd, explanationsAnswered = 0 } =
     hintUsed,
     hintActive,
 
+    // Take-back
+    undoUsed,
+
     // Actions
     startGame,
     onSquareClick,
@@ -609,5 +726,6 @@ export function useGame({ onBadgeUnlock, onGameEnd, explanationsAnswered = 0 } =
     dismissPopup,
     markTrapEscaped,
     useHint,
+    drieSkuiweTerug,
   };
 }
