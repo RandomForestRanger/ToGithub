@@ -174,6 +174,12 @@ const BADGES = {
         title: 'Sewe Sterre - ¡Siete Estrellas!',
         description: 'Jy het 5 punte op 7 verskillende skuiwe gekry - sewe sterre van uitnemendheid! ¡Increíble! Dit wys dat jy konsekwent die beste skuiwe speel. In Spanje sê hulle "siete estrellas" vir iets wat werklik uitmuntend is. Jy speel soos \'n ware meester van die Ruy Lopez!'
     },
+    twelve_perfect: {
+        name: '12 Perfek',
+        icon: '🌠',
+        title: 'Twaalf Sterre - ¡Doce Estrellas!',
+        description: "Jy het 5 punte op 12 verskillende skuiwe gekry - 'n indrukwekkende prestasie! ¡Magnífico! Jy speel op grootmeester-vlak vir die grootste deel van die spel. Hou so aan en die sestien sterre wag vir jou!"
+    },
     sixteen_perfect: {
         name: '16 Perfek',
         icon: '⭐',
@@ -1576,8 +1582,8 @@ function checkBadges(move, isBlackMove = false) {
             awardBadge('castled');
         }
 
-        // Exchange Variation (White plays Bxc6)
-        if (san === 'Bxc6') {
+        // Exchange Variation (White plays Bxc6 before ...a6 / Morphy)
+        if (san === 'Bxc6' && !variationState.morphyPlayed) {
             awardBadge('exchange');
         }
 
@@ -1604,8 +1610,8 @@ function checkBadges(move, isBlackMove = false) {
             awardBadge('center_control');
         }
 
-        // Cinderella Bishop (light bishop to a5 or a6 with tempo)
-        if ((san === 'Ba5' || san === 'Ba6') && move.piece === 'b') {
+        // Cinderella Bishop (Ba4 retreat after ...a6 Morphy — bishop dances away with tempo)
+        if (san === 'Ba4' && variationState.morphyPlayed) {
             awardBadge('cinderella');
         }
     }
@@ -1613,7 +1619,7 @@ function checkBadges(move, isBlackMove = false) {
     // Opening Variation badges (Black's moves)
     if (isBlackMove) {
         // Move 3 variations
-        if (moveNum === 3 || history.length === 5) {
+        if (moveNum === 3) {
             if (san === 'a6') { variationState.morphyPlayed = true; awardBadge('morphy'); }
             if (san === 'Nf6') awardBadge('berlin');
             if (san === 'Nd4') awardBadge('bird');
@@ -1650,9 +1656,13 @@ function checkBadges(move, isBlackMove = false) {
 
         // Marshall Attack detection (simplified - after 8...d5)
         if (san === 'd5' && moveNum >= 8) {
-            // Check for Marshall structure
+            // Check for Marshall structure — White must have castled (even index = White's move)
             const histStr = history.join(' ');
-            if (histStr.includes('O-O') && histStr.includes('c3')) {
+            const castlingIndices = history
+                .map((m, i) => m === 'O-O' ? i : -1)
+                .filter(i => i >= 0);
+            const whiteCastled = castlingIndices.some(i => i % 2 === 0);
+            if (whiteCastled && histStr.includes('c3')) {
                 awardBadge('marshall');
             }
         }
@@ -1668,26 +1678,15 @@ function checkBadges(move, isBlackMove = false) {
         }
     }
 
-    // Noah's Ark Survivor - check if White's b5 bishop is still alive after potential trap
+    // Noah's Ark Survivor - White retreated to Bb3 before Black's c4 trap closed
     if (!isBlackMove && moveNum >= 8) {
-        // If we still have our light-squared bishop and have seen the a6-b5 structure
-        const bishops = [];
-        const pos = game.board();
-        for (let r = 0; r < 8; r++) {
-            for (let c = 0; c < 8; c++) {
-                const piece = pos[r][c];
-                if (piece && piece.type === 'b' && piece.color === 'w') {
-                    bishops.push({ r, c });
-                }
-            }
-        }
-        // If white still has 2 bishops, might have escaped Noah's ark
-        if (bishops.length === 2) {
-            const hist = game.history();
-            const histStr = hist.join(' ');
-            if (histStr.includes('a6') && histStr.includes('b5') && histStr.includes('Bb3')) {
-                awardBadge('noahs_ark');
-            }
+        const hist = game.history();
+        const b5Idx  = hist.indexOf('b5');
+        const c4Idx  = hist.indexOf('c4');
+        const bb3Idx = hist.indexOf('Bb3');
+        // Award only if: b5 was played, then c4 (trap sprung), but Bb3 had already been played
+        if (b5Idx >= 0 && c4Idx > b5Idx && bb3Idx >= 0 && bb3Idx < c4Idx) {
+            awardBadge('noahs_ark');
         }
     }
 
@@ -2000,14 +1999,19 @@ function hideHintMessage() {
 function endGame(checkmateMessage = null) {
     isGameActive = false;
 
-    // Check for perfect game badge
-    if (currentScore >= TARGET_SCORE) {
+    // Check for perfect game badge (90+ allows one near-miss move)
+    if (currentScore >= 90) {
         awardBadge('perfect_game');
     }
 
     // Check for 7 perfect moves badge
     if (perfectMoves >= 7) {
         awardBadge('seven_perfect');
+    }
+
+    // Check for 12 perfect moves badge
+    if (perfectMoves >= 12) {
+        awardBadge('twelve_perfect');
     }
 
     // Check for 16 perfect moves badge
