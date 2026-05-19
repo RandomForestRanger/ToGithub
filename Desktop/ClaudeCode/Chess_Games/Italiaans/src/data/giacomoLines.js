@@ -32,7 +32,7 @@ const LINES = {
     "Jou wilde ietermagog!",
     "Ai, jou rowwe ratel!",
     "Wat was dit?! Dink, lekker lank!",
-    "Santa Maria! (O gedorie!)",
+    "Mamma Mia! (O gedorie!)",
     "Giacomo hou nie van die plan nie.",
     "O ertappel... Te vinnig gespeel.",
     "Eina! Maar goed, volgende skuif.",

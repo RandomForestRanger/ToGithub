@@ -45,6 +45,7 @@ Node.js path workaround (Mac): `PATH="/usr/local/opt/node/bin:$PATH"` voor alle 
     GiacomoFace.jsx       — SVG pixel-art gesig, 9 uitdrukkings + 5 luie animasies
     GameTitle.jsx         — Bo-titel balk
     SuggestionBox.jsx     — Beste skuif aanbeveling (na swak skuif)
+    ApiStatus.jsx         — TYDELIK: API-status dots bo-links (verwyder voor finale ontplooiing)
     GameScreen.jsx        — Hoof speel skerm, koördineer alle komponente
   /engine
     lichessApi.js         — Lichess Explorer + Cloud Eval API oproepe
@@ -252,9 +253,9 @@ Gesuprimeer in fokus modus (skuif 30+) en wyk vir 'n laag-aankondiging as beide 
 | ID | Trigger | Tema |
 |----|---------|------|
 | `ng5_f7` | `Ng5` in geskiedenis | f7-aanval — Ng5 mik op f7 |
-| `rokeer_veilig` | `O-O` in geskiedenis | Rokade — koning veilig, toring aktief |
+| `rokeer_veilig` | `O-O` in geskiedenis **én skuif-telling ≥ 3** | Rokade — slegs as rokade 'n goeie skuif was |
 | `sentrum_breuk` | `c3` + `d4` in geskiedenis, ≥10 halfskuiwe | c3–d4 breuk uitgevoer |
-| `biskoppaar` | Wit het 2 biskope + ≥1 ruil al gemaak + ≥12 halfskuiwe | Biskoppaar voordeel |
+| `biskoppaar` | Wit het 2 biskope + Swart het ≤1 biskop + ≥14 halfskuiwe | Biskoppaar voordeel (net as Wit die voordeel bo Swart het) |
 | `toring_aktief` | `Re1` of `Rd1` in geskiedenis | Toring na oop lêer |
 
 `announcedPanelsRef` (Set) in `useGame.js` hou by watter panele al gewys is. Reset by elke `startGame()`.
@@ -494,17 +495,25 @@ Fokus modus: geen Giacomo gesig, geen teks, geen variasinaam, geen laag-aankondi
 
 ---
 
-## "Begin oor" Knoppie
+## "Begin oor" en "Drie Skuiwe Terug" Knoppies
 
-Sigbaar slegs tydens `PLAYER_TURN` fase (veilig — geen asinkrone operasies in vlug nie).
+Beide **sigbaar vanaf skuif 5** in alle fases, verdwyn slegs by `GAME_OVER`. (Vroeër was dit net sigbaar tydens `PLAYER_TURN` — verander omdat spelers dit ook tydens Swart se beurt nodig het.)
 
+### "Begin oor"
 **Gedrag:**
-1. Roep `onRemoveBadges(sessionBadges)` — verwyder alle badges verdien in hierdie sessie van `profileData` en `localStorage`
+1. Roep `onRemoveBadges(sessionBadges)` — verwyder alle badges verdien in hierdie sessie
 2. Roep `resetSession()` — maak `sessionBadges` leeg
 3. Roep `startGame()` — herstel alle spelstaat
 4. Kies nuwe motiverende skuifnommers
 
-**Waarskuwing:** Enige badges wat die speler in hierdie sessie verdien het, gaan verlore. Die telling, laag-status en spellog word nie gestoor nie. `removeBadges()` in `useProfile.js` doen die omgekeerde van `addBadges()`.
+**Waarskuwing:** Enige badges wat die speler in hierdie sessie verdien het, gaan verlore.
+
+### "Drie Skuiwe Terug" (eenmalig per spel)
+- Sigbaar wanneer `whiteMovesPlayed >= 4` en nog nie gebruik nie
+- Herstel presies 3 Wit-skuiwe terug (altyd Wit aan beurt na undo)
+- Vereis eenmalig gebruik (`undoUsed` ref) — grys daarna
+- Kanselleer in-vlug timers en async refs (`popupTimerRef`, `pendingRef`, `popupAfterRef`)
+- Herlai wenk-logika inlyn (want fase bly `PLAYER_TURN`, so die hint `useEffect` herlaai nie outomaties nie)
 
 ---
 

@@ -9,17 +9,19 @@ import BadgePanel   from './BadgePanel.jsx';
 import MovePopup        from './MovePopup.jsx';
 import ExplanationModal from './ExplanationModal.jsx';
 import SuggestionBox    from './SuggestionBox.jsx';
+import ApiStatus        from './ApiStatus.jsx';
 
 export default function GameScreen({ profileData, onGameEnd, onAddBadges, onRemoveBadges, onExplanationAnswered }) {
   const {
     position, phase, selectedSquare, legalSquares, lastMove,
     whiteMovesPlayed, totalScore, MAX_SCORE, moveLog,
-    layerStatus, variationName, consecutivePerfect,
+    layerStatus, variationName, variationsHit, consecutivePerfect,
     trapEscaped, trapKey, mateDelivered, gameOverReason,
     popupData, explanationData, lastBestMove,
     hintTreeMove, hintEngineMove, hintLoading, hintUsed, hintActive,
     game,
-    startGame, onSquareClick, dismissExplanation, dismissPopup, useHint,
+    undoUsed,
+    startGame, onSquareClick, dismissExplanation, dismissPopup, useHint, drieSkuiweTerug,
   } = useGame({ explanationsAnswered: profileData?.uitlegtellings ?? 0 });
 
   const { sessionBadges, resetSession, checkMoveBadges, checkGameEndBadges } = useBadges();
@@ -159,7 +161,7 @@ export default function GameScreen({ profileData, onGameEnd, onAddBadges, onRemo
       trapKey,
       layerStatus,
       consecutivePerfect,
-      variationsHit:      variationName ? new Set([variationName]) : new Set(),
+      variationsHit,
     };
   }
 
@@ -258,9 +260,19 @@ export default function GameScreen({ profileData, onGameEnd, onAddBadges, onRemo
         />
       </div>
 
-      {/* Restart button — only during player's turn, safe to restart with no async ops in flight */}
-      {phase === PHASES.PLAYER_TURN && (
+      {/* Action bar — visible after move 5, hidden only at game over */}
+      {whiteMovesPlayed >= 5 && phase !== PHASES.GAME_OVER && (
         <div className="game-screen__restart-bar">
+          {whiteMovesPlayed >= 4 && (
+            <button
+              className={`btn-undo${undoUsed ? ' btn-undo--used' : ''}`}
+              onClick={drieSkuiweTerug}
+              disabled={undoUsed}
+              title={undoUsed ? 'Reeds gebruik hierdie spel' : 'Gaan 3 skuiwe terug (eenmalig)'}
+            >
+              ↩ Drie Skuiwe Terug
+            </button>
+          )}
           <button className="btn-restart" onClick={handleRestart}>
             ↺ Begin oor
           </button>
@@ -286,6 +298,7 @@ export default function GameScreen({ profileData, onGameEnd, onAddBadges, onRemo
       )}
 
       <SuggestionBox bestMove={showSuggestion ? lastBestMove : null} />
+      <ApiStatus />
 
       {/* Option B — idle Italy fact overlay */}
       {idleItalyFact && (

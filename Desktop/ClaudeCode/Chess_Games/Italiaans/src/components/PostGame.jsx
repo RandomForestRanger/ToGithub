@@ -3,11 +3,12 @@ import GiacomoFace from './GiacomoFace.jsx';
 import { BADGES } from '../data/badges.js';
 
 const REASON_LABELS = {
-  checkmate:   'Mat toegedien! 🏆',
-  mated:       'Jy is gemateer',
-  stalemate:   'Patstelling — remise',
-  draw:        'Gelykspel',
-  moves_complete: '50 skuiwe voltooi',
+  checkmate_white:  'Mat toegedien! 🏆',
+  checkmate_black:  'Jy is gemat',
+  stalemate:        'Patstelling — remise',
+  draw:             'Gelykspel',
+  moves_complete:   '50 skuiwe voltooi',
+  no_legal_moves:   'Geen wettige skuiwe',
 };
 
 export default function PostGame({ result, profile, onPlayAgain, onTrophy }) {

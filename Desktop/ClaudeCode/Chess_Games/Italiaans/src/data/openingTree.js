@@ -489,26 +489,29 @@ export function getTreeHintMove(history) {
 // announcedPanels: Set<string> of panel IDs already shown this game.
 // game: chess.js instance (used for bishop-pair count).
 
-export function detectNewMidgamePanel(history, game, announcedPanels) {
+export function detectNewMidgamePanel(history, game, announcedPanels, score = 4) {
   const sans = new Set(history);
 
   // f7 attack — Ng5 aimed at f7 with Bc4 support
   if (!announcedPanels.has('ng5_f7') && sans.has('Ng5'))
     return 'ng5_f7';
 
-  // Castling — king safe, rook activated
-  if (!announcedPanels.has('rokeer_veilig') && sans.has('O-O'))
+  // Castling educational panel — only when castling was a good move (score >= 3).
+  // A bad castling (score 1-2) castles into danger and shouldn't get the praise panel.
+  if (!announcedPanels.has('rokeer_veilig') && sans.has('O-O') && score >= 3)
     return 'rokeer_veilig';
 
   // c3-d4 pawn break executed (d4 played after c3, at least 10 half-moves in)
   if (!announcedPanels.has('sentrum_breuk') && sans.has('c3') && sans.has('d4') && history.length >= 10)
     return 'sentrum_breuk';
 
-  // Bishop pair — White retains both bishops while at least one exchange has occurred
-  if (!announcedPanels.has('biskoppaar') && history.length >= 12) {
-    const whiteBishops = game.board().flat().filter(sq => sq?.type === 'b' && sq?.color === 'w').length;
-    const hasCaptures  = history.some(m => m.includes('x'));
-    if (whiteBishops === 2 && hasCaptures)
+  // Bishop pair — White has both bishops while Black has lost at least one of theirs.
+  // The advantage only exists when the opponent no longer has the bishop pair.
+  if (!announcedPanels.has('biskoppaar') && history.length >= 14) {
+    const board = game.board().flat();
+    const whiteBishops = board.filter(sq => sq?.type === 'b' && sq?.color === 'w').length;
+    const blackBishops = board.filter(sq => sq?.type === 'b' && sq?.color === 'b').length;
+    if (whiteBishops === 2 && blackBishops <= 1)
       return 'biskoppaar';
   }
 

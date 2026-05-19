@@ -1,19 +1,8 @@
-import React, { useEffect, useRef } from 'react';
+import React from 'react';
 import GiacomoFace from './GiacomoFace.jsx';
 import { scoreToExpression } from '../data/giacomoLines.js';
 
 export default function MovePopup({ data, onDismiss }) {
-  const timerRef = useRef(null);
-
-  useEffect(() => {
-    if (!data) return;
-    // Use the duration set by useGame (longer when a layer is announced)
-    timerRef.current = setTimeout(() => {
-      onDismiss?.();
-    }, data.duration ?? 7500);
-    return () => clearTimeout(timerRef.current);
-  }, [data]); // eslint-disable-line react-hooks/exhaustive-deps
-
   if (!data) return null;
 
   const { score, commentaar, variationName, expression, layerAnnouncement, midgamePanel, italyFact, focusMode } = data;
@@ -30,7 +19,7 @@ export default function MovePopup({ data, onDismiss }) {
     return (
       <div
         className="move-popup move-popup--focus glass"
-        onClick={() => { clearTimeout(timerRef.current); onDismiss?.(); }}
+        onClick={onDismiss}
       >
         <span className="move-popup__pts" style={{ color: scoreColour }}>{safeScore}</span>
         <span className="move-popup__pts-max">/ 4</span>
@@ -40,7 +29,7 @@ export default function MovePopup({ data, onDismiss }) {
   }
 
   return (
-    <div className="move-popup glass" onClick={() => { clearTimeout(timerRef.current); onDismiss?.(); }}>
+    <div className="move-popup glass" onClick={onDismiss}>
       {variationName && (
         <div className="move-popup__variation">{variationName}</div>
       )}
