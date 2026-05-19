@@ -25,7 +25,7 @@ const WIN_MESSAGES = [
   'Raakvatter!', 'Agtermekaar!', 'Wel gedaan!', 'Mooi!'
 ]
 
-const STALEMATE_EMOJIS = ['🍮', '🫏', '🍕', '🤪', '🙈', '🎪', '🦄', '🐸']
+const STALEMATE_EMOJIS = ['🍮', '🫏', '🍕', '🤪', '🙈', '🎪', '🦄', '🐸', '🐧', '🥴', '🫠', '🦆', '🎠', '🍌', '🤡', '🐝', '🧸']
 
 const STALEMATE_MSGS = [
   "Die donkie sit vas en kan nie meer beweeg nie — maar dit is nie mat nie!",
@@ -33,6 +33,16 @@ const STALEMATE_MSGS = [
   "Jelly-sonder-vorm! Swart vasgevang maar nie in skaak nie. Pasop vir pat!",
   "Aag nee! Bietjie te ver gegaan. Onthou: pat is nie mat nie!",
   "Swart is lam! Maar dit tel nie as mat nie — probeer nog 'n keer!",
+  "🐧 Die pikkewyn het ingeval! Swart staan soos 'n standbeeld — maar geen skaak nie. Dit is pat!",
+  "🫠 Oeps... Swart smelt van skrik maar kan steeds nie beweeg nie. Skaakmat was nodig!",
+  "🍌 Bananaskil! Jy het uitgegly op die laaste tree. Swart vasgevang maar nie in skaak nie!",
+  "🤡 Die sirkus is in die dorp! Almal lag, maar die punt gaan nie na jou nie. Pat!",
+  "🦆 Kwak kwak! Swart sit vas soos 'n eend op droë land. Probeer dit met skaakmat!",
+  "🧸 So naby en tog so ver... Swart het geen skuiwe nie, maar die beer is nie in skaak nie!",
+  "🎠 Die mallemolen stop, maar niemand wen nie. Swart vasgevang sonder skaak — dit is pat!",
+  "🐝 Bzzzt! Jy het die koningin omsingel maar vergeet om te steek. Probeer 'n ander pad!",
+  "🥴 Swart kyk duiselig rond... geen skuiwe nie, geen skaak nie. Net 'n groot pat-ramp!",
+  "🦄 Die towerperd het jou bewering geblokkeer! Swart sit vas — maar dis nie genoeg nie!",
 ]
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -285,7 +295,7 @@ function renderBadgeMap() {
   document.getElementById('stat-bronze').textContent = s.bronze
   document.getElementById('stat-silver').textContent = s.silver
   document.getElementById('stat-gold').textContent   = s.gold
-  document.getElementById('stat-total').textContent  = s.total + '/60'
+  document.getElementById('stat-total').textContent  = s.total + '/63'
 
   // Play button state
   const pool = buildPool()
@@ -446,9 +456,36 @@ function startGame(puzzle) {
 // SPEL — NASKUIF-LOGIKA
 // ═══════════════════════════════════════════════════════════════════════════════
 
+function getBlackKingSquare() {
+  const board = chessGame.board()
+  const files = ['a','b','c','d','e','f','g','h']
+  for (let r = 0; r < 8; r++) {
+    for (let f = 0; f < 8; f++) {
+      const p = board[r][f]
+      if (p && p.type === 'k' && p.color === 'b') return files[f] + (8 - r)
+    }
+  }
+  return null
+}
+
+function isEdgeSquare(sq) {
+  if (!sq) return true
+  return sq[0] === 'a' || sq[0] === 'h' || sq[1] === '1' || sq[1] === '8'
+}
+
 async function handleAfterWhiteMove() {
   // ── Wit het Swart geskaakmat? ─────────────────────────────────────────────
   if (chessGame.in_checkmate()) {
+    // Type 21: skaakmat moet op 'n sentrale veld wees (nie op die rand nie)
+    if (state.currentPuzzle && state.currentPuzzle.typeId === 21) {
+      const sq = getBlackKingSquare()
+      if (isEdgeSquare(sq)) {
+        setGameMessage('Skaakmat op die rand — maar die doel is om in die MIDDEL mat te gee! 🔲 Probeer weer.')
+        await sleep(2000)
+        handleGameEnd('edge_checkmate')
+        return
+      }
+    }
     setGameMessage('Skaakmat! Baie goed! 🎉')
     await sleep(800)
     handleCheckmate()
@@ -478,14 +515,19 @@ async function handleAfterWhiteMove() {
   setGameMessage('Swart dink...')
 
   try {
-    // Onakkuraatheidsreël: elke 5de skuif speel tweede-beste
-    // Tipe 5 (KNN vs K): noodsaaklik — swart KAN nie geforseer word nie
-    // Tipe 6 goud (KP vs K): voorkom eindelose herhalings teen perfekte spel
+    // Onakkuraatheidsreël: speel tweede-beste op spesifieke skuiwe
+    // Tipe 5 (KNN vs K): elke 5de skuif — swart KAN nie geforseer word nie
+    // Tipe 6 goud (KP vs K): elke 5de skuif — voorkom eindelose herhalings
+    // Tipe 17 brons (Goeie vs Slegte Loper): skuiwe 5 en 8 — voorkom 3-skuif-herhaling
     state.blackMoveCount++
-    const useInaccuracy = (state.currentPuzzle.typeId === 5 ||
-                          (state.currentPuzzle.typeId === 6 &&
-                           state.currentPuzzle.tier === 'gold')) &&
-                          state.blackMoveCount % 5 === 0
+    const useInaccuracy = (
+      (state.currentPuzzle.typeId === 5 ||
+       (state.currentPuzzle.typeId === 6 && state.currentPuzzle.tier === 'gold')) &&
+      state.blackMoveCount % 5 === 0
+    ) || (
+      state.currentPuzzle.typeId === 17 && state.currentPuzzle.tier === 'bronze' &&
+      (state.blackMoveCount === 5 || state.blackMoveCount === 8)
+    )
 
     const uciMove = useInaccuracy
       ? await getSecondBestMove(chessGame.fen())
@@ -597,6 +639,19 @@ function handleCheckmate() {
 function handleGameEnd(resultType) {
   state.gameResult = resultType
   stopStockfish()
+
+  if (resultType === 'checkmate') {
+    // Win: skip result screen and replay — go straight to badge unlock or badge map
+    if (state.newlyEarnedBadge) {
+      showBadgeUnlock(state.newlyEarnedBadge)
+    } else {
+      renderBadgeMap()
+      showScreen('badges')
+    }
+    return
+  }
+
+  // Failures (stalemate, limit, draw, black checkmate): show result then replay for learning
   showResult(resultType)
   setTimeout(function () {
     startReplay(state.startFen)
@@ -625,6 +680,11 @@ function showResult(resultType) {
     heading = 'Oeps!'
     cls     = 'limit'
     message = 'Swart het jou geskaakmat! Dit gebeur — probeer om jou koning te beskerm.'
+  } else if (resultType === 'edge_checkmate') {
+    icon    = '🔲'
+    heading = 'Rand-skaakmat!'
+    cls     = 'stalemate'
+    message = "Skaakmat, maar op die rand van die bord. Vir die ⭐ Hartjie van die Bord moet die skaakmat op 'n sentrale veld wees. Kyk hoe die perfekte spel lyk!"
   } else if (resultType === 'draw_repetition') {
     icon    = '🔄'
     heading = 'Gelykspel!'
