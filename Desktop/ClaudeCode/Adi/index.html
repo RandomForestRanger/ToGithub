@@ -19,9 +19,26 @@ body {
 
 /* ── Header ────────────────────────────────────────────────────────────────── */
 header {
+  position: relative;
   text-align: center;
   padding: 18px 20px 10px;
 }
+.lang-toggle {
+  position: absolute;
+  top: 18px;
+  right: 20px;
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.2);
+  color: #e8e8e8;
+  padding: 4px 14px;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  letter-spacing: 0.06em;
+  transition: background 0.15s;
+}
+.lang-toggle:hover { background: rgba(255,255,255,0.16); }
 header h1 {
   font-size: 2rem;
   font-weight: 700;
@@ -617,7 +634,8 @@ header p {
 
 <header>
   <h1>🪵 Adi</h1>
-  <p>A two-row mancala game of the Ewe people of Togo &amp; Ghana</p>
+  <p id="header-subtitle">A two-row mancala game of the Ewe people of Togo &amp; Ghana</p>
+  <button class="lang-toggle" id="lang-toggle" onclick="toggleLanguage()">AF</button>
 </header>
 
 <div class="layout">
@@ -625,12 +643,12 @@ header p {
   <!-- ── Left sidebar ──────────────────────────────────────────────────── -->
   <aside class="guide">
 
-    <div class="glass guide-section">
+    <div class="glass guide-section" id="guide-about">
       <h3>About Adi</h3>
       <p>Adi is played on an elaborately carved wooden board. Capture seeds from your opponent to grow your store across multiple rounds — until one player can no longer fill a row.</p>
     </div>
 
-    <div class="glass guide-section">
+    <div class="glass guide-section" id="guide-howtoplay">
       <h3>How to Play</h3>
       <ul>
         <li>You are <span class="highlight">Player 1 (bottom)</span>. The computer plays the top row.</li>
@@ -640,7 +658,7 @@ header p {
       </ul>
     </div>
 
-    <div class="glass guide-section">
+    <div class="glass guide-section" id="guide-captures">
       <h3>Captures</h3>
       <div class="rule-block">
         If your last seed lands in an <strong>opponent's hole</strong> and makes the count exactly <span class="highlight">3</span> → capture all 3!
@@ -650,7 +668,7 @@ header p {
       </div>
     </div>
 
-    <div class="glass guide-section">
+    <div class="glass guide-section" id="guide-endofround">
       <h3>End of Round</h3>
       <p>When <strong>no more captures are possible</strong> by either player, the round ends:</p>
       <ul style="margin-top:6px">
@@ -660,13 +678,13 @@ header p {
       </ul>
     </div>
 
-    <div class="glass guide-section">
+    <div class="glass guide-section" id="guide-winning">
       <h3>Winning</h3>
       <p>The game ends when a player <strong>cannot fill even one hole</strong> (fewer than 4 seeds left). Their opponent wins!</p>
     </div>
 
     <div class="glass guide-section">
-      <h3>Choose Opponent</h3>
+      <h3 id="guide-choose-h3">Choose Opponent</h3>
       <div class="char-cards">
         <div class="char-card selected" data-char="kofi" onclick="selectCharacter('kofi')">
           <div class="char-thumb" id="thumb-kofi"></div>
@@ -684,6 +702,14 @@ header p {
             <div class="char-card-diff medium">Medium</div>
           </div>
         </div>
+        <div class="char-card" data-char="melissa" onclick="selectCharacter('melissa')">
+          <div class="char-thumb" id="thumb-melissa"></div>
+          <div class="char-card-info">
+            <div class="char-card-name">Melissa</div>
+            <div class="char-card-title-sm">Star Player</div>
+            <div class="char-card-diff medium">Medium</div>
+          </div>
+        </div>
         <div class="char-card" data-char="professor" onclick="selectCharacter('professor')">
           <div class="char-thumb" id="thumb-professor"></div>
           <div class="char-card-info">
@@ -695,7 +721,7 @@ header p {
       </div>
     </div>
 
-    <button class="btn-new" onclick="startNewGame()">▶ New Game</button>
+    <button class="btn-new" id="btn-new-game" onclick="startNewGame()">▶ New Game</button>
 
   </aside>
 
@@ -705,15 +731,15 @@ header p {
     <!-- Score strip -->
     <div class="score-strip">
       <div class="score-card p1">
-        <div class="label">Your Store</div>
+        <div class="label" id="label-p1-store">Your Store</div>
         <div class="value" id="p1-store-display">0</div>
       </div>
       <div class="score-card round-card">
-        <div class="label">Round</div>
+        <div class="label" id="label-round">Round</div>
         <div class="value" id="round-display">1</div>
       </div>
       <div class="score-card p2">
-        <div class="label">Computer Store</div>
+        <div class="label" id="label-p2-store">Computer Store</div>
         <div class="value" id="p2-store-display">0</div>
       </div>
     </div>
@@ -723,7 +749,7 @@ header p {
       <!-- P2 store (left) -->
       <div class="store p2-store" id="store-p2">
         <div class="store-count" id="p2-store-count">0</div>
-        <div class="store-label">Computer</div>
+        <div class="store-label" id="label-computer-store">Computer</div>
       </div>
 
       <!-- Holes -->
@@ -741,7 +767,7 @@ header p {
       <!-- P1 store (right) -->
       <div class="store p1-store" id="store-p1">
         <div class="store-count" id="p1-store-count">0</div>
-        <div class="store-label">You</div>
+        <div class="store-label" id="label-you-store">You</div>
       </div>
     </div>
 
@@ -752,7 +778,7 @@ header p {
 
     <!-- Move history -->
     <div class="history-wrap glass">
-      <h3>Move History</h3>
+      <h3 id="move-history-heading">Move History</h3>
       <div class="history-list" id="history-list"></div>
     </div>
 
@@ -769,9 +795,9 @@ header p {
     </div>
     <!-- Reasoning -->
     <div class="glass guide-section">
-      <h3>Computer's Reasoning</h3>
+      <h3 id="reasoning-heading">Computer's Reasoning</h3>
       <div id="explain-content">
-        <p class="explain-idle">The computer's explanation will appear here after it chooses a move.</p>
+        <p class="explain-idle" id="explain-idle-text">The computer's explanation will appear here after it chooses a move.</p>
       </div>
     </div>
   </aside>
@@ -787,7 +813,7 @@ header p {
     <div class="winner-icon" id="winner-icon">🏆</div>
     <h2 id="winner-title">You Win!</h2>
     <p class="final-score" id="final-score"></p>
-    <button class="btn-new" onclick="startNewGame(); document.getElementById('overlay').classList.remove('show')">Play Again</button>
+    <button class="btn-new" id="btn-play-again" onclick="startNewGame(); document.getElementById('overlay').classList.remove('show')">Play Again</button>
   </div>
 </div>
 
@@ -1053,9 +1079,8 @@ function hardMove(state) {
 /* Build the computer-reasoning explanation HTML */
 function explainAIMove(stateBefore, chosenMove, difficulty, wasSlip, minimaxScores) {
   const moves = stateBefore.validMoves(2);
-  if (!moves.length) return '<p class="explain-idle">No moves available — the computer passes.</p>';
+  if (!moves.length) return t('noMovesAI');
 
-  /* Shallow simulation of every possible move */
   const sims = moves.map(h => {
     const c = stateBefore.clone();
     const res = c.makeMove(h);
@@ -1065,7 +1090,7 @@ function explainAIMove(stateBefore, chosenMove, difficulty, wasSlip, minimaxScor
   });
 
   const chosen   = sims.find(s => s.h === chosenMove);
-  if (!chosen) return '<p class="explain-idle">Move data unavailable.</p>';
+  if (!chosen) return t('moveDataUnavail');
 
   const capturers  = sims.filter(s => s.captured > 0);
   const dangerous  = sims.filter(s => s.p1Threat);
@@ -1078,80 +1103,75 @@ function explainAIMove(stateBefore, chosenMove, difficulty, wasSlip, minimaxScor
   const chosenMM   = minimaxScores ? (minimaxScores[chosenMove] ?? chosen.score) : chosen.score;
   const secondMM   = sorted[1] ? (minimaxScores ? (minimaxScores[sorted[1].h] ?? sorted[1].score) : sorted[1].score) : chosenMM;
   const margin     = chosenMM - secondMM;
-  const hn         = `hole ${chosenMove + 1}`;
+  const hn         = t('holeLabel', chosenMove + 1);
 
   const factors = [];
-  let modeLabel  = difficulty === 'easy' ? 'Easy Mode' : difficulty === 'medium' ? 'Medium Mode' : 'Hard Mode — Minimax';
+  let modeLabel = difficulty === 'easy' ? t('modeEasy') : difficulty === 'medium' ? t('modeMedium') : t('modeHard');
 
   /* ── Easy mode ── */
   if (difficulty === 'easy' || (difficulty === 'medium' && wasSlip)) {
     if (chosen.captured > 0) {
-      factors.push({ icon: '⚔️', text: `${cap(hn)} sows the last seed onto your side, hitting exactly 3 — a capture of ${chosen.captured} seeds. Easy mode grabs captures when it sees them.` });
-      if (capturers.length > 1) factors.push({ icon: '📋', text: `${capturers.length} captures were available; one was picked at random.` });
+      factors.push({ icon: '⚔️', text: t('factCaptureEasy', cap(hn), chosen.captured) });
+      if (capturers.length > 1) factors.push({ icon: '📋', text: t('factMultiCap', capturers.length) });
     } else if (capturers.length > 0) {
-      factors.push({ icon: '🎲', text: `A capture was within reach, but easy mode ignores it 40% of the time — ${hn} was chosen randomly instead.` });
+      factors.push({ icon: '🎲', text: t('factIgnoredCap', hn) });
     } else {
-      factors.push({ icon: '🎲', text: `No capture was available, so easy mode picked ${hn} at random from ${moves.length} option${moves.length > 1 ? 's' : ''}.` });
+      factors.push({ icon: '🎲', text: t('factRandom', hn, moves.length) });
     }
     return buildExplainHTML(modeLabel, factors);
   }
 
   /* ── Hard mode: slip ── */
   if (wasSlip) {
-    modeLabel = 'Hard Mode — Random Slip';
-    factors.push({ icon: '🎲', text: `Hard mode has a 10% chance of playing randomly to keep the game fair. This was one of those turns — ${hn} was chosen by chance, not by minimax.` });
+    modeLabel = t('modeSlip');
+    factors.push({ icon: '🎲', text: t('factSlip', hn) });
     return buildExplainHTML(modeLabel, factors);
   }
 
-  /* ── Hard mode: minimax ── */
+  /* ── Hard / medium minimax ── */
 
-  // Capture
   if (chosen.captured > 0) {
     if (chosen.capturedHoles.length > 1)
-      factors.push({ icon: '⚔️', text: `Chain capture! ${cap(hn)} triggers a cascade across ${chosen.capturedHoles.length} holes — netting ${chosen.captured} seeds in one move.` });
+      factors.push({ icon: '⚔️', text: t('factChainCapture', cap(hn), chosen.capturedHoles.length, chosen.captured) });
     else
-      factors.push({ icon: '⚔️', text: `${cap(hn)} drops its last seed onto a hole with 2 on your side — 2 + 1 = 3, capturing ${chosen.captured} seeds.` });
+      factors.push({ icon: '⚔️', text: t('factCapture', cap(hn), chosen.captured) });
   }
 
-  // Counter-capture avoidance
   if (!chosen.p1Threat && dangerous.length > 0) {
-    const names = dangerous.map(d => `hole ${d.h + 1}`).join(', ');
+    const names = dangerous.map(d => t('holeLabel', d.h + 1)).join(', ');
     if (dangerous.length >= moves.length - 1)
-      factors.push({ icon: '🛡️', text: `Almost every other option (${names}) hands you a counter-capture. ${cap(hn)} was the key safe play.` });
+      factors.push({ icon: '🛡️', text: t('factSafePlay', names, cap(hn)) });
     else
-      factors.push({ icon: '🛡️', text: `Moves like ${names} would let you counter-capture next turn. ${cap(hn)} keeps your holes out of range.` });
+      factors.push({ icon: '🛡️', text: t('factAvoidCap', names, cap(hn)) });
   } else if (chosen.p1Threat && dangerous.length === moves.length) {
-    factors.push({ icon: '⚠️', text: `Every available move leaves you with a capture threat — no safe option exists. ${cap(hn)} scores best despite the risk.` });
+    factors.push({ icon: '⚠️', text: t('factNoSafe', cap(hn)) });
   }
 
-  // Minimax score
   if (moves.length > 1) {
     if (Math.abs(margin) < 0.6)
-      factors.push({ icon: '🔢', text: `Very tight decision — all ${moves.length} moves scored within 0.6 pts at 4-move depth. ${cap(hn)} edged ahead by the narrowest margin.` });
+      factors.push({ icon: '🔢', text: t('factTight', moves.length, cap(hn)) });
     else if (rank === 1)
-      factors.push({ icon: '🔢', text: `Minimax searched 4 moves deep across ${moves.length} options and ranked ${hn} first — scoring ${margin.toFixed(1)} pts ahead of the next best move.` });
+      factors.push({ icon: '🔢', text: t('factMinimax', moves.length, hn, margin.toFixed(1)) });
     else
-      factors.push({ icon: '🔢', text: `${cap(hn)} ranked #${rank} of ${moves.length} by raw score, but combined with other factors it was the top choice at depth 4.` });
+      factors.push({ icon: '🔢', text: t('factRank', cap(hn), rank, moves.length) });
   }
 
-  // Store context
   const adv = stateBefore.p2Store - stateBefore.p1Store;
   if (adv >= 8)
-    factors.push({ icon: '📦', text: `Leading by ${adv} seeds in store — playing to hold that advantage rather than take unnecessary risks.` });
+    factors.push({ icon: '📦', text: t('factLeading', adv) });
   else if (adv <= -8)
-    factors.push({ icon: '📦', text: `Trailing by ${-adv} seeds in store — this was the most aggressive move available to close the gap.` });
+    factors.push({ icon: '📦', text: t('factTrailing', -adv) });
 
-  // Seed density note
   if (!chosen.captured && capturers.length === 0) {
     const c2 = stateBefore.clone(); c2.makeMove(chosenMove);
     const mySd = [6,7,8,9,10,11].reduce((s,h) => s + c2.holes[h], 0);
     const yrSd = [0,1,2,3,4,5].reduce((s,h) => s + c2.holes[h], 0);
     if (mySd > yrSd + 3)
-      factors.push({ icon: '🌱', text: `No captures possible — this leaves the computer with ${mySd} seeds in its row (you: ${yrSd}), building up for future captures.` });
+      factors.push({ icon: '🌱', text: t('factDensity', mySd, yrSd) });
   }
 
   if (factors.length === 0)
-    factors.push({ icon: '🔢', text: `Minimax evaluated all ${moves.length} moves 4 levels deep and found ${hn} gives the best long-term position.` });
+    factors.push({ icon: '🔢', text: t('factBestPos', moves.length, hn) });
 
   return buildExplainHTML(modeLabel, factors);
 }
@@ -1190,9 +1210,22 @@ function mediumMove(state) {
 let currentCharId = 'kofi';
 
 const QUOTES = {
-  kofi:      { idle:"Let's play! 🎮", thinking:"Hmm… let me think…", happy:"Got you! 😄", excited:"CHAIN CAPTURE! 🎉", sad:"Nice move! 😅", taunting:"You can't stop me! 😏" },
-  nefertari: { idle:"Your move, mortal.", thinking:"Calculating…", happy:"As predicted. ✨", excited:"Magnificent! 🌟", sad:"Cleverly done.", taunting:"Bow before my wisdom." },
-  professor: { idle:"Observe carefully.", thinking:"Fascinating…", happy:"Textbook play. ✓", excited:"Exceptional! 📚", sad:"Well played, student.", taunting:"I've seen better from my students." }
+  kofi: {
+    en: { idle:"Let's play! 🎮", thinking:"Hmm… let me think…", happy:"Got you! 😄", excited:"CHAIN CAPTURE! 🎉", sad:"Nice move! 😅", taunting:"You can't stop me! 😏" },
+    af: { idle:"Kom ons speel! 🎮", thinking:"Hmm… laat my dink…", happy:"Het jou! 😄", excited:"KETTINGVANGS! 🎉", sad:"Goeie beweeg! 😅", taunting:"Jy kan my nie stop nie! 😏" }
+  },
+  nefertari: {
+    en: { idle:"Your move, mortal.", thinking:"Calculating…", happy:"As predicted. ✨", excited:"Magnificent! 🌟", sad:"Cleverly done.", taunting:"Bow before my wisdom." },
+    af: { idle:"Jou beweeg, sterfling.", thinking:"Bereken…", happy:"Soos voorspel. ✨", excited:"Pragtig! 🌟", sad:"Knap gedoen.", taunting:"Buig voor my wysheid." }
+  },
+  melissa: {
+    en: { idle:"Your move! 😊", thinking:"Let me see…", happy:"Yes! Got you! 😄", excited:"DOUBLE CAPTURE! ✨", sad:"Oh, well played! 🙂", taunting:"Too easy! 😏" },
+    af: { idle:"Jou beurt! 😊", thinking:"Kom ons kyk…", happy:"Ja! Gekry! 😄", excited:"DUBBELE VANGS! ✨", sad:"Ag, goed gespeel! 🙂", taunting:"Te maklik! 😏" }
+  },
+  professor: {
+    en: { idle:"Observe carefully.", thinking:"Fascinating…", happy:"Textbook play. ✓", excited:"Exceptional! 📚", sad:"Well played, student.", taunting:"I've seen better from my students." },
+    af: { idle:"Kyk mooi.", thinking:"Fassineerend…", happy:"Handboekspel. ✓", excited:"Uitstekend! 📚", sad:"Goed gespeel, student.", taunting:"Ek het al beter van my studente gesien." }
+  }
 };
 
 /* ── Kofi: African boy, easy ── */
@@ -1408,10 +1441,79 @@ function professorSVG(e) {
   </svg>`;
 }
 
+/* ── Melissa: blonde Caucasian woman, medium ── */
+function melissaSVG(e) {
+  const sk='#F5C5A0', hc='#DEB030', hs='#C09820', ec='#4A90D9', lip='#D08080', body='#3BACC8';
+  const EYES={
+    idle:`<circle cx="46" cy="71" r="5.5" fill="white"/><circle cx="46" cy="71" r="3.5" fill="${ec}"/><circle cx="47.5" cy="69.8" r="1.3" fill="white"/>
+          <circle cx="74" cy="71" r="5.5" fill="white"/><circle cx="74" cy="71" r="3.5" fill="${ec}"/><circle cx="75.5" cy="69.8" r="1.3" fill="white"/>`,
+    thinking:`<circle cx="46" cy="71" r="5.5" fill="white"/><circle cx="45" cy="68.5" r="3.5" fill="${ec}"/><circle cx="46" cy="67.8" r="1.3" fill="white"/>
+              <circle cx="74" cy="71" r="5.5" fill="white"/><circle cx="73" cy="68.5" r="3.5" fill="${ec}"/><circle cx="74" cy="67.8" r="1.3" fill="white"/>`,
+    happy:`<path d="M40 69 Q46 76 52 69" stroke="${ec}" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+           <path d="M68 69 Q74 76 80 69" stroke="${ec}" stroke-width="2.5" fill="none" stroke-linecap="round"/>`,
+    excited:`<circle cx="46" cy="71" r="7" fill="white"/><circle cx="46" cy="71" r="5" fill="${ec}"/><circle cx="48" cy="69" r="1.8" fill="white"/>
+             <circle cx="74" cy="71" r="7" fill="white"/><circle cx="74" cy="71" r="5" fill="${ec}"/><circle cx="76" cy="69" r="1.8" fill="white"/>
+             <text x="28" y="62" font-size="11" fill="#FF80A0">★</text><text x="81" y="62" font-size="11" fill="#FF80A0">★</text>`,
+    sad:`<ellipse cx="46" cy="72" rx="5.5" ry="4" fill="white"/><circle cx="46" cy="73.5" r="3" fill="${ec}"/>
+         <ellipse cx="74" cy="72" rx="5.5" ry="4" fill="white"/><circle cx="74" cy="73.5" r="3" fill="${ec}"/>`,
+    taunting:`<circle cx="46" cy="71" r="5.5" fill="white"/><circle cx="47.5" cy="71" r="3.5" fill="${ec}"/><circle cx="48.8" cy="69.8" r="1.3" fill="white"/>
+              <ellipse cx="74" cy="71" rx="5.5" ry="3.5" fill="white"/><circle cx="75" cy="71" r="2.5" fill="${ec}"/>
+              <line x1="68" y1="68.5" x2="80" y2="68.5" stroke="${hs}" stroke-width="2"/>`
+  };
+  const BROWS={
+    idle:`<path d="M39 62 Q46 59 52 61" stroke="${hs}" stroke-width="2" fill="none" stroke-linecap="round"/>
+          <path d="M68 61 Q74 59 81 62" stroke="${hs}" stroke-width="2" fill="none" stroke-linecap="round"/>`,
+    thinking:`<path d="M39 61 Q46 56 52 59" stroke="${hs}" stroke-width="2" fill="none" stroke-linecap="round"/>
+              <path d="M68 57 Q74 55 81 60" stroke="${hs}" stroke-width="2.2" fill="none" stroke-linecap="round"/>`,
+    happy:`<path d="M39 60 Q46 57 52 59" stroke="${hs}" stroke-width="2" fill="none" stroke-linecap="round"/>
+           <path d="M68 59 Q74 57 81 60" stroke="${hs}" stroke-width="2" fill="none" stroke-linecap="round"/>`,
+    excited:`<path d="M38 57 Q46 53 53 56" stroke="${hs}" stroke-width="2.2" fill="none" stroke-linecap="round"/>
+             <path d="M67 56 Q74 53 82 57" stroke="${hs}" stroke-width="2.2" fill="none" stroke-linecap="round"/>`,
+    sad:`<path d="M39 64 Q46 62 52 65" stroke="${hs}" stroke-width="2" fill="none" stroke-linecap="round"/>
+         <path d="M68 65 Q74 62 81 64" stroke="${hs}" stroke-width="2" fill="none" stroke-linecap="round"/>`,
+    taunting:`<path d="M39 62 Q46 60 52 62" stroke="${hs}" stroke-width="2" fill="none" stroke-linecap="round"/>
+              <path d="M68 58 Q74 56 81 61" stroke="${hs}" stroke-width="2.2" fill="none" stroke-linecap="round"/>`
+  };
+  const MOUTHS={
+    idle:`<path d="M50 87 Q60 92 70 87" stroke="${lip}" stroke-width="2" fill="none" stroke-linecap="round"/>`,
+    thinking:`<path d="M52 87 Q60 85 68 87" stroke="${lip}" stroke-width="2.5" fill="none" stroke-linecap="round"/>`,
+    happy:`<path d="M45 84 Q60 97 75 84" stroke="${lip}" stroke-width="2" fill="none"/>
+           <path d="M45 84 Q60 98 75 84 Q60 88 45 84" fill="#E09090" stroke="none"/>
+           <path d="M47 84 Q60 88 73 84 Q60 86 47 84" fill="white" stroke="none"/>`,
+    excited:`<ellipse cx="60" cy="91" rx="13" ry="9" fill="#E09090"/>
+             <ellipse cx="60" cy="88" rx="11" ry="5" fill="white"/>
+             <path d="M53 83 Q60 81 67 83" stroke="${lip}" stroke-width="2" fill="none"/>`,
+    sad:`<path d="M50 92 Q60 85 70 92" stroke="${lip}" stroke-width="2" fill="none" stroke-linecap="round"/>`,
+    taunting:`<path d="M51 87 Q59 93 71 85" stroke="${lip}" stroke-width="2" fill="none" stroke-linecap="round"/>`
+  };
+  return `<svg viewBox="0 0 120 150" xmlns="http://www.w3.org/2000/svg">
+    <rect x="18" y="118" width="84" height="32" fill="${body}"/>
+    <ellipse cx="60" cy="148" rx="42" ry="20" fill="${body}"/>
+    <path d="M48 118 Q60 110 72 118" fill="#2E99B5"/>
+    <rect x="53" y="105" width="14" height="16" rx="4" fill="${sk}"/>
+    <ellipse cx="28" cy="79" rx="5.5" ry="7" fill="${sk}"/>
+    <ellipse cx="92" cy="79" rx="5.5" ry="7" fill="${sk}"/>
+    <path d="M30 64 Q14 96 18 132 Q29 105 31 82" fill="${hc}"/>
+    <path d="M90 64 Q106 96 102 132 Q91 105 89 82" fill="${hc}"/>
+    <ellipse cx="60" cy="77" rx="30" ry="35" fill="${sk}"/>
+    <path d="M30 64 Q33 28 60 24 Q87 28 90 64 Q82 38 60 35 Q38 38 30 64" fill="${hc}"/>
+    <path d="M52 26 Q55 40 53 56" stroke="#F0E080" stroke-width="2" fill="none" opacity="0.7"/>
+    <path d="M62 24 Q64 38 62 54" stroke="#F0E080" stroke-width="2" fill="none" opacity="0.7"/>
+    <circle cx="28" cy="85" r="2" fill="#FFD700"/>
+    <circle cx="92" cy="85" r="2" fill="#FFD700"/>
+    <ellipse cx="41" cy="84" rx="7" ry="4" fill="#E8A0A0" opacity="0.35"/>
+    <ellipse cx="79" cy="84" rx="7" ry="4" fill="#E8A0A0" opacity="0.35"/>
+    ${BROWS[e]||BROWS.idle}${EYES[e]||EYES.idle}
+    <path d="M57 81 Q60 85 63 81" stroke="${hs}" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+    ${MOUTHS[e]||MOUTHS.idle}
+  </svg>`;
+}
+
 const CHARACTERS = {
-  kofi:      { name:'Kofi',       title:'Village Champion',    difficulty:'easy',   render:kofiSVG },
-  nefertari: { name:'Nefertari',  title:'Princess of the Nile', difficulty:'medium', render:nefertariSVG },
-  professor: { name:'Prof. Addo', title:'Grand Scholar',        difficulty:'hard',   render:professorSVG }
+  kofi:      { name:'Kofi',       title:'Village Champion',     afTitle:'Dorpskampioen',       difficulty:'easy',   render:kofiSVG },
+  nefertari: { name:'Nefertari',  title:'Princess of the Nile', afTitle:'Prinses van die Nyl',  difficulty:'medium', render:nefertariSVG },
+  melissa:   { name:'Melissa',    title:'Star Player',           afTitle:'Sterspeler',           difficulty:'medium', render:melissaSVG },
+  professor: { name:'Prof. Addo', title:'Grand Scholar',         afTitle:'Groot Geleerde',       difficulty:'hard',   render:professorSVG }
 };
 
 function selectCharacter(charId) {
@@ -1424,15 +1526,16 @@ function selectCharacter(charId) {
 }
 
 function setExpression(expr) {
+  currentExpr = expr;
   const char = CHARACTERS[currentCharId];
   const svgEl = document.getElementById('char-portrait-svg');
   if (svgEl) svgEl.innerHTML = char.render(expr);
   const nameEl = document.getElementById('char-display-name');
   if (nameEl) nameEl.textContent = char.name;
   const titleEl = document.getElementById('char-display-title');
-  if (titleEl) titleEl.textContent = char.title;
+  if (titleEl) titleEl.textContent = lang === 'af' ? char.afTitle : char.title;
   const quoteEl = document.getElementById('char-quote');
-  if (quoteEl) quoteEl.textContent = '"' + (QUOTES[currentCharId][expr] || '') + '"';
+  if (quoteEl) quoteEl.textContent = '"' + (QUOTES[currentCharId][lang][expr] || '') + '"';
 }
 
 function initCharacterSystem() {
@@ -1444,6 +1547,235 @@ function initCharacterSystem() {
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
+   LANGUAGE / i18n
+═══════════════════════════════════════════════════════════════════════════ */
+
+let lang = 'en';
+
+const STRINGS = {
+  en: {
+    headerSubtitle: 'A two-row mancala game of the Ewe people of Togo &amp; Ghana',
+    btnNewGame: '▶ New Game',
+    btnPlayAgain: 'Play Again',
+    labelYourStore: 'Your Store',
+    labelRound: 'Round',
+    labelComputerStore: 'Computer Store',
+    labelComputer: 'Computer',
+    labelYou: 'You',
+    labelMoveHistory: 'Move History',
+    labelReasoning: "Computer's Reasoning",
+    explainIdle: "The computer's explanation will appear here after it chooses a move.",
+    statusStart: 'Press New Game to start',
+    easy: 'Easy', medium: 'Medium', hard: 'Hard',
+    youWin: 'You Win!', computerWins: 'Computer Wins!',
+    finalScore: (p1, p2, r) => `Final score — <strong>You: ${p1}</strong> | <strong>Computer: ${p2}</strong><br><span style="color:#888;font-size:0.85rem">Round ${r}</span>`,
+    yourTurn: "Your turn — click a hole to sow",
+    sowing: 'Sowing…',
+    computerThinking: 'Computer is thinking…',
+    computerThinkingDots: 'Computer is thinking',
+    roundBegins: (r, n1, n2) => `Round ${r} begins — ${n1} vs ${n2} holes`,
+    youCaptured: (n) => `You captured ${n} seed${n===1?'':'s'}! Computer's turn…`,
+    capturedBadge: (n) => `+${n} seed${n===1?'':'s'} captured!`,
+    computerSowing: 'Computer is sowing…',
+    computerPasses: 'Computer passes — your turn',
+    noMovesComputer: 'No moves available — computer goes…',
+    yourTurnNewRound: 'Your turn — new round started',
+    computerCaptured: (n) => `Computer captured ${n} seed${n===1?'':'s'} — your turn`,
+    noMovesYou: 'No moves for you — computer goes again…',
+    histP1: (h, c) => `P1: sow hole ${h}${c ? ` (+${c})` : ''}`,
+    histCPU: (h, c) => `CPU: sow hole ${h}${c ? ` (+${c})` : ''}`,
+    tipYourSide: 'your', tipComputerSide: "the computer's",
+    tipInactiveTitle: (v, s) => `Hole ${v} (${s} side) — not in play`,
+    tipInactiveBody: (r, c) => `In round ${r}, only <strong>${c} hole${c!==1?'s':''}</strong> per side are active. When a round ends, the player with fewer seeds in store refills fewer holes, so the board shrinks. Seeds here were swept to the store at the start of the round.`,
+    tipForbidTitle: (v, s) => `Hole ${v} (${s} side) — locked this turn`,
+    tipForbidP1: "You just sowed from here. Adi's same-hole rule prevents players from cycling the same hole repeatedly. It unlocks the moment the computer drops a seed into it.",
+    tipForbidP2: "The computer just sowed from here. The same-hole rule applies to both sides — it unlocks the moment you drop a seed into it.",
+    holeLabel: (n) => `hole ${n}`,
+    noMovesAI: '<p class="explain-idle">No moves available — the computer passes.</p>',
+    moveDataUnavail: '<p class="explain-idle">Move data unavailable.</p>',
+    modeEasy: 'Easy Mode', modeMedium: 'Medium Mode',
+    modeHard: 'Hard Mode — Minimax', modeSlip: 'Hard Mode — Random Slip',
+    factCaptureEasy: (hn, n) => `${hn} sows the last seed onto your side, hitting exactly 3 — a capture of ${n} seed${n===1?'':'s'}. Easy mode grabs captures when it sees them.`,
+    factMultiCap: (n) => `${n} captures were available; one was picked at random.`,
+    factIgnoredCap: (hn) => `A capture was within reach, but easy mode ignores it 40% of the time — ${hn} was chosen randomly instead.`,
+    factRandom: (hn, n) => `No capture was available, so easy mode picked ${hn} at random from ${n} option${n>1?'s':''}.`,
+    factSlip: (hn) => `Hard mode has a 10% chance of playing randomly to keep the game fair. This was one of those turns — ${hn} was chosen by chance, not by minimax.`,
+    factChainCapture: (hn, holes, n) => `Chain capture! ${hn} triggers a cascade across ${holes} holes — netting ${n} seed${n===1?'':'s'} in one move.`,
+    factCapture: (hn, n) => `${hn} drops its last seed onto a hole with 2 on your side — 2 + 1 = 3, capturing ${n} seed${n===1?'':'s'}.`,
+    factSafePlay: (names, hn) => `Almost every other option (${names}) hands you a counter-capture. ${hn} was the key safe play.`,
+    factAvoidCap: (names, hn) => `Moves like ${names} would let you counter-capture next turn. ${hn} keeps your holes out of range.`,
+    factNoSafe: (hn) => `Every available move leaves you with a capture threat — no safe option exists. ${hn} scores best despite the risk.`,
+    factTight: (n, hn) => `Very tight decision — all ${n} moves scored within 0.6 pts at 4-move depth. ${hn} edged ahead by the narrowest margin.`,
+    factMinimax: (n, hn, margin) => `Minimax searched 4 moves deep across ${n} options and ranked ${hn} first — scoring ${margin} pts ahead of the next best move.`,
+    factRank: (hn, rank, n) => `${hn} ranked #${rank} of ${n} by raw score, but combined with other factors it was the top choice at depth 4.`,
+    factLeading: (adv) => `Leading by ${adv} seed${adv===1?'':'s'} in store — playing to hold that advantage rather than take unnecessary risks.`,
+    factTrailing: (adv) => `Trailing by ${adv} seed${adv===1?'':'s'} in store — this was the most aggressive move available to close the gap.`,
+    factDensity: (mine, yours) => `No captures possible — this leaves the computer with ${mine} seed${mine===1?'':'s'} in its row (you: ${yours}), building up for future captures.`,
+    factBestPos: (n, hn) => `Minimax evaluated all ${n} moves 4 levels deep and found ${hn} gives the best long-term position.`,
+    guideAbout: `<h3>About Adi</h3>
+      <p>Adi is played on an elaborately carved wooden board. Capture seeds from your opponent to grow your store across multiple rounds — until one player can no longer fill a row.</p>`,
+    guideHowToPlay: `<h3>How to Play</h3>
+      <ul>
+        <li>You are <span class="highlight">Player 1 (bottom)</span>. The computer plays the top row.</li>
+        <li>Click any hole in your row with seeds to <span class="highlight">sow anti-clockwise</span> — seeds spread right along your row, then left along the top row.</li>
+        <li>You <strong>cannot</strong> sow from the same hole twice in a row until the opponent sows into it.</li>
+        <li>Holes you cannot use show <span style="color:#ef4444">✕</span>.</li>
+      </ul>`,
+    guideCaptures: `<h3>Captures</h3>
+      <div class="rule-block">If your last seed lands in an <strong>opponent's hole</strong> and makes the count exactly <span class="highlight">3</span> → capture all 3!</div>
+      <div class="rule-block"><strong>Chain capture:</strong> If the hole just before the captured hole <em>also</em> has exactly 3, capture that too — keep going backwards!</div>`,
+    guideEndOfRound: `<h3>End of Round</h3>
+      <p>When <strong>no more captures are possible</strong> by either player, the round ends:</p>
+      <ul style="margin-top:6px">
+        <li>Remaining seeds on each side go to that player's store.</li>
+        <li>The player with <em>fewer</em> seeds refills holes right-to-left with 4 each.</li>
+        <li>The opponent fills the <em>same number</em> of opposite holes.</li>
+      </ul>`,
+    guideWinning: `<h3>Winning</h3>
+      <p>The game ends when a player <strong>cannot fill even one hole</strong> (fewer than 4 seeds left). Their opponent wins!</p>`,
+    guideChooseOpponent: 'Choose Opponent',
+  },
+  af: {
+    headerSubtitle: "'n Tweery mancalaspel van die Ewe-volk van Togo &amp; Ghana",
+    btnNewGame: '▶ Nuwe Spel',
+    btnPlayAgain: 'Speel Weer',
+    labelYourStore: 'Jou Skatkis',
+    labelRound: 'Rondte',
+    labelComputerStore: 'Rekenaar Skatkis',
+    labelComputer: 'Rekenaar',
+    labelYou: 'Jy',
+    labelMoveHistory: 'Bewegingslys',
+    labelReasoning: 'Rekenaar se Redenasie',
+    explainIdle: "Die rekenaar se verduideliking verskyn hier nadat dit 'n beweeg gekies het.",
+    statusStart: 'Druk Nuwe Spel om te begin',
+    easy: 'Maklik', medium: 'Gemiddeld', hard: 'Moeilik',
+    youWin: 'Jy Wen!', computerWins: 'Rekenaar Wen!',
+    finalScore: (p1, p2, r) => `Finale telling — <strong>Jy: ${p1}</strong> | <strong>Rekenaar: ${p2}</strong><br><span style="color:#888;font-size:0.85rem">Rondte ${r}</span>`,
+    yourTurn: "Jou beurt — klik 'n holte om te saai",
+    sowing: 'Besig om te saai…',
+    computerThinking: 'Die rekenaar dink…',
+    computerThinkingDots: 'Rekenaar dink',
+    roundBegins: (r, n1, n2) => `Rondte ${r} begin — ${n1} teen ${n2} holtes`,
+    youCaptured: (n) => `Jy het ${n} klipp${n===1?'ie':'ies'} gevang! Rekenaar se beurt…`,
+    capturedBadge: (n) => `+${n} klipp${n===1?'ie':'ies'} gevang!`,
+    computerSowing: 'Rekenaar saai tans…',
+    computerPasses: 'Rekenaar sê pas — jou beurt',
+    noMovesComputer: 'Geen bewegings beskikbaar — rekenaar gaan…',
+    yourTurnNewRound: 'Jou beurt — nuwe rondte begin',
+    computerCaptured: (n) => `Rekenaar het ${n} klipp${n===1?'ie':'ies'} gevang — jou beurt`,
+    noMovesYou: 'Geen bewegings vir jou — rekenaar gaan weer…',
+    histP1: (h, c) => `S1: saai holte ${h}${c ? ` (+${c})` : ''}`,
+    histCPU: (h, c) => `REK: saai holte ${h}${c ? ` (+${c})` : ''}`,
+    tipYourSide: 'jou', tipComputerSide: 'die rekenaar se',
+    tipInactiveTitle: (v, s) => `Holte ${v} (${s} kant) — nie in spel nie`,
+    tipInactiveBody: (r, c) => `In rondte ${r} is slegs <strong>${c} holte${c!==1?'s':''}</strong> per kant aktief. Wanneer 'n rondte eindig, vul die speler met minder klippies minder holtes, sodat die bord kleiner word. Klippies hier is aan die begin van die rondte na die skatkis gevee.`,
+    tipForbidTitle: (v, s) => `Holte ${v} (${s} kant) — gesluit hierdie beurt`,
+    tipForbidP1: "Jy het sopas hieruit gesaai. Adi se dieselfdeholte-reël verhoed spelers om dieselfde holte herhaaldelik te gebruik. Dit ontsluit sodra die rekenaar 'n klippie daarin saai.",
+    tipForbidP2: "Die rekenaar het sopas hieruit gesaai. Die dieselfdeholte-reël geld vir beide kante — dit ontsluit sodra jy 'n klippie daarin saai.",
+    holeLabel: (n) => `holte ${n}`,
+    noMovesAI: '<p class="explain-idle">Geen bewegings beskikbaar — die rekenaar sê pas.</p>',
+    moveDataUnavail: '<p class="explain-idle">Bewegingsdata nie beskikbaar nie.</p>',
+    modeEasy: 'Maklike Modus', modeMedium: 'Gemiddelde Modus',
+    modeHard: 'Moeilike Modus — Minimax', modeSlip: 'Moeilike Modus — Toevallige Glip',
+    factCaptureEasy: (hn, n) => `${hn} saai die laaste klippie op jou kant — 'n vangs van ${n} klipp${n===1?'ie':'ies'}. Maklike modus gryp vangs wanneer dit dit sien.`,
+    factMultiCap: (n) => `${n} vangsgeleenthede was beskikbaar; een is lukraak gekies.`,
+    factIgnoredCap: (hn) => `'n Vangs was binne bereik, maar maklike modus ignoreer dit 40% van die tyd — ${hn} is eerder lukraak gekies.`,
+    factRandom: (hn, n) => `Geen vangs was beskikbaar nie, so maklike modus het ${hn} lukraak uit ${n} opsie${n>1?'s':''} gekies.`,
+    factSlip: (hn) => `Moeilike modus het 'n 10% kans om lukraak te speel om die spel billik te hou. Dit was een van dié beurte — ${hn} is per toeval gekies, nie deur minimax nie.`,
+    factChainCapture: (hn, holes, n) => `Kettingvangs! ${hn} ontlok 'n kaskade oor ${holes} holtes — wat ${n} klipp${n===1?'ie':'ies'} in een beweeg oplewer.`,
+    factCapture: (hn, n) => `${hn} plaas sy laaste klippie in 'n holte met 2 op jou kant — 2 + 1 = 3, en vang ${n} klipp${n===1?'ie':'ies'}.`,
+    factSafePlay: (names, hn) => `Byna elke ander opsie (${names}) gee jou 'n teenvangs. ${hn} was die belangrikste veilige beweeg.`,
+    factAvoidCap: (names, hn) => `Bewegings soos ${names} sou jou in staat stel om die volgende beurt terug te vang. ${hn} hou jou holtes buite bereik.`,
+    factNoSafe: (hn) => `Elke beskikbare beweeg laat jou met 'n vangsbedreiging — geen veilige opsie bestaan nie. ${hn} behaal die beste telling ten spyte van die risiko.`,
+    factTight: (n, hn) => `Baie krap besluit — al ${n} bewegings het binne 0,6 punte geskor op diepte 4. ${hn} het oor die smalste marge vooruit gegaan.`,
+    factMinimax: (n, hn, margin) => `Minimax het 4 bewegings diep oor ${n} opsies gesoek en ${hn} eerste gerangskik — ${margin} punte voor die volgende beste beweeg.`,
+    factRank: (hn, rank, n) => `${hn} het #${rank} van ${n} in rou telling geskor, maar tesame met ander faktore was dit die beste keuse op diepte 4.`,
+    factLeading: (adv) => `Die rekenaar lei met ${adv} klipp${adv===1?'ie':'ies'} in die skatkis — speel om dié voordeel te behou eerder as om onnodige risiko's te loop.`,
+    factTrailing: (adv) => `Agter met ${adv} klipp${adv===1?'ie':'ies'} in die skatkis — dit was die mees aggressiewe beweeg beskikbaar om die gaping te verklein.`,
+    factDensity: (mine, yours) => `Geen vangs moontlik — dit laat die rekenaar met ${mine} klipp${mine===1?'ie':'ies'} in sy ry (jy: ${yours}), wat opbou vir toekomstige vangste.`,
+    factBestPos: (n, hn) => `Minimax het al ${n} bewegings 4 vlakke diep geëvalueer en gevind dat ${hn} die beste langtermynposisie bied.`,
+    guideAbout: `<h3>Oor Adi</h3>
+      <p>Adi word op 'n fyn gesnyde houtbord gespeel. Vang klippies van jou teenstander om jou skatkis oor meerdere rondtes te vergroot — totdat een speler nie meer 'n ry kan vul nie.</p>`,
+    guideHowToPlay: `<h3>Hoe om te Speel</h3>
+      <ul>
+        <li>Jy is <span class="highlight">Speler 1 (onder)</span>. Die rekenaar speel die bo-ry.</li>
+        <li>Klik enige holte in jou ry met klippies om <span class="highlight">teen die kloksgewys te saai</span> — klippies versprei regs langs jou ry, dan links langs die bo-ry.</li>
+        <li>Jy mag <strong>nie</strong> twee keer agtereenvolgens vanuit dieselfde holte saai nie — totdat die teenstander daarin saai.</li>
+        <li>Holtes wat jy nie kan gebruik nie, toon <span style="color:#ef4444">✕</span>.</li>
+      </ul>`,
+    guideCaptures: `<h3>Vangs</h3>
+      <div class="rule-block">As jou laaste klippie in 'n holte van die teenstander land en die telling op presies <span class="highlight">3</span> bring → vang al 3!</div>
+      <div class="rule-block"><strong>Kettingvangs:</strong> As die holte net voor die gevangde holte <em>ook</em> presies 3 het, vang dié ook — hou aan agterwaarts!</div>`,
+    guideEndOfRound: `<h3>Einde van Rondte</h3>
+      <p>Wanneer <strong>geen vangste meer moontlik</strong> is vir enige speler nie, eindig die rondte:</p>
+      <ul style="margin-top:6px">
+        <li>Oorblywende klippies aan elke kant gaan na dié speler se skatkis.</li>
+        <li>Die speler met <em>minder</em> klippies vul holtes van regs na links met 4 elk.</li>
+        <li>Die teenstander vul <em>dieselfde getal</em> teenoorgestelde holtes.</li>
+      </ul>`,
+    guideWinning: `<h3>Wen</h3>
+      <p>Die spel eindig wanneer 'n speler <strong>nie eens een holte kan vul nie</strong> (minder as 4 klippies oor). Die teenstander wen!</p>`,
+    guideChooseOpponent: 'Kies Teenstander',
+  }
+};
+
+function t(key, ...args) {
+  const val = STRINGS[lang]?.[key] ?? STRINGS.en[key];
+  return typeof val === 'function' ? val(...args) : (val ?? key);
+}
+
+function toggleLanguage() {
+  lang = lang === 'en' ? 'af' : 'en';
+  document.getElementById('lang-toggle').textContent = lang === 'en' ? 'AF' : 'EN';
+  document.documentElement.lang = lang;
+  updateStaticStrings();
+}
+
+function updateStaticStrings() {
+  document.getElementById('header-subtitle').innerHTML        = t('headerSubtitle');
+  document.getElementById('btn-new-game').textContent         = t('btnNewGame');
+  document.getElementById('btn-play-again').textContent       = t('btnPlayAgain');
+  document.getElementById('label-p1-store').textContent       = t('labelYourStore');
+  document.getElementById('label-round').textContent          = t('labelRound');
+  document.getElementById('label-p2-store').textContent       = t('labelComputerStore');
+  document.getElementById('label-computer-store').textContent = t('labelComputer');
+  document.getElementById('label-you-store').textContent      = t('labelYou');
+  document.getElementById('move-history-heading').textContent = t('labelMoveHistory');
+  document.getElementById('reasoning-heading').textContent    = t('labelReasoning');
+  document.getElementById('guide-about').innerHTML            = t('guideAbout');
+  document.getElementById('guide-howtoplay').innerHTML        = t('guideHowToPlay');
+  document.getElementById('guide-captures').innerHTML         = t('guideCaptures');
+  document.getElementById('guide-endofround').innerHTML       = t('guideEndOfRound');
+  document.getElementById('guide-winning').innerHTML          = t('guideWinning');
+  document.getElementById('guide-choose-h3').textContent      = t('guideChooseOpponent');
+  document.querySelectorAll('.char-card-diff.easy').forEach(el   => el.textContent = t('easy'));
+  document.querySelectorAll('.char-card-diff.medium').forEach(el => el.textContent = t('medium'));
+  document.querySelectorAll('.char-card-diff.hard').forEach(el   => el.textContent = t('hard'));
+  // Update explain idle text only if no explanation is shown
+  const explainEl = document.getElementById('explain-content');
+  if (explainEl?.querySelector('.explain-idle')) {
+    explainEl.querySelector('.explain-idle').textContent = t('explainIdle');
+  }
+  // Character display title + card subtitle titles
+  if (currentCharId) {
+    const char = CHARACTERS[currentCharId];
+    const titleEl = document.getElementById('char-display-title');
+    if (titleEl) titleEl.textContent = lang === 'af' ? char.afTitle : char.title;
+  }
+  document.querySelectorAll('.char-card').forEach(card => {
+    const char = CHARACTERS[card.dataset.char];
+    if (char) {
+      const sm = card.querySelector('.char-card-title-sm');
+      if (sm) sm.textContent = lang === 'af' ? char.afTitle : char.title;
+    }
+  });
+  // Re-render history with new labels
+  renderHistory();
+  // Update status if game hasn't started or is over
+  if (!game || game.over) setStatus(t('statusStart'));
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
    UI
 ═══════════════════════════════════════════════════════════════════════════ */
 
@@ -1451,6 +1783,7 @@ let game       = null;
 let difficulty = 'easy';
 let inputLocked = false;
 let moveHistory = [];
+let currentExpr = 'idle';
 
 // P2 holes are displayed right-to-left: visual positions [0..5] → holes [11,10,9,8,7,6]
 const P2_DISPLAY_ORDER = [11,10,9,8,7,6];
@@ -1465,7 +1798,7 @@ function startNewGame() {
   renderBoard();
   renderHistory();
   setExpression('idle');
-  setStatus('Your turn — click a hole to sow');
+  setStatus(t('yourTurn'));
   document.getElementById('overlay').classList.remove('show');
 }
 
@@ -1523,11 +1856,8 @@ function renderHole(i, count, validMoves, humanTurn, state) {
 
   el.className = 'hole';
   if (!isOwned && count === 0) el.classList.add('inactive-hole');
-  if (isP1) {
-    if (humanTurn && isValid)      el.classList.add('clickable');
-    if (isForbid && isOwned)       el.classList.add('forbidden');
-    if (!isOwned && count === 0)   el.classList.add('inactive-hole');
-  }
+  if (isP1 && humanTurn && isValid) el.classList.add('clickable');
+  if (isForbid && isOwned)          el.classList.add('forbidden');
 
   // Seeds visual
   el.innerHTML = '';
@@ -1573,13 +1903,13 @@ function setStatus(html, captureAmt) {
   const bar = document.getElementById('status-bar');
   bar.innerHTML = `<span class="msg">${html}</span>`;
   if (captureAmt) {
-    bar.innerHTML += `<span class="capture-badge">+${captureAmt} seeds captured!</span>`;
+    bar.innerHTML += `<span class="capture-badge">${t('capturedBadge', captureAmt)}</span>`;
   }
 }
 
 function setThinking() {
   document.getElementById('status-bar').innerHTML =
-    `<span class="msg" style="color:#94a3b8">Computer is thinking</span>
+    `<span class="msg" style="color:#94a3b8">${t('computerThinkingDots')}</span>
      <span class="thinking-dots"><span>●</span><span>●</span><span>●</span></span>`;
 }
 
@@ -1589,7 +1919,9 @@ function renderHistory() {
   for (const entry of moveHistory.slice(-30)) {
     const el = document.createElement('span');
     el.className = 'history-item' + (entry.cap > 0 ? ' capture' : '');
-    el.textContent = entry.text;
+    el.textContent = entry.isP1
+      ? t('histP1', entry.hole, entry.cap)
+      : t('histCPU', entry.hole, entry.cap);
     list.appendChild(el);
   }
 }
@@ -1602,16 +1934,71 @@ function showGameOver() {
 
   if (game.winner === 1) {
     icon.textContent  = '🏆';
-    title.textContent = 'You Win!';
+    title.textContent = t('youWin');
     title.style.color = '#f39c12';
+    launchConfetti();
   } else {
     icon.textContent  = '🤖';
-    title.textContent = 'Computer Wins!';
+    title.textContent = t('computerWins');
     title.style.color = '#94a3b8';
   }
-  score.innerHTML = `Final score — <strong>You: ${game.p1Store}</strong> | <strong>Computer: ${game.p2Store}</strong><br>
-    <span style="color:#888;font-size:0.85rem">Round ${game.round}</span>`;
+  score.innerHTML = t('finalScore', game.p1Store, game.p2Store, game.round);
   overlay.classList.add('show');
+}
+
+function launchConfetti() {
+  const canvas = document.createElement('canvas');
+  canvas.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:150';
+  document.body.appendChild(canvas);
+  const ctx = canvas.getContext('2d');
+  canvas.width  = window.innerWidth;
+  canvas.height = window.innerHeight;
+
+  const colors = ['#f39c12','#2ecc71','#3498db','#e74c3c','#9b59b6','#1abc9c','#f1c40f','#e91e63','#FFD700'];
+  const pieces = Array.from({length: 140}, () => ({
+    x:     Math.random() * canvas.width,
+    y:     -30 - Math.random() * 100,
+    vx:    (Math.random() - 0.5) * 5,
+    vy:    2 + Math.random() * 3.5,
+    color: colors[Math.floor(Math.random() * colors.length)],
+    w:     7 + Math.random() * 9,
+    h:     4 + Math.random() * 6,
+    angle: Math.random() * Math.PI * 2,
+    spin:  (Math.random() - 0.5) * 0.18,
+    shape: Math.random() < 0.4 ? 'circle' : 'rect',
+    r:     3 + Math.random() * 4,
+  }));
+
+  let frame = 0;
+  (function tick() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    let alive = 0;
+    for (const p of pieces) {
+      if (p.y > canvas.height + 30) continue;
+      alive++;
+      p.x     += p.vx;
+      p.y     += p.vy;
+      p.vy    += 0.07;
+      p.vx    *= 0.993;
+      p.angle += p.spin;
+      ctx.save();
+      ctx.globalAlpha = Math.max(0, 1 - (frame / 220));
+      ctx.translate(p.x, p.y);
+      ctx.rotate(p.angle);
+      ctx.fillStyle = p.color;
+      if (p.shape === 'circle') {
+        ctx.beginPath();
+        ctx.arc(0, 0, p.r, 0, Math.PI * 2);
+        ctx.fill();
+      } else {
+        ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+      }
+      ctx.restore();
+    }
+    frame++;
+    if (alive > 0 && frame < 240) requestAnimationFrame(tick);
+    else canvas.remove();
+  })();
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -1713,14 +2100,11 @@ async function handleClick(holeIdx) {
   if (!valid.includes(holeIdx)) return;
 
   inputLocked = true;
-  setStatus('Sowing…');
+  setStatus(t('sowing'));
 
   const result = await animateSow(holeIdx);
 
-  moveHistory.push({
-    text: `P1: sow hole ${holeIdx + 1}${result.captured ? ` (+${result.captured})` : ''}`,
-    cap:  result.captured
-  });
+  moveHistory.push({ isP1: true, hole: holeIdx + 1, cap: result.captured });
 
   renderBoard();
   renderHistory();
@@ -1732,16 +2116,16 @@ async function handleClick(holeIdx) {
 
   if (result.roundEnded) {
     const n1 = game.p1Owned.length, n2 = game.p2Owned.length;
-    setStatus(`Round ${game.round} begins — ${n1} vs ${n2} holes`);
+    setStatus(t('roundBegins', game.round, n1, n2));
     setTimeout(continueAfterRound, 900);
     return;
   }
 
   if (result.captured > 0) {
-    setStatus(`You captured ${result.captured} seeds! Computer's turn…`, result.captured);
+    setStatus(t('youCaptured', result.captured), result.captured);
     setExpression('sad');
   } else {
-    setStatus('Computer is thinking…');
+    setStatus(t('computerThinking'));
   }
 
   setTimeout(triggerAI, 350);
@@ -1750,16 +2134,16 @@ async function handleClick(holeIdx) {
 function continueAfterRound() {
   if (game.over) { showGameOver(); return; }
   if (game.current === 2) {
-    setStatus('Computer is thinking…');
+    setStatus(t('computerThinking'));
     setTimeout(triggerAI, 600);
   } else {
     // Check P1 has moves; if not, pass to AI
     if (game.validMoves(1).length === 0 && !game.over) {
-      setStatus('No moves available — computer goes…');
+      setStatus(t('noMovesComputer'));
       game.current = 2;
       setTimeout(triggerAI, 700);
     } else {
-      setStatus('Your turn — new round started');
+      setStatus(t('yourTurnNewRound'));
       inputLocked = false;
       renderBoard();
     }
@@ -1769,7 +2153,7 @@ function continueAfterRound() {
 function triggerAI() {
   if (!game || game.over || game.current !== 2) {
     inputLocked = false;
-    setStatus('Your turn — click a hole to sow');
+    setStatus(t('yourTurn'));
     return;
   }
 
@@ -1788,7 +2172,7 @@ function triggerAI() {
     }
 
     if (move === null) {
-      setStatus('Computer passes — your turn');
+      setStatus(t('computerPasses'));
       game.current = 1;
       inputLocked = false;
       renderBoard();
@@ -1798,13 +2182,10 @@ function triggerAI() {
     // Show explanation before sowing so player can read it
     setExplanation(explainAIMove(stateBefore, move, difficulty, wasSlip, minimaxScores));
 
-    setStatus('Computer is sowing…');
+    setStatus(t('computerSowing'));
     const result = await animateSow(move);
 
-    moveHistory.push({
-      text: `CPU: sow hole ${move + 1}${result.captured ? ` (+${result.captured})` : ''}`,
-      cap:  result.captured
-    });
+    moveHistory.push({ isP1: false, hole: move + 1, cap: result.captured });
 
     renderBoard();
     renderHistory();
@@ -1816,22 +2197,22 @@ function triggerAI() {
 
     if (result.roundEnded) {
       const n1 = game.p1Owned.length, n2 = game.p2Owned.length;
-      setStatus(`Round ${game.round} begins — ${n1} vs ${n2} holes`);
+      setStatus(t('roundBegins', game.round, n1, n2));
       setTimeout(continueAfterRound, 900);
       return;
     }
 
     if (result.captured > 0) {
-      setStatus(`Computer captured ${result.captured} seeds — your turn`);
+      setStatus(t('computerCaptured', result.captured));
       setExpression(result.captured > 3 ? 'excited' : 'happy');
     } else {
-      setStatus('Your turn — click a hole to sow');
+      setStatus(t('yourTurn'));
       const adv = game.p2Store - game.p1Store;
       setExpression(adv >= 10 && Math.random() < 0.45 ? 'taunting' : 'idle');
     }
 
     if (game.validMoves(1).length === 0 && !game.over) {
-      setStatus('No moves for you — computer goes again…');
+      setStatus(t('noMovesYou'));
       game.current = 2;
       setTimeout(triggerAI, 700);
     } else {
@@ -1855,8 +2236,8 @@ function setupHoleTooltips() {
 
     const idx   = parseInt(hole.dataset.idx);
     const isP1  = idx < 6;
-    const side  = isP1 ? 'your' : "the computer's";
-    const visNum = isP1 ? idx + 1 : 12 - idx; // 1-6 from left within each row
+    const side  = isP1 ? t('tipYourSide') : t('tipComputerSide');
+    const visNum = isP1 ? idx + 1 : 12 - idx;
     const owned  = isP1 ? game.p1Owned : game.p2Owned;
     const forb   = isP1 ? game.p1Forbidden : game.p2Forbidden;
 
@@ -1866,19 +2247,14 @@ function setupHoleTooltips() {
     if (hole.classList.contains('inactive-hole')) {
       const activeCount = owned.length;
       html = `<span class="tip-icon">💤</span>
-        <strong>Hole ${visNum} (${side} side) — not in play</strong><br>
-        In round ${game.round}, only <strong>${activeCount} hole${activeCount !== 1 ? 's' : ''}</strong> per side are active.
-        When a round ends, the player with fewer seeds in store refills
-        fewer holes, so the board shrinks. Seeds here were swept to the
-        store at the start of the round.`;
+        <strong>${t('tipInactiveTitle', visNum, side)}</strong><br>
+        ${t('tipInactiveBody', game.round, activeCount)}`;
       tip.classList.add('tip-inactive');
 
     } else if (hole.classList.contains('forbidden')) {
       html = `<span class="tip-icon">🔒</span>
-        <strong>Hole ${visNum} — locked this turn</strong><br>
-        You just sowed from here. Adi's same-hole rule prevents players from
-        cycling the same hole repeatedly. It unlocks the moment the computer
-        drops a seed into it.`;
+        <strong>${t('tipForbidTitle', visNum, side)}</strong><br>
+        ${isP1 ? t('tipForbidP1') : t('tipForbidP2')}`;
       tip.classList.add('tip-forbidden');
 
     } else {
@@ -1911,6 +2287,7 @@ function positionTip(e) {
 startNewGame();
 initCharacterSystem();
 setupHoleTooltips();
+updateStaticStrings();
 </script>
 </body>
 </html>
