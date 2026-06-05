@@ -1274,7 +1274,7 @@ async function getLichessPopularity(fen) {
     try {
         const response = await fetch(
             `https://explorer.lichess.ovh/lichess?variant=standard&speeds=blitz,rapid,classical&ratings=1600,2000,2500&fen=${encodeURIComponent(fen)}`,
-            { headers: { 'Authorization': 'Bearer LICHESS_TOKEN_REDACTED' } }
+            { headers: { 'Authorization': 'Bearer ' + (window.LICHESS_TOKEN || '') } }
         );
         if (response.ok) {
             const data = await response.json();

@@ -448,7 +448,7 @@ async function fetchLichessMoves(fen) {
         const timer = setTimeout(() => controller.abort(), 4000);
         const resp = await fetch(url, {
             signal: controller.signal,
-            headers: { 'Authorization': 'Bearer LICHESS_TOKEN_REDACTED' }
+            headers: { 'Authorization': 'Bearer ' + (window.LICHESS_TOKEN || '') }
         });
         clearTimeout(timer);
         if (!resp.ok) return [];

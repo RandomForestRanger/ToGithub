@@ -81,20 +81,20 @@ Use a **job ID + callback queue** to discard stale responses. Never trust a resp
 ### Cloud Eval
 ```
 GET https://lichess.org/api/cloud-eval?fen={FEN}&multiPv={N}
-Authorization: Bearer LICHESS_TOKEN_REDACTED
+Authorization: Bearer <LICHESS_TOKEN>
 ```
 Returns `{ pvs: [{moves, cp, mate}] }`. Use this first — fastest and most accurate for known positions.
 
 ### Opening Explorer
 ```
 GET https://explorer.lichess.ovh/lichess?fen={FEN}&speeds=blitz,rapid,classical&ratings=1600,1800,2000
-Authorization: Bearer LICHESS_TOKEN_REDACTED
+Authorization: Bearer <LICHESS_TOKEN>
 ```
 Returns `{ moves: [{san, white, draws, black, averageRating}] }`. Sort by total games (`white+draws+black`) to get popularity rank.
 
 **The auth header is required on both endpoints.** Without it, explorer returns 401.
 
-Token: `LICHESS_TOKEN_REDACTED` (Lichess user J_P_B, no scopes needed)
+Token: `<LICHESS_TOKEN>` (Lichess user J_P_B, no scopes needed)
 
 ### API Cache Pattern
 All games cache Lichess responses to avoid hammering the API:
@@ -303,7 +303,7 @@ Always persist: badges earned, high scores, total games played.
 
 1. **Eval race condition**: Never call `game.turn()` inside a `.then()` callback. Capture turn synchronously before the async call.
 2. **Mate sign ignored**: Always check `r.mate > 0` vs `< 0`. Don't just use `Math.abs`.
-3. **Lichess Explorer 401**: The auth header is required — `Authorization: Bearer LICHESS_TOKEN_REDACTED`.
+3. **Lichess Explorer 401**: The auth header is required — `Authorization: Bearer <LICHESS_TOKEN>`.
 4. **Stale Stockfish responses**: Use job IDs. Discard any response whose job ID doesn't match the current pending request.
 5. **CORS with Stockfish Blob worker**: Must serve via HTTP, not `file://`.
 6. **Afrikaans `'n` in JS string literals**: The Afrikaans indefinite article `'n` (meaning "a/an") contains a single quote. Any JS string containing `'n` must use double quotes: `"gebruik 'n ruiter"` — never single quotes, or it will cause a syntax error.

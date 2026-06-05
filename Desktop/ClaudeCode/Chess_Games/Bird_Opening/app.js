@@ -1011,7 +1011,7 @@ async function fetchLichessData(fen) {
 
     try {
         const response = await fetch(url, {
-            headers: { 'Authorization': 'Bearer LICHESS_TOKEN_REDACTED' }
+            headers: { 'Authorization': 'Bearer ' + (window.LICHESS_TOKEN || '') }
         });
         if (!response.ok) {
             throw new Error('Lichess API error');

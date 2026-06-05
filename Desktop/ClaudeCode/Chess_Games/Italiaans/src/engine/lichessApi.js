@@ -7,7 +7,7 @@
 // Both require the auth header (without it Explorer returns 401).
 // Token: Lichess user J_P_B, no scopes needed.
 
-const TOKEN = 'LICHESS_TOKEN_REDACTED';
+const TOKEN = window.LICHESS_TOKEN || '';
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 const CACHE_MAX = 50;
 
