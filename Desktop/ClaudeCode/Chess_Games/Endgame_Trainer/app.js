@@ -220,6 +220,13 @@ function sfRequest(fen, depth, mode) {
 function getBestMove(fen, depth)       { return sfRequest(fen, depth, 'best')   }
 function getSecondBestMove(fen, depth) { return sfRequest(fen, depth, 'second') }
 
+function getRandomMove(game) {
+  const moves = game.moves({ verbose: true })
+  if (!moves.length) return null
+  const m = moves[Math.floor(Math.random() * moves.length)]
+  return m.from + m.to + (m.promotion || '')
+}
+
 function stopStockfish() {
   if (sfPending) {
     sfWorker.postMessage('stop')
@@ -295,7 +302,7 @@ function renderBadgeMap() {
   document.getElementById('stat-bronze').textContent = s.bronze
   document.getElementById('stat-silver').textContent = s.silver
   document.getElementById('stat-gold').textContent   = s.gold
-  document.getElementById('stat-total').textContent  = s.total + '/63'
+  document.getElementById('stat-total').textContent  = s.total + '/60'
 
   // Play button state
   const pool = buildPool()
@@ -456,36 +463,10 @@ function startGame(puzzle) {
 // SPEL — NASKUIF-LOGIKA
 // ═══════════════════════════════════════════════════════════════════════════════
 
-function getBlackKingSquare() {
-  const board = chessGame.board()
-  const files = ['a','b','c','d','e','f','g','h']
-  for (let r = 0; r < 8; r++) {
-    for (let f = 0; f < 8; f++) {
-      const p = board[r][f]
-      if (p && p.type === 'k' && p.color === 'b') return files[f] + (8 - r)
-    }
-  }
-  return null
-}
-
-function isEdgeSquare(sq) {
-  if (!sq) return true
-  return sq[0] === 'a' || sq[0] === 'h' || sq[1] === '1' || sq[1] === '8'
-}
 
 async function handleAfterWhiteMove() {
   // ── Wit het Swart geskaakmat? ─────────────────────────────────────────────
   if (chessGame.in_checkmate()) {
-    // Type 21: skaakmat moet op 'n sentrale veld wees (nie op die rand nie)
-    if (state.currentPuzzle && state.currentPuzzle.typeId === 21) {
-      const sq = getBlackKingSquare()
-      if (isEdgeSquare(sq)) {
-        setGameMessage('Skaakmat op die rand — maar die doel is om in die MIDDEL mat te gee! 🔲 Probeer weer.')
-        await sleep(2000)
-        handleGameEnd('edge_checkmate')
-        return
-      }
-    }
     setGameMessage('Skaakmat! Baie goed! 🎉')
     await sleep(800)
     handleCheckmate()
@@ -515,23 +496,33 @@ async function handleAfterWhiteMove() {
   setGameMessage('Swart dink...')
 
   try {
-    // Onakkuraatheidsreël: speel tweede-beste op spesifieke skuiwe
-    // Tipe 5 (KNN vs K): elke 5de skuif — swart KAN nie geforseer word nie
-    // Tipe 6 goud (KP vs K): elke 5de skuif — voorkom eindelose herhalings
-    // Tipe 17 brons (Goeie vs Slegte Loper): skuiwe 5 en 8 — voorkom 3-skuif-herhaling
+    // Onakkuraatheidsreël per tipe:
+    // Tipe 5 (KNN vs K): ewekansig op beurte 4,9,14,19,24 (mc%5===4); tweede-beste op 5,10,15,20,25 (mc%5===0)
+    // Tipe 6 goud (KP vs K): tweede-beste elke 5de beurt
+    // Tipe 17 (Goeie vs Slegte Loper): tweede-beste op beurte 4, 10, 12
     state.blackMoveCount++
-    const useInaccuracy = (
-      (state.currentPuzzle.typeId === 5 ||
-       (state.currentPuzzle.typeId === 6 && state.currentPuzzle.tier === 'gold')) &&
-      state.blackMoveCount % 5 === 0
-    ) || (
-      state.currentPuzzle.typeId === 17 && state.currentPuzzle.tier === 'bronze' &&
-      (state.blackMoveCount === 5 || state.blackMoveCount === 8)
-    )
+    const mc     = state.blackMoveCount
+    const typeId = state.currentPuzzle.typeId
+    const tier   = state.currentPuzzle.tier
 
-    const uciMove = useInaccuracy
-      ? await getSecondBestMove(chessGame.fen())
-      : await getBestMove(chessGame.fen())
+    let moveMode = 'best'
+    if (typeId === 5) {
+      if (mc % 5 === 4) moveMode = 'random'
+      else if (mc % 5 === 0) moveMode = 'second'
+    } else if (typeId === 6 && tier === 'gold' && mc % 5 === 0) {
+      moveMode = 'second'
+    } else if (typeId === 17 && (mc === 4 || mc === 10 || mc === 12)) {
+      moveMode = 'second'
+    }
+
+    let uciMove
+    if (moveMode === 'random') {
+      uciMove = getRandomMove(chessGame)
+    } else if (moveMode === 'second') {
+      uciMove = await getSecondBestMove(chessGame.fen())
+    } else {
+      uciMove = await getBestMove(chessGame.fen())
+    }
 
     if (!uciMove) throw new Error('Geen skuif van enjin')
 
@@ -680,11 +671,6 @@ function showResult(resultType) {
     heading = 'Oeps!'
     cls     = 'limit'
     message = 'Swart het jou geskaakmat! Dit gebeur — probeer om jou koning te beskerm.'
-  } else if (resultType === 'edge_checkmate') {
-    icon    = '🔲'
-    heading = 'Rand-skaakmat!'
-    cls     = 'stalemate'
-    message = "Skaakmat, maar op die rand van die bord. Vir die ⭐ Hartjie van die Bord moet die skaakmat op 'n sentrale veld wees. Kyk hoe die perfekte spel lyk!"
   } else if (resultType === 'draw_repetition') {
     icon    = '🔄'
     heading = 'Gelykspel!'

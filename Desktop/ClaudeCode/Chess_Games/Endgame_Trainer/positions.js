@@ -27,7 +27,6 @@ const ENDGAME_TYPES = [
   { id: 18, name: 'Loper teen Ruiter',                  icon: '🐎' },
   { id: 19, name: 'Verkeerde Kleur Loper',              icon: '🔲' },
   { id: 20, name: 'Koningin teen Pion op 7de Ry',       icon: '🎖️' },
-  { id: 21, name: 'Hartjie van die Bord',               icon: '⭐' },
 ]
 
 // ─── Tier-konfigurasie ────────────────────────────────────────────────────────
@@ -494,41 +493,49 @@ const POSITIONS = {
 
   // ── Tipe 5: Koning & Twee Ruiters teen Koning ────────────────────────────
   // Tegniek: dryf die swart koning na 'n hoek — maar gebruik die onakkuraatheidsreël.
-  // Elke 5de swart skuif speel Stockfish die TWEEDE beste skuif (nie die beste nie).
-  // Brons: swart in of naby hoek, ruiters aktief — mat binne ~8 skuiwe met onakkuraatheid.
-  // Silwer: swart meer sentraal — langer maneuver benodig.
-  // Goud: swart ver van hoek — volle hoek-dryf-tegniek teen aktiewe verdediging.
+  // Swart speel 'n ewekansige skuif op beurte 4,9,14,19,24 en die tweede-beste op 5,10,15,20,25.
+  // Brons: swart in of naby hoek, ruiters aktief — mat binne 22 beurte.
+  // Silwer: swart meer sentraal — langer maneuver benodig (34 beurte).
+  // Goud: swart ver van hoek — volle hoek-dryf-tegniek (46 beurte).
   // PASOP VIR PAT: moenie die swart koning vasdruk sonder skaak nie!
   5: {
     bronze: [
-      // B1: Kd1 Nd4 Ne4 vs Ke7 ph7 — pion op 7de ry gee swart 'n haak, ruiter-mat in 12
+      // B1: Kd1 Nd4 Ne4 vs Ke7 ph7 — pion op 7de ry gee swart 'n haak
       { fen: '8/4k2p/8/8/3NN3/8/8/3K4 w - - 0 1',
-        note: 'Swart se pion op h7 gee jou die haak — dryf die swart koning na h8 en gebruik die pion om pat te vermy' },
+        note: 'Swart se pion op h7 gee jou die haak — dryf die swart koning na h8 en gebruik die pion om pat te vermy',
+        moveLimit: 22 },
       // B2: Kd1 Nd2 Ne2 vs Ka4 ph7 — swart reeds op rand, pion op 7de ry
       { fen: '8/7p/8/8/k7/8/3NN3/3K4 w - - 0 1',
-        note: 'Swart op die a-lyn met pion op h7 — dryf na a1-hoek terwyl die pion die pat-gevaar verwyder' },
+        note: 'Swart op die a-lyn met pion op h7 — dryf na a1-hoek terwyl die pion die pat-gevaar verwyder',
+        moveLimit: 22 },
       // B3: Kg1 Nf2 Ng2 vs Kf3 pa7 — pion op 7de ry, swart naby h-hoek
       { fen: '8/p7/8/8/8/5k2/5NN1/6K1 w - - 0 1',
-        note: 'Pion op a7, swart naby die h-hoek — druk die koning toe met Nh4 en Nf4, gebruik die pion as haak' },
+        note: 'Pion op a7, swart naby die h-hoek — druk die koning toe met Nh4 en Nf4, gebruik die pion as haak',
+        moveLimit: 22 },
     ],
     silver: [
       // S1: Kd1 Nd4 Ne4 vs Kd7 ph5 — pion op 5de ry, swart middelblok
       { fen: '8/3k4/8/7p/3NN3/8/8/3K4 w - - 0 1',
-        note: 'Pion op h5, swart middelblok — kombineer ruiter-maneuvers om na hoek te dryf voor die pion te ver vorder' },
+        note: 'Pion op h5, swart middelblok — kombineer ruiter-maneuvers om na hoek te dryf voor die pion te ver vorder',
+        moveLimit: 34 },
       // S2: Kd1 Nd2 Ne2 vs Ka5 ph5 — pion op 5de ry, swart op rand
       { fen: '8/8/8/k6p/8/8/3NN3/3K4 w - - 0 1',
-        note: 'Pion op h5 met swart op a5 — jaag na die hoek terwyl jy die pion se vordering dophou' },
+        note: 'Pion op h5 met swart op a5 — jaag na die hoek terwyl jy die pion se vordering dophou',
+        moveLimit: 34 },
       // S3: Kd1 Nd2 Ne2 vs Ka8 ph5 — swart in hoek maar wit ver weg, pion dreig
       { fen: 'k7/8/8/7p/8/8/3NN3/3K4 w - - 0 1',
-        note: 'Swart in a8-hoek met pion op h5 — wit moet vinnig mat gee voor die pion bevorder!' },
+        note: 'Swart in a8-hoek met pion op h5 — wit moet vinnig mat gee voor die pion bevorder!',
+        moveLimit: 34 },
     ],
     gold: [
       // G1: Kd1 Nd4 Ne4 vs Ka7 ph2 — pion op 2de ry, amper bevordering, dringende mat
       { fen: '8/k7/8/8/3NN3/8/7p/3K4 w - - 0 1',
-        note: "Pion op h2, een skuif van bevordering — dryf swart na a8 met presisie voor die pion 'n koningin word" },
+        note: "Pion op h2, een skuif van bevordering — dryf swart na a8 met presisie voor die pion 'n koningin word",
+        moveLimit: 46 },
       // G2: Kd1 Nd2 Ne2 vs Ke8 ph2 — swart sentraal, pion op h2, langste uitdaging
       { fen: '4k3/8/8/8/8/8/3NN2p/3K4 w - - 0 1',
-        note: 'Pion op h2 dreig bevordering — dryf swart na hoek en lewer mat presies voor dit te laat is' },
+        note: 'Pion op h2 dreig bevordering — dryf swart na hoek en lewer mat presies voor dit te laat is',
+        moveLimit: 46 },
     ],
   },
 
@@ -895,43 +902,4 @@ const POSITIONS = {
     ],
   },
 
-  // ── Tipe 21: Hartjie van die Bord ────────────────────────────────────────
-  // Tegniek: lewer skaakmat BUITE DIE RAND — op 'n sentrale veld (nie op lêer a/h of ry 1/8 nie).
-  // Wit het 'n loper EN ruiter (plus koning). Swart het net 'n koning en 'n pion.
-  // Die pion beperk swart se ontsnappingsroetes en verhoed hom om die rand te bereik.
-  // Brons: Pion op ry 7 (ver van bevordering), tyd beskikbaar vir die mat-net.
-  // Silwer: Pion op ry 5 (middel), dringender spel vereis.
-  // Goud: Pion op ry 3 (naby bevordering), — wen die wedren teen die bevorderende pion!
-  21: {
-    bronze: [
-      // B1: Kd3 Bc5 Ne5 vs Kf5 pd7 — loper en ruiter al aktief, pion ver
-      { fen: '8/3p4/8/2B1Nk2/8/3K4/8/8 w - - 0 1',
-        note: "Pion op d7 is ver weg — bou die mat-net rondom die sentrale swart koning op f5. Gee skaakmat BUITE die rand!", moveLimit: 24 },
-      // B2: Ke3 Bc4 Nc3 vs Ke5 pe7 — klassieke sentrale posisie
-      { fen: '8/4p3/8/4k3/2B5/2N1K3/8/8 w - - 0 1',
-        note: "Pion op e7, swart se koning sentraal op e5 — sluit die mat-net in die middel van die bord toe", moveLimit: 24 },
-      // B3: Ke3 Bc5 Nd6 vs Kd5 pg7 — ruiter op d6 aktief, loper ondersteun
-      { fen: '8/6p1/3N4/2Bk4/8/4K3/8/8 w - - 0 1',
-        note: "Pion op g7, Nd6 beheer sleutelblokke — forseer skaakmat op 'n sentrale veld terwyl die pion wag", moveLimit: 24 },
-    ],
-    silver: [
-      // S1: Ke3 Bc4 Nd6 vs Ke5 pd5 — pion op ry 5, beperk sentrum
-      { fen: '8/8/3N4/3pk3/2B5/4K3/8/8 w - - 0 1',
-        note: "Pion op d5 blokkeer 'n ontsnappingsroete — gebruik Nd6 en Bc4 se samewerking vir 'n sentrale skaakmat", moveLimit: 24 },
-      // S2: Ke3 Bg5 Nc6 vs Kd5 pe5 — pion op e5, ruiter aktief
-      { fen: '8/8/2N5/3kp1B1/8/4K3/8/8 w - - 0 1',
-        note: "Pion op e5 staan langs die swart koning — Nc6 en Bg5 bou die mat-net; hou die skaakmat uit die rand!", moveLimit: 24 },
-      // S3: Ke3 Bc4 Nd5 vs Ke5 pf5 — pion op f5 langs die swart koning
-      { fen: '8/8/8/3Nkp2/2B5/4K3/8/8 w - - 0 1',
-        note: "Pion op f5 verskans swart se een kant — trek die sentrale mat-net met Nd5 en Bc4 toe", moveLimit: 24 },
-    ],
-    gold: [
-      // G1: Kf3 Bc4 Nb5 vs Ke5 pd3 — pion dreig bevordering! Wedren teen die klok
-      { fen: '8/8/8/1N2k3/2B5/3p1K2/8/8 w - - 0 1',
-        note: "Pion op d3 dreig d2-d1! Vang dit of gee sentrale skaakmat EERSTE — die wedren begin nou!", moveLimit: 24 },
-      // G2: Kf2 Bc5 Nd7 vs Kd5 pe3 — pion op e3, sentrale mat vereiste
-      { fen: '8/3N4/8/2Bk4/8/4p3/5K2/8 w - - 0 1',
-        note: "Pion op e3 dreig e2 en bevordering — vind die sentrale skaakmat voor dit gebeur! Elke skuif tel.", moveLimit: 24 },
-    ],
-  },
 }
