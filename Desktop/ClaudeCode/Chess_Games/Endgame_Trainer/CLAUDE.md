@@ -48,17 +48,21 @@ Each type corresponds to one badge. Listed in recommended difficulty order:
 | 19 | Verkeerde Kleur Loper | Wrong-Coloured Bishop |
 | 20 | Koningin teen Pion op 7de Ry | Queen vs Pawn on 7th Rank |
 
+> Type 21 (Hartjie van die Bord) was removed — the "central checkmate only" constraint was unachievable because the pawns in those positions didn't reliably cage the king away from the edge, and B+N naturally mates on edge squares. Total badge count is **60** (20 types × 3 tiers).
+
 **Audience**: Young players (~8–12 years), mostly in Afrikaans.
 
 ---
 
 ## Three Tiers Per Badge
 
-| Tier | Afrikaans | Move Limit | Puzzles Per Type | Hints |
+| Tier | Afrikaans | Default Move Limit | Puzzles Per Type | Hints |
 |------|-----------|------------|-----------------|-------|
 | Bronze | Brons | 12 moves | 5 | Always available |
 | Silver | Silwer | 24 moves | 3 | First 10 moves only, then notification |
 | Gold | Goud | 36 moves | 2 | None |
+
+Individual puzzles may override the tier default via `moveLimit` in `positions.js`. Type 5 uses 22 / 34 / 46 instead of the defaults.
 
 **Definition of "move":** One full turn = one white move + one black response.
 
@@ -74,16 +78,16 @@ Each type corresponds to one badge. Listed in recommended difficulty order:
 
 ---
 
-## 200 Starting Positions
+## Starting Positions
 
 All positions are hardcoded as FEN strings, stored in `positions.js` grouped by type and tier.
 
-**Counts:** 5 bronze + 3 silver + 2 gold = 10 per type × 20 types = **200 total**
+**Counts:** 20 types × (3B + 3S + 2G) ≈ **~160 positions** (some types have 3 bronze instead of 5).
 
 **Construction guidelines by type:**
-- **Pure material endings (Types 1–5):** Use Syzygy tablebase theory. Bronze positions should be close to forced mate (within ~8–10 ideal moves). Silver positions mid-distance. Gold positions further back, requiring longer technique.
-- **Structural/thematic endings (Types 6–20):** Construct canonical positions based on well-known endgame theory for each theme. Positions should clearly illustrate the concept being taught.
-- **King & Two Knights (Type 5) special rule:** All positions — at all tiers — must be pre-constructed such that black's inaccuracy (see Engine Behaviour below) creates a genuine mating net reachable within the tier's move limit. These cannot be randomly generated; they require deliberate setup.
+- **Pure material endings (Types 1–5):** Use Syzygy tablebase theory. Bronze positions should be close to forced mate. Silver positions mid-distance. Gold positions further back, requiring longer technique.
+- **Structural/thematic endings (Types 6–20):** Construct canonical positions based on well-known endgame theory for each theme.
+- **King & Two Knights (Type 5) special rule:** All positions must be pre-constructed such that the inaccuracy rule (random + second-best wobble, see Engine Behaviour) creates a mating net reachable within the tier's extended move limit (22 / 34 / 46). Positions include a "hook" pawn on rank 7 (bronze), 5 (silver), or 2 (gold) to prevent stalemate in the corner.
 
 ---
 
@@ -91,11 +95,16 @@ All positions are hardcoded as FEN strings, stored in `positions.js` grouped by 
 
 **Normal play:** Stockfish plays at maximum strength (depth 20+).
 
-**Inaccuracy rule:**
-- Applies **only** to endgame types that are theoretically unsolvable without it (currently: Type 5, King & Two Knights).
-- Every **5th black move**, Stockfish plays the **second-best move** instead of the best.
-- The inaccuracy counter **resets at the start of each new game**.
-- Each inaccuracy must be exploitable by white within 5 moves — positions should be pre-validated to ensure this.
+**Inaccuracy rule** — three types, implemented in `handleAfterWhiteMove` in `app.js`:
+
+| Type | Rule |
+|------|------|
+| 5 — Twee Ruiters | Random legal move on black turns 4, 9, 14, 19, 24 (mc % 5 === 4); second-best on turns 5, 10, 15, 20, 25 (mc % 5 === 0). Double wobble every 5 turns. |
+| 6 — K+P (gold only) | Second-best every 5th black move — prevents infinite repetition draws. |
+| 17 — Goeie Loper | Second-best on black moves 4, 10, and 12 (all tiers). Provides the break needed to establish a material advantage before Stockfish seals the locked-pawn position. |
+
+- The move counter (`blackMoveCount`) resets at the start of each new game.
+- "Random" uses `chess.js moves({ verbose: true })` — picks uniformly from all legal moves, no Stockfish call needed.
 
 **Stalemate:**
 - If black is stalemated, the round ends immediately as a **failure**.
@@ -139,7 +148,7 @@ Triggered automatically after **every** round (win, loss, or stalemate):
 ## UI Screens
 
 ### 1. Tuis / Kentekens (Home / Badge Map)
-- 4×5 grid of 20 badges
+- 4×5 grid of 20 badges (was 21 — Type 21 removed)
 - Each badge shows: Afrikaans type name, current tier colour (greyed out / bronze / silver / gold)
 - A "Speel" (Play) button launches a random puzzle from the current available pool
 - Progress summary visible (e.g., how many badges earned at each tier)
@@ -213,34 +222,35 @@ Use figurine algebraic notation (piece icons instead of letters) to avoid disamb
 
 ---
 
-## Current Sprint State (positions.js)
+## Current State (positions.js) — June 2026
 
-All 20 types complete (as of March 2026):
+All 20 active types complete:
 
 | Type | Status | Notes |
 |------|--------|-------|
 | 1 — K+Q vs K | ✅ Complete (5B 3S 2G) | |
 | 2 — K+R vs K | ✅ Complete (5B 3S 2G) | |
-| 3 — K+BB vs K | ✅ Complete (3B 3S 2G) | Bronze has 3 not 5 |
-| 4 — K+BN vs K | ✅ Complete (3B 3S 2G) | Bronze has 3 not 5 |
-| 5 — K+NN vs K | ✅ Complete (3B 3S 2G) | Bronze has 3 not 5; inaccuracy rule in app.js |
+| 3 — K+BB vs K | ✅ Complete (3B 3S 2G) | |
+| 4 — K+BN vs K | ✅ Complete (3B 3S 2G) | |
+| 5 — K+NN vs K | ✅ Complete (3B 3S 2G) | Extended limits 22/34/46; random+second-best wobble rule |
 | 6 — K+P vs K | ✅ Complete (5B 3S 2G) | |
 | 7 — Passed Pawn Races | ✅ Complete (5B 3S 2G) | |
 | 8 — Opposition & King Activity | ✅ Complete (5B 3S 2G) | |
-| 9 — Zugzwang | ✅ Complete (3B 3S 2G) | Bronze has 3 not 5 |
-| 10 — Triangulation | ✅ Complete (3B 3S 2G) | Bronze has 3 not 5 |
-| 11 — Piondeurbraak | ✅ Complete (3B 3S 2G) | Bronze has 3 not 5 |
-| 12 — Buitenste Verbygeraakte Pion | ✅ Complete (3B 3S 2G) | Bronze has 3 not 5 |
-| 13 — Lucena | ✅ Complete (3B 3S 2G) | Bronze has 3 not 5 |
-| 14 — Philidor | ✅ Complete (3B 3S 2G) | Bronze has 3 not 5 |
-| 15 — Toring Agter Verbygeraakte Pion | ✅ Complete (3B 3S 2G) | Bronze has 3 not 5 |
-| 16 — Aktiewe vs Passiewe Toring | ✅ Complete (3B 3S 2G) | Bronze has 3 not 5 |
-| 17 — Goeie Loper vs Slegte Loper | ✅ Complete (3B 3S 2G) | Bronze has 3 not 5 |
-| 18 — Loper teen Ruiter | ✅ Complete (3B 3S 2G) | Bronze has 3 not 5 |
-| 19 — Verkeerde Kleur Loper | ✅ Complete (3B 3S 2G) | Bronze has 3 not 5; extra pawn provides winning resource |
-| 20 — Q vs P on 7th | ✅ Complete (3B 3S 2G) | Bronze has 3 not 5 |
+| 9 — Zugzwang | ✅ Complete (3B 3S 2G) | |
+| 10 — Triangulation | ✅ Complete (3B 3S 2G) | |
+| 11 — Piondeurbraak | ✅ Complete (3B 3S 2G) | |
+| 12 — Buitenste Verbygeraakte Pion | ✅ Complete (3B 3S 2G) | |
+| 13 — Lucena | ✅ Complete (3B 3S 2G) | |
+| 14 — Philidor | ✅ Complete (3B 3S 2G) | |
+| 15 — Toring Agter Verbygeraakte Pion | ✅ Complete (3B 3S 2G) | |
+| 16 — Aktiewe vs Passiewe Toring | ✅ Complete (3B 3S 2G) | |
+| 17 — Goeie Loper vs Slegte Loper | ✅ Complete (3B 3S 2G) | Second-best on moves 4, 10, 12 (all tiers) |
+| 18 — Loper teen Ruiter | ✅ Complete (3B 3S 2G) | |
+| 19 — Verkeerde Kleur Loper | ✅ Complete (3B 3S 2G) | Extra pawn provides winning resource |
+| 20 — Q vs P on 7th | ✅ Complete (3B 3S 2G) | |
+| ~~21 — Hartjie van die Bord~~ | ❌ Removed | Central-checkmate constraint unachievable with B+N |
 
-**All 20 types complete.** Next sprint: verify app.js Type 5 inaccuracy rule (every 5th black move → second-best), then full playthrough testing.
+**Next:** playthrough testing of Types 5 and 17 under the new inaccuracy rules.
 
 ---
 
