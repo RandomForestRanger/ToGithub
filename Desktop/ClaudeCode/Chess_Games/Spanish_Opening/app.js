@@ -36,7 +36,7 @@ const BADGES = {
     },
     exchange: {
         name: 'Ruil',
-        icon: '🔄',
+        icon: '🤝',
         title: 'Ruil Variasie',
         description: 'Wit speel Bxc6 en vernietig Swart se pion struktuur deur dubbele pionne te skep. Bobby Fischer het hierdie variasie gereeld gespeel. Die idee is om \'n eenvoudige maar blywende voordeel te kry in die eindspel danksy Swart se swak pionne.'
     },
@@ -48,13 +48,13 @@ const BADGES = {
     },
     closed: {
         name: 'Geslote',
-        icon: '🔒',
+        icon: '🔐',
         title: 'Geslote Spel',
         description: 'Swart speel ...Be7 - \'n strategiese, geslote posisie waar langtermyn beplanning belangrik is. Die spel ontwikkel stadig met albei kante wat hul stukke herposisioneer. Geduld is die sleutel! Anatoly Karpov was \'n meester van hierdie tipe posisies.'
     },
     bird: {
         name: 'Bird',
-        icon: '🐦',
+        icon: '🦅',
         title: 'Bird se Variasie',
         description: 'Swart speel 3...Nd4 - \'n ongewone maar interessante keuse wat Wit verras! Die ridder spring na d4 en bedreig om na f3 te neem. Dit is vernoem na die Engelse meester Henry Bird. \'n Goeie opsie as jy van jou teenstander se voorbereiding wil wegbeweeg!'
     },
@@ -72,13 +72,13 @@ const BADGES = {
     },
     breyer: {
         name: 'Breyer',
-        icon: '🔙',
+        icon: '🔄',
         title: 'Breyer Variasie',
         description: 'Swart speel 9...Nb8 - die ridder gaan terug om via d7 na \'n beter posisie te gaan! Dit lyk snaaks, maar die idee is diep: die ridder gaan na d7 waar dit meer opsies het. Boris Spassky en Anatoly Karpov het hierdie stelsel gereeld gebruik. Geduld en strategie!'
     },
     zaitsev: {
         name: 'Zaitsev',
-        icon: '📚',
+        icon: '📖',
         title: 'Zaitsev Variasie',
         description: 'Swart speel 9...Bb7 - fianchetto die loper vir druk op die sentrum en die e4-pion! Hierdie aggressiewe stelsel is vernoem na die Russiese grootmeester Igor Zaitsev. Die loper op b7 skiet diagonaal en ondersteun \'n moontlike ...d5 deurbraak.'
     },
@@ -96,13 +96,13 @@ const BADGES = {
     },
     schliemann: {
         name: 'Schliemann',
-        icon: '🎲',
+        icon: '🎰',
         title: 'Schliemann Gambiet',
         description: 'Swart speel 3...f5 - \'n gewaagde gambiet wat onmiddellik Wit se sentrum uitdaag! Dit is vernoem na die Duitse argeoloog Adolf Schliemann (wat ook Troje ontdek het!). Die spel word wild en taktiek-vol. Net vir die dapperes wat van avontuur hou!'
     },
     cozio: {
         name: 'Cozio',
-        icon: '🔍',
+        icon: '🔭',
         title: 'Cozio Ontdekker',
         description: 'Swart speel 3...Nge7 - \'n skaars maar soliede verdediging uit die 18de eeu! Carlo Cozio van Italië het dit ontwikkel. Die ridder gaan na e7 in plaas van f6, wat verskillende planne moontlik maak. \'n Goeie verrassingswapen omdat min spelers dit ken!'
     },
@@ -126,7 +126,7 @@ const BADGES = {
     },
     keres: {
         name: 'Keres',
-        icon: '🌟',
+        icon: '⭐',
         title: 'Keres Lyn',
         description: 'Swart speel 9...Nd7 of 9...a5 - dinamiese opsies vernoem na Paul Keres van Estland! Keres was een van die sterkste spelers wat nooit Wêreldkampioen geword het nie. Hierdie buigsame stelsels gee Swart verskeie planne afhangende van Wit se reaksie.'
     },
@@ -315,9 +315,8 @@ let lastHintInfo = null;  // Track hint for debugging
 // Track specific variations
 let variationState = {
     morphyPlayed: false,
-    marshallSequence: [],
-    closedReached: false,
-    archangelSequence: []
+    openDefenseEntered: false,
+    closedDefenseEntered: false
 };
 
 // ============================================
@@ -755,9 +754,8 @@ function startNewGame() {
 
     variationState = {
         morphyPlayed: false,
-        marshallSequence: [],
-        closedReached: false,
-        archangelSequence: []
+        openDefenseEntered: false,
+        closedDefenseEntered: false
     };
 
     updateUI();
@@ -1582,8 +1580,8 @@ function checkBadges(move, isBlackMove = false) {
             awardBadge('castled');
         }
 
-        // Exchange Variation (White plays Bxc6 before ...a6 / Morphy)
-        if (san === 'Bxc6' && !variationState.morphyPlayed) {
+        // Exchange Variation (White plays Bxc6 before ...a6 / Morphy) — opening only
+        if (san === 'Bxc6' && !variationState.morphyPlayed && moveNum <= 8) {
             awardBadge('exchange');
         }
 
@@ -1597,8 +1595,8 @@ function checkBadges(move, isBlackMove = false) {
             awardBadge('anti_marshall');
         }
 
-        // Delayed Exchange (Bxc6 after ...a6 has been played - Morphy variation)
-        if (san === 'Bxc6' && variationState.morphyPlayed) {
+        // Delayed Exchange (Bxc6 after ...a6 has been played - Morphy variation) — opening only
+        if (san === 'Bxc6' && variationState.morphyPlayed && moveNum <= 10) {
             awardBadge('delayed_exchange');
         }
 
@@ -1610,8 +1608,8 @@ function checkBadges(move, isBlackMove = false) {
             awardBadge('center_control');
         }
 
-        // Cinderella Bishop (Ba4 retreat after ...a6 Morphy — bishop dances away with tempo)
-        if (san === 'Ba4' && variationState.morphyPlayed) {
+        // Cinderella Bishop (Ba4 retreat after ...a6 Morphy — bishop dances away with tempo) — opening only
+        if (san === 'Ba4' && variationState.morphyPlayed && moveNum <= 8) {
             awardBadge('cinderella');
         }
     }
@@ -1629,13 +1627,15 @@ function checkBadges(move, isBlackMove = false) {
             if (san === 'Bc5') awardBadge('classical');
         }
 
-        // Open Game (Black plays ...Nxe4)
-        if (san === 'Nxe4') {
+        // Open Game (Black plays ...Nxe4) — opening only, mutually exclusive with Closed
+        if (san === 'Nxe4' && !variationState.closedDefenseEntered && moveNum <= 10) {
+            variationState.openDefenseEntered = true;
             awardBadge('open');
         }
 
-        // Closed Game (Black plays ...Be7)
-        if (san === 'Be7') {
+        // Closed Game (Black plays ...Be7) — opening only, mutually exclusive with Open
+        if (san === 'Be7' && !variationState.openDefenseEntered && moveNum <= 10) {
+            variationState.closedDefenseEntered = true;
             awardBadge('closed');
         }
 
@@ -1654,8 +1654,8 @@ function checkBadges(move, isBlackMove = false) {
             if (san === 'Nd7' || san === 'a5') awardBadge('keres');
         }
 
-        // Marshall Attack detection (simplified - after 8...d5)
-        if (san === 'd5' && moveNum >= 8) {
+        // Marshall Attack detection (simplified - after 8...d5) — opening only
+        if (san === 'd5' && moveNum >= 8 && moveNum <= 10) {
             // Check for Marshall structure — White must have castled (even index = White's move)
             const histStr = history.join(' ');
             const castlingIndices = history
@@ -1673,13 +1673,13 @@ function checkBadges(move, isBlackMove = false) {
         const nf6Idx = histArr.indexOf('Nf6');
         const b5Idx = histArr.indexOf('b5');
         const bb7Idx = histArr.indexOf('Bb7');
-        if (nf6Idx >= 0 && b5Idx > nf6Idx && bb7Idx > b5Idx) {
+        if (nf6Idx >= 0 && b5Idx > nf6Idx && bb7Idx > b5Idx && moveNum <= 10) {
             awardBadge('archangel');
         }
     }
 
-    // Noah's Ark Survivor - White retreated to Bb3 before Black's c4 trap closed
-    if (!isBlackMove && moveNum >= 8) {
+    // Noah's Ark Survivor - White retreated to Bb3 before Black's c4 trap closed — opening only
+    if (!isBlackMove && moveNum >= 8 && moveNum <= 12) {
         const hist = game.history();
         const b5Idx  = hist.indexOf('b5');
         const c4Idx  = hist.indexOf('c4');
@@ -1690,11 +1690,10 @@ function checkBadges(move, isBlackMove = false) {
         }
     }
 
-    // Gajewski Gambit detection
-    if (!isBlackMove) {
+    // Gajewski Gambit detection — middlegame, capped at move 15
+    if (!isBlackMove && moveNum <= 15) {
         const histStr = history.join(' ');
         if (histStr.includes('d5') && histStr.includes('exd5') && histStr.includes('Bg4')) {
-            // Simplified Gajewski detection
             awardBadge('gajewski');
         }
     }
@@ -1999,8 +1998,8 @@ function hideHintMessage() {
 function endGame(checkmateMessage = null) {
     isGameActive = false;
 
-    // Check for perfect game badge (90+ allows one near-miss move)
-    if (currentScore >= 90) {
+    // Check for perfect game badge
+    if (currentScore >= 100) {
         awardBadge('perfect_game');
     }
 
