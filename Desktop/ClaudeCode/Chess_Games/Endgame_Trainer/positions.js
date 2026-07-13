@@ -27,6 +27,14 @@ const ENDGAME_TYPES = [
   { id: 18, name: 'Loper teen Ruiter',                  icon: '🐎' },
   { id: 19, name: 'Verkeerde Kleur Loper',              icon: '🔲' },
   { id: 20, name: 'Koningin teen Pion op 7de Ry',       icon: '🎖️' },
+  // Fase 5 "Fyn Kuns" (Opdrag 8b) — ses nuwe tipes, 22–27. 10 en 21 bly dood,
+  // nooit hergebruik nie (sien CLAUDE.md).
+  { id: 22, name: 'Koningin teen Toring',               icon: '♕' },
+  { id: 23, name: 'Koningin teen 2 Verbonde Pionne',    icon: '👯' },
+  { id: 24, name: 'Toring teen 2 Verbonde Pionne',      icon: '🛡️' },
+  { id: 25, name: 'Ruiter-en-Pion teen Ruiter',         icon: '🦄' },
+  { id: 26, name: 'Loper-en-Pion teen Loper',           icon: '✝️' },
+  { id: 27, name: 'Teenoorgestelde Lopers: Verdedig!',  icon: '🏰' },
 ]
 
 // ─── Tier-konfigurasie ────────────────────────────────────────────────────────
@@ -1329,6 +1337,226 @@ const POSITIONS = {
       // C4 0/5 pat-slaggate. Enjin se beste lyn: 1.Kxg2 Kg7 2.a6 ... mat in 8.
       { fen: '7k/7P/6B1/P7/8/8/6p1/5K2 w - - 0 1', moveLimit: 14,
         note: "Bg6 is VERKEERDE KLEUR vir h8 — maar swart se pg2 gee 'n mikro-hulpbron naby jou koning. Vang dit eers, dan bevorder die a-pion om deur te breek" },
+    ],
+  },
+
+  // ── Tipe 22: Koningin teen Toring ────────────────────────────────────────
+  // Fase 5 "Fyn Kuns" (Opdrag 8b). Tegniek: jaag die toring met vurke/afkappings
+  // totdat dit val, dan gewone K+Q-mat. 4 stukke, tabelbasis-eksak.
+  22: {
+    bronze: [
+      // B1: tabelbasis DTM=3 wit-skuiwe.
+      { fen: '8/8/8/6Q1/4K3/4r3/8/4k3 w - - 0 1',
+        note: 'Die toring staan langs die swart koning — vang dit dadelik en lewer dan gewone koningin-mat' },
+      // B2: tabelbasis DTM=3 wit-skuiwe.
+      { fen: '6k1/5r2/8/6K1/2Q5/8/8/8 w - - 0 1',
+        note: 'Jaag die toring met jou koning en koningin — dit kan nie vir altyd wegkruip nie' },
+      // B3: tabelbasis DTM=3 wit-skuiwe.
+      { fen: '8/8/8/3Q4/8/5K2/8/5r1k w - - 0 1',
+        note: "Skaak eers, dryf dan die toring in 'n hoek waar dit val" },
+    ],
+    silver: [
+      // S1: tabelbasis DTM=12 wit-skuiwe.
+      { fen: '8/8/8/3Q4/8/3K4/8/1kr5 w - - 0 1',
+        note: 'Toring en koning is uitmekaar — gebruik skaak om die toring af te sny voor jy mat lewer' },
+      // S2: tabelbasis DTM=13 wit-skuiwe.
+      { fen: '8/8/8/8/8/8/1r6/k2K1Q2 w - - 0 1',
+        note: 'Toring ver in die hoek — bou versigtig die net sonder om per ongeluk pat te gee' },
+    ],
+    gold: [
+      // G1: tabelbasis DTM=20 wit-skuiwe.
+      { fen: '8/8/8/k1r5/8/2K5/8/4Q3 w - - 0 1',
+        note: 'Toring en koning werk saam om weg te kom — presiese koningsette nodig om die toring te vang' },
+      // G2: tabelbasis DTM=20 wit-skuiwe.
+      { fen: '3k4/8/3r1K2/8/7Q/8/8/8 w - - 0 1',
+        note: 'Die langste jagtog — geduldig die toring insluit sonder om die tyd te mors' },
+    ],
+  },
+
+  // ── Tipe 23: Koningin teen 2 Verbonde Pionne ─────────────────────────────
+  // Tegniek: blokkeer eers die pionne (voorkom bevordering), vreet dan.
+  23: {
+    bronze: [
+      // B1: pionne op die 4de ry — tabelbasis DTM=4 wit-skuiwe.
+      { fen: '8/4Q3/8/8/1pp5/k2K4/8/8 w - - 0 1',
+        note: 'Die pionne staan op die 4de ry — vang hulle dadelik met jou koning' },
+      // B2: pionne op die 5de ry — tabelbasis DTM=5 wit-skuiwe.
+      { fen: '8/2K5/8/k1pp1Q2/8/8/8/8 w - - 0 1',
+        note: 'Blokkeer eers die pionne se opmars, vreet dan' },
+      // B3: pionne op die 5de ry — tabelbasis DTM=5 wit-skuiwe.
+      { fen: '8/4K3/8/2kpp3/8/8/8/Q7 w - - 0 1',
+        note: 'Skaak eers om die pionne se verdediging te ontwrig' },
+    ],
+    silver: [
+      // S1: pionne op die 5de ry, swart koning aktief — tabelbasis DTM=7 wit-skuiwe.
+      { fen: '8/8/8/4ppk1/8/8/6K1/4Q3 w - - 0 1',
+        note: 'Swart se koning verdedig die pionne aktief — blokkeer eers voor jy vreet' },
+      // S2: pionne op die 5de ry, swart koning aktief — tabelbasis DTM=7 wit-skuiwe.
+      { fen: '8/8/5k2/5pp1/3K4/8/3Q4/8 w - - 0 1',
+        note: 'Die pionne op die 5de ry het koningsteun — bou jou blokkade versigtig' },
+    ],
+    gold: [
+      // G1: pionne op die 6de ry — tabelbasis DTM=11 wit-skuiwe.
+      { fen: '8/8/5pp1/1K2k3/8/8/8/2Q5 w - - 0 1',
+        note: 'Pionne op die 6de ry, amper by die doel — blokkeer eers, vreet dan presies' },
+      // G2: pionne op die 6de ry — tabelbasis DTM=11 wit-skuiwe.
+      { fen: '5K2/8/5pp1/5k2/8/8/8/3Q4 w - - 0 1',
+        note: "Die gevaarlikste geval — een fout en 'n pion bevorder. Blokkeer eers!" },
+    ],
+  },
+
+  // ── Tipe 24: Toring teen 2 Verbonde Pionne ───────────────────────────────
+  // Tegniek: die toring moet van agter/sykant aanval voor die pionne die 6de ry bereik.
+  // Brons se moveLimit is opgestoot (14/16) — 'n toring (anders as 'n koningin)
+  // kan hierdie materiaal nooit vinniger as DTM~8 wen nie; die verstek 12 se
+  // 60%-begroting (7.2) is struktureel onbereikbaar hier, bevestig deur 382
+  // tabelbasis-wen-kandidate te deursoek sonder 'n enkele dtm<8-geval.
+  24: {
+    bronze: [
+      // B1: tabelbasis DTM=8 wit-skuiwe.
+      { fen: '8/4R3/8/8/1pp5/k2K4/8/8 w - - 0 1', moveLimit: 14,
+        note: 'Die toring val die pionne van agter aan — vang hulle voordat hulle ver kom' },
+      // B2: tabelbasis DTM=9 wit-skuiwe.
+      { fen: '8/8/8/8/2R1Kppk/8/8/8 w - - 0 1', moveLimit: 16,
+        note: 'Toring en koning werk saam — sny die pionne af en vreet hulle op' },
+      // B3: tabelbasis DTM=9 wit-skuiwe.
+      { fen: '2R5/8/2K5/1pp5/k7/8/8/8 w - - 0 1', moveLimit: 16,
+        note: "Wees geduldig — die toring moet eers 'n aanvalslyn kry voor dit kan toeslaan" },
+    ],
+    silver: [
+      // S1: tabelbasis DTM=8 wit-skuiwe.
+      { fen: '8/8/8/kppK4/8/8/8/4R3 w - - 0 1',
+        note: 'Swart se koning verdedig die pionne, maar die toring kan steeds deurbreek' },
+      // S2: tabelbasis DTM=9 wit-skuiwe.
+      { fen: '2R5/8/8/1pp5/k2K4/8/8/8 w - - 0 1',
+        note: 'Die pionne op die 5de ry het koningsteun — sny hulle eers af' },
+    ],
+    gold: [
+      // G1: tabelbasis DTM=29 wit-skuiwe.
+      { fen: '7K/8/3ppk2/8/8/8/1R6/8 w - - 0 1',
+        note: 'Pionne amper by die doel — die toring moet van ver af presies saamwerk met die koning' },
+      // G2: tabelbasis DTM=24 wit-skuiwe.
+      { fen: '5R2/8/3pp3/8/3k4/8/8/K7 w - - 0 1',
+        note: 'Die swaarste tegniek — hou geduldig druk totdat die pionne val' },
+    ],
+  },
+
+  // ── Tipe 25: Ruiter-en-Pion teen Ruiter ──────────────────────────────────
+  // Tegniek: skerm die pion se pad met jou eie ruiter teen die verdedigende ruiter.
+  25: {
+    bronze: [
+      // B1: verdedigende ruiter ver — tabelbasis DTM=4 wit-skuiwe.
+      { fen: '7k/2N5/4PK2/8/n7/8/8/8 w - - 0 1', winCondition: 'promote',
+        note: 'Swart se ruiter is te ver om in te meng — stoot die pion reguit deur' },
+      // B2: verdedigende ruiter ver — tabelbasis DTM=4 wit-skuiwe.
+      { fen: '4k3/8/3PK3/8/2N5/8/8/n7 w - - 0 1', winCondition: 'promote',
+        note: 'Die verdedigende ruiter staan magteloos in die hoek — bevorder met jou koning se steun' },
+      // B3: verdedigende ruiter ver — tabelbasis DTM=4 wit-skuiwe.
+      { fen: 'k7/1NK5/3P4/8/7n/8/8/8 w - - 0 1', winCondition: 'promote',
+        note: 'Ver van die aksie — jou ruiter skerm, jou koning en pion doen die res' },
+    ],
+    silver: [
+      // S1: verdedigende ruiter naby — selfspel-uitrol bevorder teen wit-skuif 7.
+      { fen: '3k4/2N5/4P1n1/5K2/8/8/8/8 w - - 0 1', winCondition: 'promote',
+        note: 'Swart se ruiter by g6 loer na die pion se pad — hou dit weg met noukeurige ruiterspel' },
+      // S2: verdedigende ruiter naby — selfspel-uitrol bevorder teen wit-skuif 9.
+      { fen: '3k4/8/5n2/4PK2/6N1/8/8/8 w - - 0 1', winCondition: 'promote',
+        note: 'Die verdediger staan sentraal — beskerm jou pion se opmarspad stap vir stap' },
+    ],
+    gold: [
+      // G1: verdedigende ruiter naby, hardste geval — selfspel-uitrol bevorder
+      // teen wit-skuif 16. (Vervang 'n eerste kandidaat wat tabelbasis-wen was
+      // maar nie binne 100 wit-skuiwe in regte selfspel bevorder het nie —
+      // dieselfde patroon as Opdrag 7 se T7-goud-herbou: tabelbasis-DTM is nie
+      // altyd 'n betroubare moeilikheidsverteenwoordiger vir hierdie tema nie.)
+      { fen: '4N3/8/1n1PK3/7k/8/8/8/8 w - - 0 1', winCondition: 'promote',
+        note: "Verdedigende ruiter loer van naby — 'n lang, presiese skermingsdans is nodig om die pion tuis te bring" },
+      // G2: verdedigende ruiter naby — selfspel-uitrol bevorder teen wit-skuif 13.
+      { fen: 'k7/3N1n2/8/4P3/5K2/8/8/8 w - - 0 1', winCondition: 'promote',
+        note: 'Presiese ruiterspel benodig — een fout en die verdedigende ruiter blokkeer die pion vir goed' },
+    ],
+  },
+
+  // ── Tipe 26: Loper-en-Pion teen Loper (selfde kleur) ─────────────────────
+  // Tegniek: twee diagonale, een loper — dryf hom van een af, bevorder op die ander.
+  // Kandidate is met selfspel-uitrol geverifieer (nie net tabelbasis-DTM nie) —
+  // dieselfde les as Tipe 25: 'n tabelbasis-wen konfigurasie bevorder nie altyd
+  // binne regte selfspel nie ('n eerste brons-kandidaat, DTM=3, het gefaal en
+  // is vervang).
+  26: {
+    bronze: [
+      // B1: verdedigende loper ver — selfspel-uitrol bevorder teen wit-skuif 2.
+      { fen: '1b4k1/8/3P4/3KB3/8/8/8/8 w - - 0 1', winCondition: 'promote',
+        note: "Swart se loper is ver van die pion se pad — stoot deur met jou koning se steun" },
+      // B2: verdedigende loper ver — selfspel-uitrol bevorder teen wit-skuif 2.
+      { fen: '5k2/8/3P4/3K4/1B6/8/8/6b1 w - - 0 1', winCondition: 'promote',
+        note: 'Die verdedigende loper staan magteloos ver weg — bevorder maklik' },
+      // B3: verdedigende loper ver — selfspel-uitrol bevorder teen wit-skuif 3.
+      { fen: '7b/8/8/4PK1k/8/2B5/8/8 w - - 0 1', winCondition: 'promote',
+        note: 'Ver van die aksie — jou loper en koning werk saam sonder inmenging' },
+    ],
+    silver: [
+      // S1: verdedigende loper naby — selfspel-uitrol bevorder teen wit-skuif 5.
+      { fen: '4k3/2b5/3P4/3K4/5B2/8/8/8 w - - 0 1', winCondition: 'promote',
+        note: 'Swart se loper is nou naby — dryf hom van sy diagonaal af voor jy bevorder' },
+      // S2: verdedigende loper naby — selfspel-uitrol bevorder teen wit-skuif 6.
+      { fen: '1B5k/6b1/3P4/4K3/8/8/8/8 w - - 0 1', winCondition: 'promote',
+        note: "Die verdedigende loper probeer die pion se pad dek — druk hom weg met presiese sette" },
+    ],
+    gold: [
+      // G1: verdedigende loper naby, hardste geval — selfspel-uitrol bevorder
+      // teen wit-skuif 13.
+      { fen: 'k7/8/4P1b1/4K3/8/1B6/8/8 w - - 0 1', winCondition: 'promote',
+        note: 'Twee diagonale, een loper — swart kan nie altwee dek nie, maar dit neem geduld om dit te bewys' },
+      // G2: verdedigende loper naby — selfspel-uitrol bevorder teen wit-skuif 10.
+      { fen: '8/8/6b1/3P3k/4K3/8/6B1/8 w - - 0 1', winCondition: 'promote',
+        note: 'Die swaarste geval — dryf die loper stap vir stap van die pion se pad af voor jy bevorder' },
+    ],
+  },
+
+  // ── Tipe 27: Teenoorgestelde Lopers: Verdedig! ───────────────────────────
+  // Tegniek: wit se loper se kleur is die vesting — hou die blokkade, wen die tyd.
+  // Eerste regte verdedigingskenteken. winCondition: 'hold'; holdMoves word
+  // nie oorskryf nie (verstek na die tier se moveLimit, per app.js se
+  // `posn.holdMoves || moveLimit`).
+  //
+  // Keuse-kriterium (bevestig voor generering): onder tabelbasis-gelykspel-
+  // kandidate is getel hoeveel van wit se wettige skuiwe OOK gelykspel hou
+  // (classify_move_for_white omgekeer — 'draw' getel i.p.v. C5 se 'win'),
+  // met voorkeur vir min sulke skuiwe sodat 'n kind nie sommer enige
+  // aanneemlike skuif kan speel nie. Brons het posisies met ≤3 sulke skuiwe
+  // gevind (die spesifikasie se maatstaf); silwer/goud se steekproef
+  // (50 van 198 gelykspel-kandidate, om binne die uur te bly) het geen
+  // ≤3-geval buite die brons-familie opgelewer nie — silwer/goud gebruik
+  // eerder die stewigste beskikbare kandidate MET 'n bevestigde verlies-skuif
+  // (sien tools/opdrag_08b_manifest.md vir die volle tabel).
+  27: {
+    bronze: [
+      // B1: 2/7 skuiwe hou gelykspel; verlore voorbeeld Ke5.
+      { fen: '8/2kB4/8/2p3b1/3K4/8/8/8 w - - 0 1', winCondition: 'hold',
+        note: 'Jou koning staan reeds op die blokkade — moenie wegdwaal nie, bly presies hier' },
+      // B2: 2/9 skuiwe hou gelykspel; verlore voorbeeld Ba5.
+      { fen: 'b7/8/1B6/1k1p4/3K4/8/8/8 w - - 0 1', winCondition: 'hold',
+        note: 'Die vesting is klaar gebou — een stap weg en swart breek deur' },
+      // B3: 3/4 skuiwe hou gelykspel; verlore voorbeeld Ka3.
+      { fen: '8/8/8/1p3b2/K7/8/2kB4/8 w - - 0 1', winCondition: 'hold',
+        note: "Jou loper se kleur is jou vesting — hou net jou posisie en die gelykspel is verseël" },
+    ],
+    silver: [
+      // S1: 9/13 skuiwe hou gelykspel; verlore voorbeeld Bf6.
+      { fen: '8/4B3/8/3p1k2/3K4/8/6b1/8 w - - 0 1', winCondition: 'hold',
+        note: 'Swart se loper is die verkeerde kleur om jou vesting te breek — verdedig geduldig' },
+      // S2: 10/15 skuiwe hou gelykspel; verlore voorbeeld Bf8.
+      { fen: '6k1/4B3/8/3pK3/8/8/6b1/8 w - - 0 1', winCondition: 'hold',
+        note: 'Meer speelruimte, maar steeds net een pad na die gelykspel — kies versigtig' },
+    ],
+    gold: [
+      // G1: 6/13 skuiwe hou gelykspel, koning moet die blokkade nog bereik; verlore voorbeeld Kg6.
+      { fen: '8/2b5/8/5K2/5p2/8/8/6kB w - - 0 1', winCondition: 'hold',
+        note: 'Jou koning moet eers die blokkade bereik — swart druk om jou daar weg te hou voor jy dit regkry' },
+      // G2: 6/12 skuiwe hou gelykspel, koning moet die blokkade nog bereik; verlore voorbeeld Kh4.
+      { fen: '8/8/8/8/4p3/1b5K/8/1kB5 w - - 0 1', winCondition: 'hold',
+        note: 'Die langste pad na die vesting — elke tempo tel voor die blokkade bereik word' },
     ],
   },
 

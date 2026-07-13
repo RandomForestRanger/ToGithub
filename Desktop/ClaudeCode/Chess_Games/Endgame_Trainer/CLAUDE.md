@@ -22,9 +22,9 @@ Entry point is `index.html`, which loads `positions.js` → `fases.js` → `app.
 
 ---
 
-## The 20 Endgame Types (Badge Names in Afrikaans)
+## The 25 Endgame Types (Badge Names in Afrikaans)
 
-Each type corresponds to one badge. Listed by numeric ID, **not** play order — since Opdrag 4, actual curriculum sequencing is the Fase-Poorte grouping below (Type 4 in particular plays last, in Fase 4, despite its low ID).
+Each type corresponds to one badge. Listed by numeric ID, **not** play order — since Opdrag 4, actual curriculum sequencing is the Fase-Poorte grouping below (Type 4 in particular plays last, in Fase 4, despite its low ID). Types 22–27 (Opdrag 8b) are a fifth curriculum group, Fase 5 "Fyn Kuns" — see Fase-Poorte below.
 
 | # | Afrikaans Name | English Reference |
 |---|---|---|
@@ -47,10 +47,16 @@ Each type corresponds to one badge. Listed by numeric ID, **not** play order —
 | 18 | Loper teen Ruiter | Bishop vs Knight |
 | 19 | Verkeerde Kleur Loper | Wrong-Coloured Bishop |
 | 20 | Koningin teen Pion op 7de Ry | Queen vs Pawn on 7th Rank |
+| 22 | Koningin teen Toring | Queen vs Rook |
+| 23 | Koningin teen 2 Verbonde Pionne | Queen vs 2 Connected Pawns |
+| 24 | Toring teen 2 Verbonde Pionne | Rook vs 2 Connected Pawns |
+| 25 | Ruiter-en-Pion teen Ruiter | Knight & Pawn vs Knight |
+| 26 | Loper-en-Pion teen Loper | Bishop & Pawn vs Bishop (same colour) |
+| 27 | Teenoorgestelde Lopers: Verdedig! | Opposite-Coloured Bishops: Defend! |
 
 > Type 21 (Hartjie van die Bord) was removed — the "central checkmate only" constraint was unachievable because the pawns in those positions didn't reliably cage the king away from the edge, and B+N naturally mates on edge squares.
 >
-> Type 10 (Driehoeksbeweging) was cut permanently (Opdrag 6b) — see the Current State table below for the epitaph. Total badge count is **57** (19 remaining types × 3 tiers).
+> Type 10 (Driehoeksbeweging) was cut permanently (Opdrag 6b) — see the Current State table below for the epitaph. Numbers 10 and 21 are dead permanently — never reused. Total badge count is **75** (25 types × 3 tiers).
 
 **Audience**: Young players (~8–12 years), mostly in Afrikaans.
 
@@ -80,7 +86,7 @@ Individual puzzles may override the tier default via `moveLimit` in `positions.j
 
 ### Fase-Poorte (Curriculum Gate) — Opdrag 4
 
-The (now 19) types are grouped into **4 fases** (`fases.js`), replacing the old flat random-pool-of-everything lottery with a curriculum sequence. Type 4 is deliberately placed last — despite being a "basic material" mate, its DTM runs up to 33, making it the hardest technique in the app. Type 10 was permanently cut from Fase 2's list in Opdrag 6b (see Current State) — its absence from `faseGatingTypes()` is exactly the same mechanism that already handled Type 5's temporary retirement, so no special-casing was needed.
+The (now 25) types are grouped into **5 fases** (`fases.js`), replacing the old flat random-pool-of-everything lottery with a curriculum sequence. Type 4 is deliberately placed last in Fase 4 — despite being a "basic material" mate, its DTM runs up to 33, making it the hardest technique in the app. Type 10 was permanently cut from Fase 2's list in Opdrag 6b (see Current State) — its absence from `faseGatingTypes()` is exactly the same mechanism that already handled Type 5's temporary retirement, so no special-casing was needed. Fase 5 "Fyn Kuns" (Opdrag 8b) reuses the exact same `isFaseUnlocked()` gate a fifth time — no new app.js logic was needed, only a new `FASES` row.
 
 | Fase | Afrikaans Name | Types |
 |---|---|---|
@@ -88,6 +94,7 @@ The (now 19) types are grouped into **4 fases** (`fases.js`), replacing the old 
 | 2 | Pioneindspele | 6, 7, 8, 9, 11, 12 |
 | 3 | Toringeindspele | 13, 14, 15, 16 |
 | 4 | Meesterklas | 4, 5, 17, 18, 19, 20 |
+| 5 | Fyn Kuns | 22, 23, 24, 25, 26, 27 |
 
 **Gating rule:** Fase 1 is open from the start. Fase N+1 unlocks once every type in Fase N *that has at least one active bronze position* has its bronze badge earned (`faseGatingTypes()` in `app.js` filters out types with zero active bronzes before checking completeness — this is what keeps a fully-retired type from ever deadlocking progression; Type 5 was exactly this case at Opdrag 4's writing, before its Opdrag 5 rebuild gave it active positions again). Tier-within-type unlocking (above) is unchanged; the fase gate is an additional, orthogonal check applied inside `isTierUnlocked()`.
 
@@ -112,7 +119,7 @@ Positions the harness can't pass (theoretically drawn, or a cruel move-limit bud
 
 All positions are hardcoded as FEN strings, stored in `positions.js` grouped by type and tier.
 
-**Counts (post-Opdrag 8):** 222 positions on file (types 1–20; `_dev` now empty, excluded from this count), 164 active (servable), 58 retired (audit trail, never served) — see Current State below for the per-type breakdown and `tools/verification_report.md` for the authoritative, harness-generated numbers.
+**Counts (post-Opdrag 8b):** 264 positions on file (types 1–20 and 22–27; `_dev` empty, excluded from this count), 206 active (servable), 58 retired (audit trail, never served) — see Current State below for the per-type breakdown and `tools/verification_report.md` for the authoritative, harness-generated numbers.
 
 **Construction guidelines by type:**
 - **Pure material endings (Types 1–5):** Use Syzygy/Gaviota tablebase theory. Bronze positions should be close to forced mate. Silver positions mid-distance. Gold positions further back, requiring longer technique.
@@ -288,9 +295,21 @@ Use figurine algebraic notation (piece icons instead of letters) to avoid disamb
 
 ---
 
-## Current State (positions.js) — Opdrag 8 (2026-07-13)
+## Current State (positions.js) — Opdrag 8b (2026-07-13)
 
-Post-Opdrag-8 gap-fill: **222 positions on file across types 1–20** (`_dev` now empty, excluded from this count), **164 active (servable), 58 retired** (audit trail only). Harness: **0 ERRORs** across types 16, 17, 18, 19. "Active" below counts (Brons/Silwer/Goud); a retired position still occupies a slot in `positions.js` but is never dealt to a player.
+Post-Opdrag-8b: **264 positions on file across types 1–20 and 22–27** (`_dev` empty, excluded from this count), **206 active (servable), 58 retired** (audit trail only). Harness: **0 ERRORs** across all six new types (22–27). "Active" below counts (Brons/Silwer/Goud); a retired position still occupies a slot in `positions.js` but is never dealt to a player.
+
+### Opdrag 8b additions — Fase 5 "Fyn Kuns", six new types (22–27)
+
+New curriculum group, gated by Fase 4's bronzes via the existing `isFaseUnlocked()` mechanism (no new app.js logic — verified against the real app.js code via a small vm-sandboxed harness, not just read). All six types generated via the Type 5 pipeline (local filter → tablebase query → band select → gauntlet) as a template, lean counts throughout (3B/2S/2G = 7 positions × 6 types = 42 new, 0 retirements — candidates that failed generation-time checks were swapped before ever reaching `positions.js`). Full per-position evidence (tablebase DTM/rollout/drawing-move-count, harness lines, corrections made mid-task) in `tools/opdrag_08b_manifest.md`.
+
+- **Type 22 (Koningin teen Toring, Q vs R, mate):** broad king/rook/queen sweep, tablebase-win-filtered, DTM-banded. Bronze's DTM≤7 band initially picked three mate-in-1s (rook already adjacent to the king — no hunt, no lesson); floor raised to DTM≥3 before final selection. 3/3/2, harness 7/7 OK.
+- **Type 23 (Koningin teen 2 Verbonde Pionne, mate):** pawn-phalanx construction (bronze/silver rank 4–5, gold rank 6), tablebase-win-only filter is the entire quality bar per spec. Gold's construction band was initially sorted cheapest-DTM-first like the other tiers — but pawns already on rank 6 are often just captured outright (DTM 3, *easier* than bronze); fixed to sort hardest-first within gold's band. 3/2/2, harness 7/7 OK.
+- **Type 24 (Toring teen 2 Verbonde Pionne, mate):** same construction as Type 23, rook instead of queen. Same gold-ordering fix applied pre-emptively. Structural finding (not a search gap): exhaustively widened the bronze search (382 win-candidates) and confirmed a rook cannot convert this material faster than DTM 8 — the default bronze budget (7.2) is structurally unreachable here. Resolved the established way: bumped `moveLimit` on the three bronze positions (14/16/16) rather than accept a WARN. 3/2/2, harness 7/7 OK, 0 WARN.
+- **Type 25 (Ruiter-en-Pion teen Ruiter, promote):** curated skeleton, defender-knight near/far sets (brons=far/goud=near per spec). **Real lesson of this type:** tablebase DTM is not a reliable difficulty/convergence proxy for `promote` positions — first-pass gold (tablebase DTM=25, category=win) **failed the harness** (`geen bevordering binne 100 wit-skuiwe nie`, real self-play rollout never converged). Diagnosed by rollout-testing a broad candidate sample directly; replaced with a rollout-confirmed candidate (16 white-moves) and re-selected silver the same way (first pass was rollout=2, indistinguishable from bronze). Final picks are real-rollout-confirmed: bronze 2–4, silver 7–9, gold 13–16 white-moves. 3/2/2, harness 7/7 OK.
+- **Type 26 (Loper-en-Pion teen Loper, selfde kleur, promote):** same shape as Type 25 plus the same-colour-bishop constraint (opposite-colour is Type 27's material, never sampled here). Applied Type 25's lesson pre-emptively — rollout-checked every candidate *before* writing to positions.js, catching one more tablebase/real-play mismatch this way (a bronze pick swapped before it ever reached the harness). 3/2/2, harness 7/7 OK.
+- **Type 27 (Teenoorgestelde Lopers: Verdedig!, hold):** the game's first real defence badge — white K+B vs black K+B(opposite colour)+P, `winCondition: 'hold'`. Construction generated broadly and filtered to tablebase `category: 'draw'`; correctness is the tablebase's job. **Selection criterion (confirmed before generating):** among draw-candidates, count how many of white's legal moves also hold the draw (`classify_move_for_white` reused, tallying `'draw'` instead of C5's `'win'`), preferring ≤3 such moves. A full pass over all 198 draw-candidates projected to ~30 minutes (one tablebase query per legal move per candidate) — killed and re-run capped to a stratified 50-candidate sample (~7 min). Bronze hit the ≤3 criterion exactly (2/7, 2/9, 3/4 safe moves); the capped sample found no silver/gold that tight, so those use the tightest available candidates with a *confirmed* genuine losing move instead (silver 9–10/13–15 safe, gold 6/12–13 safe) — a documented shortfall against the letter of the criterion, not a silent one. **Live-fire:** all 7 confirmed to hold under real engine-vs-engine self-play; the wrong-defence demonstration (bronze #3, playing the identified losing move `1.Ka3??`) shows eval crashing to −762cp immediately, forced mate by ply 10, actual checkmate by ply 21 — comfortably inside `hold` mode's early-adjudication trigger, confirming the Opdrag-2 adjudicator would catch this exact mistake. 3/2/2, harness 7/7 OK.
+- **Dedup scan** (`tools/scan_duplicates.py`, full file): 0 exact duplicates, 0 translation-aware near-duplicates among active positions. One pre-existing INFO shadow (T08 S6 vs retired T10 B2), unrelated to this task.
 
 ### Opdrag 8 additions (light-touch gap fill — no new certifiers, no re-theming)
 
@@ -344,9 +363,15 @@ Type 10 (Driehoeksbeweging) is no longer one of the app's types — cut permanen
 | 19 — Verkeerde Kleur Loper | 3/3/2 | 4 (B1, B3, S3, G1) | ✅ | Opdrag 8: file audit found silver already had 2 active (spec's "1" was stale, left untouched); added 1 gold (B4/B5-style skeleton + extra black defending pawn), tablebase DTM=15. Also: the Opdrag-2 `_dev` hold fixture promoted to a real silver (S6, `hold`, white as the weaker side) |
 | 20 — Koningin teen Pion op 7de Ry | 3/3/2 | 0 | ✅ | Brons #3 `moveLimit` bumped to 17 (budget) |
 | ~~21 — Hartjie van die Bord~~ | — | — | ❌ Removed | Central-checkmate constraint unachievable with B+N |
+| 22 — Koningin teen Toring | 3/2/2 | 0 | ✅ | Opdrag 8b: broad K/Q/R sweep, tablebase DTM-banded (bronze floor raised to DTM≥3 to avoid mate-in-1 picks) |
+| 23 — Koningin teen 2 Verbonde Pionne | 3/2/2 | 0 | ✅ | Opdrag 8b: pawn-phalanx construction (bronze/silver rank 4–5, gold rank 6); gold selection fixed to hardest-first within its band |
+| 24 — Toring teen 2 Verbonde Pionne | 3/2/2 | 0 | ✅ | Opdrag 8b: same construction as T23 with a rook; bronze `moveLimit` bumped (14/16/16) — a rook structurally cannot convert this material faster than DTM 8, confirmed via a 382-candidate search |
+| 25 — Ruiter-en-Pion teen Ruiter | 3/2/2 | 0 | ✅ | Opdrag 8b: defender-knight near/far construction; final picks selected by real self-play rollout, not tablebase DTM, after a tablebase-win gold candidate failed the harness outright |
+| 26 — Loper-en-Pion teen Loper (selfde kleur) | 3/2/2 | 0 | ✅ | Opdrag 8b: same-colour-bishop constraint added to T25's shape; every candidate rollout-checked before writing to positions.js, catching one more tablebase/real-play mismatch pre-emptively |
+| 27 — Teenoorgestelde Lopers: Verdedig! | 3/2/2 | 0 | ✅ | Opdrag 8b: first `hold`-mode type since T19 S6 — opposite-colour bishops, tablebase `draw`-filtered. Selection by reversed-C5 (count drawing moves, prefer ≤3); bronze hit that bar, silver/gold used the tightest available with a confirmed genuine losing move instead (documented shortfall). Live-fire confirmed both correct defence and a wrong-defence adjudication trigger |
 | _dev (test scaffolding) | 0/0/0 | — | ✅ Emptied (Opdrag 8) | Its one hold-mode fixture was promoted to a real T19 silver (see above) and removed here (not retired — `_dev` was never part of the audit-trail convention, and a retired copy with an identical FEN would only have tripped the exact-duplicate scan for no benefit). The `_dev` key itself stays, empty, since `buildPool()` in `app.js` filters on it by name. |
 
-**Next:** Opdrag 8 (light-touch gap fill) is complete — Types 16, 17, 18, 19 no longer run any tier empty. Type 18 got its real rebuild (silver+gold from scratch, tablebase theory); the rest were minor-variation additions on already-healthy skeletons, per the task's explicit "no redesign" scope. Remaining rebuild ownership per the roadmap: Opdrag 9 → minor-piece endings, specifically Type 17's B1/G2 (retired, genuine draws) and Type 12's bronze decoy-certification gap (flagged in Opdrag 7).
+**Next:** Opdrag 8b (Fase 5 "Fyn Kuns", six new types 22–27) is complete — 0 ERRORs across all six, dedup-clean, Fase 5 gating verified against the real app.js. Opdrag 8 (light-touch gap fill for 16/17/18/19) remains complete from before. Remaining rebuild ownership per the roadmap: Opdrag 9 → minor-piece endings, specifically Type 17's B1/G2 (retired, genuine draws) and Type 12's bronze decoy-certification gap (flagged in Opdrag 7); Type 27's silver/gold could be revisited with a wider (uncapped) reversed-C5 search if a tighter ≤3-drawing-move example is ever wanted.
 
 ---
 

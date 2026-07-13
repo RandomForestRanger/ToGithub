@@ -15,4 +15,7 @@ const FASES = [
   { id: 2, name: 'Pioneindspele',    types: [6, 7, 8, 9, 11, 12] },
   { id: 3, name: 'Toringeindspele',  types: [13, 14, 15, 16] },
   { id: 4, name: 'Meesterklas',      types: [4, 5, 17, 18, 19, 20] },
+  // Fase 5 (Opdrag 8b): gepoort deur Fase 4 se bronse, per die standaardreël
+  // in isFaseUnlocked() — geen nuwe logika benodig nie.
+  { id: 5, name: 'Fyn Kuns',         types: [22, 23, 24, 25, 26, 27] },
 ]
