@@ -6,35 +6,64 @@
 // Tier bewegingsgrense: brons = 12 volle beurte, silwer = 24, goud = 36
 // "Volle beurt" = een wit-skuif + een swart-reaksie
 
+// Elke tipe se `sleutelgedagte` (Opdrag 10) is die kernidee vir 'n jong
+// speler — < 100 woorde, wys regs van die bord tydens die spel (kyk
+// renderSleutelgedagte() in app.js). Nie 'n volledige teorie-les nie, net
+// die een ding om te onthou.
 const ENDGAME_TYPES = [
-  { id: 1,  name: 'Koning & Koningin teen Koning',     icon: '♛' },
-  { id: 2,  name: 'Koning & Toring teen Koning',        icon: '♜' },
-  { id: 3,  name: 'Koning & Twee Lopers teen Koning',   icon: '♝' },
-  { id: 4,  name: 'Koning, Loper & Ruiter teen Koning', icon: '🐴' },
-  { id: 5,  name: 'Koning & Twee Ruiters teen Koning',  icon: '🏇' },
-  { id: 6,  name: 'Koning & Pion teen Koning',          icon: '♟' },
-  { id: 7,  name: 'Verbygeraakte Pion Wedren',          icon: '🏁' },
-  { id: 8,  name: 'Opposisie & Koningaktiwiteit',       icon: '👑' },
-  { id: 9,  name: 'Zugzwang',                           icon: '⚡' },
+  { id: 1,  name: 'Koning & Koningin teen Koning',     icon: '♛',
+    sleutelgedagte: 'Gebruik jou koningin om die swart koning stap vir stap na die kant van die bord te dryf. Hou die koningin \'n ridder-sprong (nie net langs mekaar nie) van die swart koning af, sodat dit nooit aangeval kan word nie. Sodra die koning teen die rand vasgekeer is, bring jou eie koning nader om die net toe te trek. Wees veral versigtig: moenie die koning al sy skuiwe wegvat sonder om hom te skaak nie — dit is pat, en pat is gelykspel!' },
+  { id: 2,  name: 'Koning & Kasteel teen Koning',        icon: '♜',
+    sleutelgedagte: 'Gebruik jou kasteel om die swart koning op \'n ry of kolom af te sny, sodat hy net op een kant kan bly. Bring dan jou eie koning stadig nader om die swart koning al hoe verder na die rand te druk. Skuif die kasteel weer weg wanneer die swart koning te naby kom. Soos by die koningin, is pat die grootste gevaar — moet nooit al die koning se skuiwe wegneem sonder skaak nie.' },
+  { id: 3,  name: 'Koning & Twee Biskoppe teen Koning',   icon: '♝',
+    sleutelgedagte: 'Jou twee biskoppe werk saam — een op die lig vierkante, een op die donker — om die swart koning stelselmatig na \'n hoek te dryf. Hou hulle langs mekaar sodat hulle \'n muur oor twee kolomme of rye vorm wat die koning nie kan oorsteek nie. Bring jou eie koning nader om die laaste stap te help. Die mat kom altyd in \'n hoek, nooit in die middel nie.' },
+  { id: 4,  name: 'Koning, Biskop & Ruiter teen Koning', icon: '🐴',
+    sleutelgedagte: 'Die moeilikste basiese mat: jy moet die swart koning na \'n hoek dryf wat DIESELFDE kleur is as jou biskop. Gebruik jou koning en biskop om die koning oor te druk, en jou ruiter om die laaste blokkies af te sny en mat te help lewer. Dit vat geduld — verwag baie skuiwe voor die koning selfs naby die regte hoek is.' },
+  { id: 5,  name: 'Koning & Twee Ruiters teen Koning',  icon: '🏇',
+    sleutelgedagte: 'Twee ruiters kan \'n kaal koning nie op hulle eie mat gee nie — hulle het \'n swart pion nodig as hulpmiddel! Een ruiter blokkeer die pion, terwyl jou koning en die ander ruiter die swart koning na \'n hoek dryf. Op die regte oomblik laat jy die pion een tree vorentoe beweeg — dit gee jou die ekstra tempo om mat te lewer sonder pat.' },
+  { id: 6,  name: 'Koning & Pion teen Koning',          icon: '♟',
+    sleutelgedagte: 'Alles gaan oor sleutelblokkies: as jou koning voor jou pion \'n sekere blokkie kan bereik voordat swart se koning dit keer, bevorder die pion outomaties. Tel skuiwe versigtig — soms moet jy WAG met \'n koningsskuif eerder as om die pion te druk, sodat jy die opposisie kry. As jou koning nie betyds daar kan kom nie, is dit dikwels net gelykspel.' },
+  { id: 7,  name: 'Verbygeraakte Pion Wedren',          icon: '🏁',
+    sleutelgedagte: 'Wanneer beide konings se pionne na bevordering hardloop, tel wie eerste daar kom — soms met \'n tempo of twee se verskil. Bereken die wedren presies voordat jy \'n skuif maak: as swart eerste bevorder, kyk of jou pion steeds met skaak kan bevorder om die spel te wen ondanks alles.' },
+  { id: 8,  name: 'Opposisie & Koningaktiwiteit',       icon: '👑',
+    sleutelgedagte: 'Opposisie is die sleutel: as die konings mekaar direk oorkant staan met \'n oop blokkie tussenin, en dit is die ANDER speler se beurt om te skuif, het jy die opposisie — en dit beslis dikwels wie wen. Soms moet jy \'n wagskuif maak (nie met jou koning nie) om die opposisie na die regte kant te dwing.' },
+  { id: 9,  name: 'Zugzwang',                           icon: '⚡',
+    sleutelgedagte: 'Zugzwang beteken: enige skuif wat jy maak, maak jou posisie erger — maar jy MOET skuif. Vind die een wagskuif (dikwels \'n stille koningskuif na \'n skynbaar minder aktiewe blokkie) wat swart in genau hierdie verknorsing dwing. Die voor-die-hand-liggende, aktiewe skuif is amper altyd die verkeerde een hier.' },
   // Tipe 10 (Driehoeksbeweging) permanent gesny (Opdrag 6b) — sien CLAUDE.md.
-  { id: 11, name: 'Piondeurbraak',                      icon: '💥' },
-  { id: 12, name: 'Buitenste Verbygeraakte Pion',       icon: '🎯' },
-  { id: 13, name: 'Lucena-posisie',                     icon: '🏛️' },
-  { id: 14, name: 'Philidor-posisie',                   icon: '📐' },
-  { id: 15, name: 'Toring Agter Verbygeraakte Pion',    icon: '🚂' },
-  { id: 16, name: 'Aktiewe vs Passiewe Toring',         icon: '⚔️' },
-  { id: 17, name: 'Goeie Loper vs Slegte Loper',        icon: '🌓' },
-  { id: 18, name: 'Loper teen Ruiter',                  icon: '🐎' },
-  { id: 19, name: 'Verkeerde Kleur Loper',              icon: '🔲' },
-  { id: 20, name: 'Koningin teen Pion op 7de Ry',       icon: '🎖️' },
+  { id: 11, name: 'Piondeurbraak',                      icon: '💥',
+    sleutelgedagte: 'Wanneer drie pionne teen drie pionne in \'n muur vasgesit staan, kan \'n opoffering die deurbraak forseer: gee een pion op sodat \'n ander een vry deur kan bevorder terwyl swart se koning nie betyds kan help verdedig nie. Bereken presies — as jou koning net wag in plaas van die opoffering, wen jy dikwels glad nie.' },
+  { id: 12, name: 'Buitenste Verbygeraakte Pion',       icon: '🎯',
+    sleutelgedagte: '\'n Buitenste pion op die a- of h-lyn is \'n lokaas: as swart se koning dit moet gaan vang, is hy te ver van die res van die bord om jou ander pionne te keer. Stuur die buiten-pion vorentoe om swart se koning weg te lok, en gebruik jou eie koning om aan die ander kant te oes.' },
+  { id: 13, name: 'Lucena-posisie',                     icon: '🏛️',
+    sleutelgedagte: 'Die klassieke wen-tegniek wanneer jou kasteelpion amper bevorder en jou koning reeds voor die pion staan: bou \'n "brug" met jou kasteel op die vierde ry om swart se kasteel se skaak-lyn te blokkeer, sodat jou koning veilig kan wegstap en die pion bevorder.' },
+  { id: 14, name: 'Philidor-posisie',                   icon: '📐',
+    sleutelgedagte: 'Die verdedigende tegniek: hou jou kasteel op die sesde ry (van jou kant af) om die vyandige koning permanent van die sewende ry af te hou. Eers wanneer die pion op die sesde ry self beweeg, skuif jou kasteel agter dit om skaak te gee — dit red die gelykspel.' },
+  { id: 15, name: 'Kasteel Agter Verbygeraakte Pion',    icon: '🚂',
+    sleutelgedagte: '\'n Ou reël: sit jou kasteel altyd AGTER \'n verbygeraakte pion — of dit joune is (om dit te ondersteun terwyl dit bevorder) of s\'n (om dit van agter af te agtervolg). \'n Kasteel voor \'n pion word maklik weggejaag; \'n kasteel agter dit bly ewig aktief.' },
+  { id: 16, name: 'Aktiewe vs Passiewe Kasteel',         icon: '⚔️',
+    sleutelgedagte: '\'n Aktiewe kasteel — een wat agter die vyand se linies op die sewende of agtste ry werk — is soveel sterker as een wat net sy eie pion pas. Hou jou kasteel aktief, selfs al beteken dit jy moet dit tydelik van jou eie pion af wegvat, en bevorder deur.' },
+  { id: 17, name: 'Goeie Biskop vs Slegte Biskop',        icon: '🌓',
+    sleutelgedagte: '\'n Slegte biskop word deur sy eie pione geblokkeer, wat almal op dieselfde kleur vierkante staan as die biskop self. \'n Goeie biskop het oop diagonale. Gebruik jou koning om in te dring op die kleur wat die vyand se slegte biskop nie kan beskerm nie — dit is die swak plek in sy vesting.' },
+  { id: 18, name: 'Biskop teen Ruiter',                  icon: '🐎',
+    sleutelgedagte: 'In oop posisies met pionne aan BEIDE kante van die bord is \'n biskop sterker as \'n ruiter — die biskop kan in een skuif van kant na kant spring, maar die ruiter moet stap-vir-stap oorbeweeg. Skep twee wyd geskeide verbygeraakte pionne: die ruiter kan nooit altwee gelyk keer nie.' },
+  { id: 19, name: 'Verkeerde Kleur Biskop',              icon: '🔲',
+    sleutelgedagte: '\'n Biskop- en kasteelpion-eindspel is dikwels gelykspel as die biskop die VERKEERDE kleur is vir die bevorderingsblokkie — swart hou net sy koning in daardie hoek en jy kan nooit inbreek nie. \'n Ekstra pion op \'n ander lyn is jou redding: dit dwing swart se koning uit die hoek uit.' },
+  { id: 20, name: 'Koningin teen Pion op 7de Ry',       icon: '🎖️',
+    sleutelgedagte: '\'n Enkele pion op die sewende ry (amper bevorder) kan soms selfs teen \'n koningin gelykspel hou — veral kasteel- en biskop-pionne. Ken die presiese tegniek: gebruik jou koningin om die swart koning weg van sy pion se ondersteuning te dwing voor jy toeslaan.' },
   // Fase 5 "Fyn Kuns" (Opdrag 8b) — ses nuwe tipes, 22–27. 10 en 21 bly dood,
   // nooit hergebruik nie (sien CLAUDE.md).
-  { id: 22, name: 'Koningin teen Toring',               icon: '♕' },
-  { id: 23, name: 'Koningin teen 2 Verbonde Pionne',    icon: '👯' },
-  { id: 24, name: 'Toring teen 2 Verbonde Pionne',      icon: '🛡️' },
-  { id: 25, name: 'Ruiter-en-Pion teen Ruiter',         icon: '🦄' },
-  { id: 26, name: 'Loper-en-Pion teen Loper',           icon: '✝️' },
-  { id: 27, name: 'Teenoorgestelde Lopers: Verdedig!',  icon: '🏰' },
+  { id: 22, name: 'Koningin teen Kasteel',               icon: '♕',
+    sleutelgedagte: '\'n Kaal kasteel kan nooit teen \'n koningin op sy eie oorleef nie — die koningin se reeks-vurke sal dit uiteindelik vang. Jaag die kasteel met jou koningin totdat dit \'n vurk of skerm teenkom en val, en lewer dan gewone koningin-mat.' },
+  { id: 23, name: 'Koningin teen 2 Verbonde Pionne',    icon: '👯',
+    sleutelgedagte: 'Twee verbonde pionne kan gevaarlik ver kom, selfs teen \'n koningin — hulle beskerm mekaar. Blokkeer hulle EERS met jou koningin of koning voordat jy een probeer vang; as jy te vroeg toeslaan, kan die ander pion dalk deurglip.' },
+  { id: 24, name: 'Kasteel teen 2 Verbonde Pionne',      icon: '🛡️',
+    sleutelgedagte: '\'n Kasteel alleen sukkel teen twee verbonde pionne wat na die 6de of 7de ry vorder — hulle beskerm mekaar te goed. Val hulle van AGTER of opsy aan voordat hulle te ver kom, en gebruik jou koning om te help blokkeer.' },
+  { id: 25, name: 'Ruiter-en-Pion teen Ruiter',         icon: '🦄',
+    sleutelgedagte: 'Jou ruiter moet die pad na bevordering skerm terwyl die vyand se ruiter probeer inmeng. Hou jou ruiter waar dit die vyandige ruiter se beste blokkeerblokkies dek, en stoot die pion stap vir stap vorentoe agter daardie skerm.' },
+  { id: 26, name: 'Biskop-en-Pion teen Biskop',           icon: '✝️',
+    sleutelgedagte: 'Met biskoppe van dieselfde kleur beskerm die vyand se biskop net EEN diagonaal op \'n slag. Dryf hom van die diagonaal wat jou pion se pad blokkeer af — gebruik jou koning om te dreig totdat die biskop moet padgee, en bevorder dan.' },
+  { id: 27, name: 'Teenoorgestelde Biskoppe: Verdedig!',  icon: '🏰',
+    sleutelgedagte: 'Met biskoppe van TEENOORGESTELDE kleure kan die swakker kant dikwels gelykspel hou, al is hy \'n pion agter! Jou biskop se kleur is jou vesting: sit jou koning of biskop op \'n blokkie van daardie kleur vlak voor die vyand se pion, en moenie ooit wegbeweeg nie — die vyand se biskop kan daardie blokkie nooit self beheer nie.' },
 ]
 
 // ─── Tier-konfigurasie ────────────────────────────────────────────────────────
@@ -96,52 +125,52 @@ const POSITIONS = {
     ],
   },
 
-  // ── Tipe 2: Koning & Toring teen Koning ───────────────────────────────────
-  // Tegniek: gebruik die toring om die swart koning af te kap op 'n ry of kolom,
+  // ── Tipe 2: Koning & Kasteel teen Koning ───────────────────────────────────
+  // Tegniek: gebruik die kasteel om die swart koning af te kap op 'n ry of kolom,
   // bring dan die wit koning nader, en dryf die swart koning na die rand.
   // Grootste gevaar: pat (soos by KQ vs K).
   2: {
     bronze: [
       // B1: Ka5 (rand), Kb2, Rh1 — swart koning naby rand, wit kan vinnig afkap
       { fen: '8/8/8/k7/8/8/1K6/7R w - - 0 1',
-        note: 'Swart koning naby die a-rand — kap hom af met die toring', moveLimit: 16 },
+        note: 'Swart koning naby die a-rand — kap hom af met die kasteel', moveLimit: 16 },
       // B2: Ka4, Kd2, Rh1 — swart koning aan die rand, wit speelruimte
       { fen: '8/8/8/8/k7/8/3K4/7R w - - 0 1',
-        note: 'Toring op die agterste ry — dryf swart na die hoek', moveLimit: 16 },
+        note: 'Kasteel op die agterste ry — dryf swart na die hoek', moveLimit: 16 },
       // B3: Ka3, Kd2, Rh1 — soortgelyk, 'n rang verder
       { fen: '8/8/8/8/8/k7/3K4/7R w - - 0 1',
-        note: "Swart net 'n rang van die hoek — koordineer koning en toring", moveLimit: 16 },
+        note: "Swart net 'n rang van die hoek — koordineer koning en kasteel", moveLimit: 16 },
       // B4: Ka2, Kd2, Rh1 — swart op dieselfde rang as wit (maklik gespeel)
       { fen: '8/8/8/8/8/8/k2K4/7R w - - 0 1',
-        note: 'Konings op dieselfde rang — toring kap die rand af' },
-      // B5: Kc4, Ka1, Rd1 — toring op d-kolom, swart naby die hoek
+        note: 'Konings op dieselfde rang — kasteel kap die rand af' },
+      // B5: Kc4, Ka1, Rd1 — kasteel op d-kolom, swart naby die hoek
       { fen: '8/8/8/8/2k5/8/8/K2R4 w - - 0 1',
-        note: 'Toring op d1, swart naby die hoek — bring die wit koning nader', moveLimit: 19 },
+        note: 'Kasteel op d1, swart naby die hoek — bring die wit koning nader', moveLimit: 19 },
     ],
     silver: [
       // S1: Kd5 (sentraal), Kd2, Rh1 — standaard sentraal posisie
       { fen: '8/8/8/3k4/8/8/3K4/7R w - - 0 1',
         note: 'Swart sentraal — dryf hom eers na die rand' },
-      // S2: Kd6, Kd2, Ra1 — toring in hoek, langer roete
+      // S2: Kd6, Kd2, Ra1 — kasteel in hoek, langer roete
       { fen: '8/8/3k4/8/8/8/3K4/R7 w - - 0 1',
-        note: 'Toring in die hoek — sentreer dit eers' },
-      // S3: Kd4, Ka1, Rh1 — konings ver uitmekaar, toring op h-kolom
+        note: 'Kasteel in die hoek — sentreer dit eers' },
+      // S3: Kd4, Ka1, Rh1 — konings ver uitmekaar, kasteel op h-kolom
       { fen: '8/8/8/8/3k4/8/8/K6R w - - 0 1',
         note: 'Wit koning ver — vereis koördinasie oor die hele bord' },
     ],
     gold: [
-      // G1: Ke7 (ver kant), Ke2, Ra1 — konings regoor mekaar, toring in hoek
+      // G1: Ke7 (ver kant), Ke2, Ra1 — konings regoor mekaar, kasteel in hoek
       { fen: '8/4k3/8/8/8/8/4K3/R7 w - - 0 1',
         note: 'Konings ver uiteen op dieselfde kolom — langste afstand' },
       // G2: Kd7, Kd2, Ra1 — soortgelyk op d-kolom
       { fen: '8/3k4/8/8/8/8/3K4/R7 w - - 0 1',
-        note: 'Maksimum afstand — toring en koningsteun nodig' },
+        note: 'Maksimum afstand — kasteel en koningsteun nodig' },
     ],
   },
 
   // ── Tipe 6: Koning & Pion teen Koning ─────────────────────────────────────
   // Tegniek: bring die wit koning op die sleutelblokkie voor die pion;
-  // dryf die pion tot bevordering. Groot gevaar: pat (veral met toring-pion).
+  // dryf die pion tot bevordering. Groot gevaar: pat (veral met kasteel-pion).
   // Alle posisies gebruik middelste pione (d of e) om patgevaar te beperk.
   // Opdrag 6: alle tien re-getag na 'promote' (die K+D-mat wat volg is Fase-1-
   // eiendom; dit elke ronde te herhaal is herhaling, nie leer nie). Limiete
@@ -210,10 +239,10 @@ const POSITIONS = {
     ],
   },
 
-  // ── Tipe 3: Koning & Twee Lopers teen Koning ──────────────────────────────
+  // ── Tipe 3: Koning & Twee Biskoppe teen Koning ──────────────────────────────
   // Tegniek: dryf die swart koning na die rand, dan na 'n hoek met die regte
-  // kleur. Gebruik beide lopers saam om die vlug-sones te beperk.
-  // BELANGRIK: lopers MOET op verskillende kleure wees (Bc1=donker + Bf1=lig).
+  // kleur. Gebruik beide biskoppe saam om die vlug-sones te beperk.
+  // BELANGRIK: biskoppe MOET op verskillende kleure wees (Bc1=donker + Bf1=lig).
   3: {
     bronze: [
       // B1: Ka8 vs Kc6 Bc8(lig) Bc7(donker) — swart gevang, mat ~5 skuiwe
@@ -231,7 +260,7 @@ const POSITIONS = {
       // B3: Ka8 vs Kc7 Bd8(donker,d+8=12√) Ba6(lig,a+6=7√) — ander hoekmat
       // Konings: c7 vs a8 = afstand 2 (|c-a|=2, |7-8|=1) √
       { fen: 'k2B4/2K5/B7/8/8/8/8/8 w - - 0 1',
-        note: 'Lopers op d8 en a6 sluit die hoek toe — vind die mat!' },
+        note: 'Biskoppe op d8 en a6 sluit die hoek toe — vind die mat!' },
     ],
     silver: [
       // S1: Kd1 Bc1 Bf1 vs Kd5 — swart sentraal, langer herding
@@ -239,7 +268,7 @@ const POSITIONS = {
         note: 'Swart in die sentrum — dryf eers na die rand' },
       // S2: Kd1 Bc1 Bf1 vs Kd7 — swart naby die rand
       { fen: '8/3k4/8/8/8/8/8/2BK1B2 w - - 0 1',
-        note: 'Swart naby die rand — gebruik die lopers om die hoek toe te dryf' },
+        note: 'Swart naby die rand — gebruik die biskoppe om die hoek toe te dryf' },
       // S3: Kd1 Bc1 Bf1 vs Ke4 — swart meer sentraal
       { fen: '8/8/8/8/4k3/8/8/2BK1B2 w - - 0 1',
         note: 'Swart aktief in die sentrum — vereis presisie' },
@@ -250,7 +279,7 @@ const POSITIONS = {
         note: 'Wit koning in die hoek — alles moet saamwerk' },
       // G2: Ka1 Bc1 Bf1 vs Kh8 — maksimum afstand
       { fen: '7k/8/8/8/8/8/8/K1B2B2 w - - 0 1',
-        note: 'Maksimum afstand — die langste twee-loper-eindspel' },
+        note: 'Maksimum afstand — die langste twee-biskop-eindspel' },
     ],
   },
 
@@ -291,22 +320,22 @@ const POSITIONS = {
     ],
   },
 
-  // ── Tipe 4: Koning, Loper & Ruiter teen Koning ────────────────────────────
-  // Tegniek: dryf die swart koning na die hoek van DIE SELFDE KLEUR as die loper.
-  // Lig-loper (Bc8/Bf1 ens.) → mat by a8 of h1.
+  // ── Tipe 4: Koning, Biskop & Ruiter teen Koning ────────────────────────────
+  // Tegniek: dryf die swart koning na die hoek van DIE SELFDE KLEUR as die biskop.
+  // Lig-biskop (Bc8/Bf1 ens.) → mat by a8 of h1.
   // Gebruik die "W-maneuver" met die ruiter om die swart koning te forseer.
   // Brons-posisies begin al met swart in die hoek — minder as 12 skuiwe tot mat.
   4: {
     bronze: [
       // B1: Bc8(lig), Kc7, Nd6 vs Ka8 — swart in die lig-hoek, byna gemat
       { fen: 'k1B5/2K5/3N4/8/8/8/8/8 w - - 0 1',
-        note: 'Swart gevang by a8 — forseer mat met loper en ruiter' },
+        note: 'Swart gevang by a8 — forseer mat met biskop en ruiter' },
       // B2: Bg4(lig), Ne3, Kg3 vs Kh1 — swart in h1-hoek, byna gemat
       { fen: '8/8/8/8/6B1/4N1K1/8/7k w - - 0 1',
-        note: 'Swart vasgevang by h1 — ruiter en loper saamwerk' },
+        note: 'Swart vasgevang by h1 — ruiter en biskop saamwerk' },
       // B3: Bh3(lig), Nf4, Kf3 vs Kh1 — alternatiewe aanvalshoek
       { fen: '8/8/8/8/5N2/5K1B/8/7k w - - 0 1',
-        note: 'Swart in die hoek — loper op h3 versper die ontsnapping' },
+        note: 'Swart in die hoek — biskop op h3 versper die ontsnapping' },
     ],
     silver: [
       // S1: Ba2(lig), Nd5, Ke4 vs Kh5 — swart op die rand, ver van regte hoek
@@ -329,13 +358,13 @@ const POSITIONS = {
       // C4 0/19 pat-slaggate, swart koning 8 wettige skuiwe by die begin, geen
       // duplikaat nie. Enjin se beste lyn: 1.Kf5! (koning-sentralisasie).
       { fen: '2N5/6k1/8/8/6K1/B7/8/8 w - - 0 1',
-        note: 'Donker-vierkant loper — dryf swart na die a1- of h8-hoek. Begin met 1.Kf5! om die koning te sentraliseer' },
+        note: 'Donker-vierkant biskop — dryf swart na die a1- of h8-hoek. Begin met 1.Kf5! om die koning te sentraliseer' },
       // S5: Kc5 Bg2(lig) Ne6 vs Kh2 — nuut, Opdrag 3. Vervang S3.
       // Gegenereer-en-geverifieer: tabelbasis DTM=17 (binne silwer-begroting 18.0),
       // C4 0/24 pat-slaggate, swart koning 5 wettige skuiwe by die begin, geen
-      // duplikaat nie. Enjin se beste lyn: 1.Bf3! (loper herposisioneer).
+      // duplikaat nie. Enjin se beste lyn: 1.Bf3! (biskop herposisioneer).
       { fen: '8/8/4N3/2K5/8/8/6Bk/8 w - - 0 1',
-        note: 'Lig-vierkant loper — dryf swart na die a8- of h1-hoek. Begin met 1.Bf3! om die loper te herposisioneer' },
+        note: 'Lig-vierkant biskop — dryf swart na die a8- of h1-hoek. Begin met 1.Bf3! om die biskop te herposisioneer' },
     ],
     gold: [
       // G1: Bd3(lig), Nc3, Ka2 vs Ke6 — swart sentraal, langste roete
@@ -959,9 +988,9 @@ const POSITIONS = {
   },
 
   // ── Tipe 13: Lucena-posisie ───────────────────────────────────────────────
-  // Tegniek: bou die "brug" — die witste toring beweeg na die 4de ry om die koninguitgang te skerm.
-  // Witste koning staan voor die pion op die 8ste ry. Swart se toring gee aanhoudende skaak.
-  // Die brug-bou-tegniek: 1.Td4! (of soortgelyk) — dan as swart skaak gee, skerp die toring.
+  // Tegniek: bou die "brug" — die witste kasteel beweeg na die 4de ry om die koninguitgang te skerm.
+  // Witste koning staan voor die pion op die 8ste ry. Swart se kasteel gee aanhoudende skaak.
+  // Die brug-bou-tegniek: 1.Td4! (of soortgelyk) — dan as swart skaak gee, skerp die kasteel.
   // Brons: Brug halfpad gebou — vind die laaste skerm-skuif.
   // Silwer: Brug moet van voor af gebou word — vind 1.Td4!
   // Goud: Swart se koning is aktief naby die pion — moeiliker uitvoering van die brug.
@@ -972,11 +1001,11 @@ const POSITIONS = {
     bronze: [
       // B1: Kd8 Pd7 Td1 vs Kg3 ta2 — bou die brug: 1.Td4! dan skerp teen skaak
       { fen: '3K4/3P4/8/8/8/6k1/r7/3R4 w - - 0 1',
-        note: 'Lucena: bou die brug met 1.Td4! — dan wanneer swart skaak gee, skerp jou toring om die koning te beskerm', moveLimit: 24,
+        note: 'Lucena: bou die brug met 1.Td4! — dan wanneer swart skaak gee, skerp jou kasteel om die koning te beskerm', moveLimit: 24,
         winCondition: 'promote' },
       // B2: Ke8 Pe7 Te4 vs Kd1 ta1 — brug reeds op e4, voer die afskerming uit
       { fen: '4K3/4P3/8/8/4R3/8/8/r2k4 w - - 0 1',
-        note: 'Die brug is reeds op e4 gebou — vind die regte oomblik om die toring as skerm te gebruik', moveLimit: 24,
+        note: 'Die brug is reeds op e4 gebou — vind die regte oomblik om die kasteel as skerm te gebruik', moveLimit: 24,
         winCondition: 'promote' },
       // B3: Kc8 Pc7 Tc1 vs Kf3 ta2 — c-pion weergawe van die Lucena
       { fen: '2K5/2P5/8/8/8/5k2/r7/2R5 w - - 0 1',
@@ -990,7 +1019,7 @@ const POSITIONS = {
         winCondition: 'promote' },
       // S2: Kf8 Pf7 Tf1 vs Kd3 ta2 — f-pion Lucena, swart se koning meer sentraal
       { fen: '5K2/5P2/8/8/8/3k4/r7/5R2 w - - 0 1',
-        note: 'Lucena met die f-pion — bou die brug op f4 terwyl swart se toring aanhoudende skaak gee', moveLimit: 22,
+        note: 'Lucena met die f-pion — bou die brug op f4 terwyl swart se kasteel aanhoudende skaak gee', moveLimit: 22,
         winCondition: 'promote' },
       // S3: Kc8 Pc7 Tc1 vs Kb3 ta2 — swart se koning aggressief naby die brug
       { fen: '2K5/2P5/8/8/8/1k6/r7/2R5 w - - 0 1',
@@ -1012,12 +1041,12 @@ const POSITIONS = {
   // ── Tipe 14: Philidor-posisie ─────────────────────────────────────────────
   // Tegniek: as aanvaller moet jy die PHILIDOR-verdediging VERMY deur eers die
   // koning na die 6de ry te bring VOORDAT die pion na die 6de ry beweeg.
-  // Swart se verdediging: toring op die 3de ry solank die pion op die 5de ry is —
+  // Swart se verdediging: kasteel op die 3de ry solank die pion op die 5de ry is —
   // wanneer dit na die 6de ry beweeg, gee swart skaak van agter af.
   // As wit verkeerd speel, kan swart dit gelykspel maak. Speel dus Lucena-georiënteerd!
   // Brons: Pion al op die 6de ry, koning voor die pion — Lucena-tegniek van hier af.
   // Silwer: Pion op die 5de ry — bring eers die koning voor, dan beweeg die pion.
-  // Goud: Swart se toring aktief, swart se koning nader — presisiespel vereiste.
+  // Goud: Swart se kasteel aktief, swart se koning nader — presisiespel vereiste.
   14: {
     bronze: [
       // B1: Kd8 Pd6 Td1 vs Kh3 ta4 — pion op 6de ry, voer Lucena-tegniek uit
@@ -1037,9 +1066,9 @@ const POSITIONS = {
       // S2: Kd8 Pd5 Td1 vs Kh3 ta4 — d-pion op 5de ry
       { fen: '3K4/8/8/3P4/r7/7k/8/3R4 w - - 0 1',
         note: 'Pion op d5 — die Philidor-verdediging dreig. Beweeg die koning na d7 voor jy die pion stoot', moveLimit: 26 },
-      // S3: Ke8 Pe5 Te1 vs Kh3 ta2 — swart se toring op 2de ry, meer aktief
+      // S3: Ke8 Pe5 Te1 vs Kh3 ta2 — swart se kasteel op 2de ry, meer aktief
       { fen: '4K3/8/8/4P3/8/7k/r7/4R3 w - - 0 1',
-        note: 'Swart se toring op a2 is meer aktief — bring die koning voor, dan beweeg die pion presies', moveLimit: 25 },
+        note: 'Swart se kasteel op a2 is meer aktief — bring die koning voor, dan beweeg die pion presies', moveLimit: 25 },
     ],
     gold: [
       // G1: Ke8 Pe5 Te1 vs Kh2 ta2 — swart se koning nader, moeiliker uitvoering
@@ -1047,104 +1076,104 @@ const POSITIONS = {
         note: 'Swart se Kh2 is aggressief nader — voer die anti-Philidor-tegniek perfek uit teen sterk verdediging', moveLimit: 24 },
       // G2: Kd8 Pd5 Td1 vs Kh2 ta2 — d-pion, swart aktief
       { fen: '3K4/8/8/3P4/8/8/r6k/3R4 w - - 0 1',
-        note: 'Die moeilikste Philidor-oefening — swart se koning en toring beide aktief. Speel die korrekte volgorde!', moveLimit: 24 },
+        note: 'Die moeilikste Philidor-oefening — swart se koning en kasteel beide aktief. Speel die korrekte volgorde!', moveLimit: 24 },
     ],
   },
 
-  // ── Tipe 15: Toring Agter Verbygeraakte Pion ─────────────────────────────
-  // Tegniek: ALTYD plaas jou toring AGTER jou eie verbygeraakte pion (nie voor of langs nie).
-  // Die toring agter die pion ondersteun elke skuif van die pion en behou maksimale aktiwiteit.
-  // Swart se toring moet ook agter die pion geplaas word om dit te stop.
-  // Brons: Duidelike demonstrasie — toring agter die pion wen maklik, geen swart toring.
-  // Silwer: Swart het ook toring — vind die regte posisie vir jou toring om te wen.
-  // Goud: Swart se toring aktief met skaakgewing — handhaaf die toring-agter-pion-beginsel.
+  // ── Tipe 15: Kasteel Agter Verbygeraakte Pion ─────────────────────────────
+  // Tegniek: ALTYD plaas jou kasteel AGTER jou eie verbygeraakte pion (nie voor of langs nie).
+  // Die kasteel agter die pion ondersteun elke skuif van die pion en behou maksimale aktiwiteit.
+  // Swart se kasteel moet ook agter die pion geplaas word om dit te stop.
+  // Brons: Duidelike demonstrasie — kasteel agter die pion wen maklik, geen swart kasteel.
+  // Silwer: Swart het ook kasteel — vind die regte posisie vir jou kasteel om te wen.
+  // Goud: Swart se kasteel aktief met skaakgewing — handhaaf die kasteel-agter-pion-beginsel.
   15: {
     bronze: [
-      // B1: Kc5 Pa6 Ta1 vs Kd3 — toring agter pion, bevorder maklik
+      // B1: Kc5 Pa6 Ta1 vs Kd3 — kasteel agter pion, bevorder maklik
       { fen: '8/8/P7/2K5/8/3k4/8/R7 w - - 0 1',
-        note: 'Toring op a1 AGTER die a6-pion — druk die pion vorentoe en bevorder. Die toring ondersteun elke stap!' },
-      // B2: Kc5 Pa6 Ta1 vs Kd2 Tf1 — swart se toring probeer inmeng
+        note: 'Kasteel op a1 AGTER die a6-pion — druk die pion vorentoe en bevorder. Die kasteel ondersteun elke stap!' },
+      // B2: Kc5 Pa6 Ta1 vs Kd2 Tf1 — swart se kasteel probeer inmeng
       { fen: '8/8/P7/2K5/8/8/3k4/R4r2 w - - 0 1',
-        note: 'Swart se toring probeer inmeng — hou jou toring agter die a-pion en bevorder voor swart kan stop' },
-      // B3: Kc5 Ph6 Th1 vs Kd2 — toring agter h-pion
+        note: 'Swart se kasteel probeer inmeng — hou jou kasteel agter die a-pion en bevorder voor swart kan stop' },
+      // B3: Kc5 Ph6 Th1 vs Kd2 — kasteel agter h-pion
       { fen: '8/8/7P/2K5/8/8/3k4/7R w - - 0 1',
-        note: 'Toring agter die h-pion op h1 — bevorder die h-pion na h8 met die toring wat elke skuif steun' },
+        note: 'Kasteel agter die h-pion op h1 — bevorder die h-pion na h8 met die kasteel wat elke skuif steun' },
     ],
     silver: [
-      // S1: Kc5 Pa6 Ta1 vs Kd3 Td6 — swart se toring voor die pion, wit se toring agter
+      // S1: Kc5 Pa6 Ta1 vs Kd3 Td6 — swart se kasteel voor die pion, wit se kasteel agter
       { fen: '8/8/P2r4/2K5/8/3k4/8/R7 w - - 0 1',
-        note: 'Swart se toring staan VOOR die pion op d6 — jou toring is agter op a1. Wys die verskil: toring agter wen!' },
-      // S2: Kc5 Ph6 Th1 vs Kd3 Th2 — swart se toring net agter die pion
+        note: 'Swart se kasteel staan VOOR die pion op d6 — jou kasteel is agter op a1. Wys die verskil: kasteel agter wen!' },
+      // S2: Kc5 Ph6 Th1 vs Kd3 Th2 — swart se kasteel net agter die pion
       { fen: '8/8/7P/2K5/8/3k4/7r/7R w - - 0 1',
-        note: 'Swart se toring op h2 probeer ook agter die pion kom — wen die toring-agter-pion-geveg' },
-      // S3: Kc5 Pa6 Ta1 vs Kd3 Tg1 — swart se toring verre skaak
+        note: 'Swart se kasteel op h2 probeer ook agter die pion kom — wen die kasteel-agter-pion-geveg' },
+      // S3: Kc5 Pa6 Ta1 vs Kd3 Tg1 — swart se kasteel verre skaak
       { fen: '8/8/P7/2K5/8/3k4/8/R5r1 w - - 0 1',
-        note: 'Swart se toring op g1 gee skake van die kant — hou die beginsel: toring agter die pion, moenie paniekerig skuif nie' },
+        note: 'Swart se kasteel op g1 gee skake van die kant — hou die beginsel: kasteel agter die pion, moenie paniekerig skuif nie' },
     ],
     gold: [
-      // G1: Kd5 Pa6 Ta1 vs Kb3 Ta2 — swart se toring ook agter die pion, aktiewe koning
+      // G1: Kd5 Pa6 Ta1 vs Kb3 Ta2 — swart se kasteel ook agter die pion, aktiewe koning
       { fen: '8/8/P7/3K4/8/1k6/r7/R7 w - - 0 1',
-        note: 'Swart se toring ook op die a-lyn — aktiewe swart koning by b3. Handhaaf die voordeel: toring agter wen die posisie' },
+        note: 'Swart se kasteel ook op die a-lyn — aktiewe swart koning by b3. Handhaaf die voordeel: kasteel agter wen die posisie' },
       // G2: Kd4 Ph6 Th1 vs Kb3 Th2 — h-pion wedstryd, swart aktief
       { fen: '8/8/7P/8/3K4/1k6/7r/7R w - - 0 1',
-        note: 'h-pion met aktiewe swart koning en toring — die moeilikste toring-agter-pion-oefening. Verslaan die aggressiewe verdediging!' },
+        note: 'h-pion met aktiewe swart koning en kasteel — die moeilikste kasteel-agter-pion-oefening. Verslaan die aggressiewe verdediging!' },
     ],
   },
 
-  // ── Tipe 16: Aktiewe vs Passiewe Toring ──────────────────────────────────
-  // Tegniek: AKTIEWE toring = op die 7de ry of agter verbygeraakte pione, dreig konstant.
-  // PASSIEWE toring = agter sy eie pione vasgesit of ver van die aksie.
-  // Die aktiewe toring wen deur materiaal te wen of deur bevordering te dwing.
-  // Brons: Wit se toring op die 7de ry — swart se toring is passief op ry 1.
-  // Silwer: Swart se koning meer aktief — handhaaf die toring-aktiwiteit teen teenstaan.
-  // Goud: Swart se koning sentraal, dreig om die bevordering te stop — hou die toring aktief!
+  // ── Tipe 16: Aktiewe vs Passiewe Kasteel ──────────────────────────────────
+  // Tegniek: AKTIEWE kasteel = op die 7de ry of agter verbygeraakte pione, dreig konstant.
+  // PASSIEWE kasteel = agter sy eie pione vasgesit of ver van die aksie.
+  // Die aktiewe kasteel wen deur materiaal te wen of deur bevordering te dwing.
+  // Brons: Wit se kasteel op die 7de ry — swart se kasteel is passief op ry 1.
+  // Silwer: Swart se koning meer aktief — handhaaf die kasteel-aktiwiteit teen teenstaan.
+  // Goud: Swart se koning sentraal, dreig om die bevordering te stop — hou die kasteel aktief!
   16: {
     bronze: [
-      // B1: Ke8 Td4 Pd7 vs Kf6 Ta1 — Lucena-tipe: pion op 7de ry, wit koning voor, toring aktief
+      // B1: Ke8 Td4 Pd7 vs Kf6 Ta1 — Lucena-tipe: pion op 7de ry, wit koning voor, kasteel aktief
       { fen: '4K3/3P4/5k2/8/R7/8/8/r7 w - - 0 1',
-        note: 'Pion op die 7de ry — wit se aktiewe toring op a4 bou die "brug" en verdryf swart se toring van die 1ste ry' },
+        note: 'Pion op die 7de ry — wit se aktiewe kasteel op a4 bou die "brug" en verdryf swart se kasteel van die 1ste ry' },
       // B2: Kd8 Tb4 Pe7 vs Kg6 Ta1 — soortgelyke Lucena tegniek, swart koning sykant
       { fen: '3K4/4P3/6k1/8/1R6/8/8/r7 w - - 0 1',
-        note: 'Pion op e7, wit aktief — bou die brug met die toring en bevorder terwyl swart se passiewe toring toekyk' },
-      // B3: Kf4 Tb7 Pg4 vs Kg6 Tb1 — toring aktief op 7de ry, g-pion naby
+        note: 'Pion op e7, wit aktief — bou die brug met die kasteel en bevorder terwyl swart se passiewe kasteel toekyk' },
+      // B3: Kf4 Tb7 Pg4 vs Kg6 Tb1 — kasteel aktief op 7de ry, g-pion naby
       { fen: '8/1R6/6k1/8/5KP1/8/8/1r6 w - - 0 1',
-        note: 'Toring op b7 verskaar die 7de ry aktief — bevorder die g-pion terwyl swart se toring vasgesit is', moveLimit: 14 },
+        note: 'Kasteel op b7 verskaar die 7de ry aktief — bevorder die g-pion terwyl swart se kasteel vasgesit is', moveLimit: 14 },
     ],
     silver: [
       // S1: Kd4 Tb7 Pg4 vs Kg5 Tb1 — swart se koning aktief naby die pion
       { fen: '8/1R6/8/6k1/3K2P1/8/8/1r6 w - - 0 1',
-        note: 'Swart se koning is aktief by g5 en dreig die g-pion — hou jou toring op die 7de ry aktief om die bevorderingsdreigement lewendig te hou' },
+        note: 'Swart se koning is aktief by g5 en dreig die g-pion — hou jou kasteel op die 7de ry aktief om die bevorderingsdreigement lewendig te hou' },
       // S4 (Opdrag 8): dieselfde geraamte as S1, swart koning by g6.
       { fen: '8/1R6/6k1/8/3K2P1/8/8/1r6 w - - 0 1',
-        note: 'Swart se koning probeer die g-pion van agter aanval — hou jou toring op die 7de ry aktief en bevorder deur' },
+        note: 'Swart se koning probeer die g-pion van agter aanval — hou jou kasteel op die 7de ry aktief en bevorder deur' },
       // S5 (Opdrag 8): dieselfde geraamte, swart koning by h6.
       { fen: '8/1R6/7k/8/3K2P1/8/8/1r6 w - - 0 1',
-        note: 'Swart se koning is aan die rand — gebruik jou aktiewe toring om die bevordering te dwing terwyl swart se toring passief bly' },
-      // S2: Kd4 Tc7 Pg2 vs Kg4 Tb1 — langer pad na bevordering, aktiewe toring hou druk
+        note: 'Swart se koning is aan die rand — gebruik jou aktiewe kasteel om die bevordering te dwing terwyl swart se kasteel passief bly' },
+      // S2: Kd4 Tc7 Pg2 vs Kg4 Tb1 — langer pad na bevordering, aktiewe kasteel hou druk
       // AFGETREE 2026-07-09: tabelbasis DRAW (Opdrag 3).
       { fen: '8/2R5/8/8/3K2k1/8/6P1/1r6 w - - 0 1',
-        note: 'g-pion ver terug maar toring aktief op c7 — hou die aktiwiteit terwyl die pion gevorder word',
+        note: 'g-pion ver terug maar kasteel aktief op c7 — hou die aktiwiteit terwyl die pion gevorder word',
         retired: true },
-      // S3: Kd4 Te7 Pe2 vs Kf5 Tb1 — toring aktief op e7, pion bevorder langs die e-lyn
+      // S3: Kd4 Te7 Pe2 vs Kf5 Tb1 — kasteel aktief op e7, pion bevorder langs die e-lyn
       // AFGETREE 2026-07-09: tabelbasis DRAW (Opdrag 3).
       { fen: '8/4R3/8/5k2/3K4/8/4P3/1r6 w - - 0 1',
-        note: 'Aktiewe toring op e7 ondersteun die e-pion van agter — swart se passiewe toring op b1 kan nie inmeng nie',
+        note: 'Aktiewe kasteel op e7 ondersteun die e-pion van agter — swart se passiewe kasteel op b1 kan nie inmeng nie',
         retired: true },
     ],
     gold: [
       // G1: Kd4 Tb7 Pg2 vs Kf5 Tb1 — swart se koning sentraal, dreig pion
       { fen: '8/1R6/8/5k2/3K4/8/6P1/1r6 w - - 0 1',
-        note: 'Swart se Kf5 dreig die g-pion — hou jou toring aktief op die 7de ry terwyl die pion vorder. Aktiwiteit wen die eindspel!' },
+        note: 'Swart se Kf5 dreig die g-pion — hou jou kasteel aktief op die 7de ry terwyl die pion vorder. Aktiwiteit wen die eindspel!' },
       // G2: Kd4 Te7 Pe2 vs Kb5 Tb1 — swart aktiewe koning naby bevorderingsveld
       { fen: '8/4R3/8/1k6/3K4/8/4P3/1r6 w - - 0 1',
-        note: 'Swart se Kb5 is aggressief geplaas — die aktiewe toring op e7 moet swart se verdediging verpletter. Aktiwiteit vs passiwiteit beslis hier!' },
+        note: 'Swart se Kb5 is aggressief geplaas — die aktiewe kasteel op e7 moet swart se verdediging verpletter. Aktiwiteit vs passiwiteit beslis hier!' },
     ],
   },
 
-  // ── Tipe 17: Goeie Loper vs Slegte Loper ─────────────────────────────────
-  // Tegniek: GOEIE loper = eie pione op die TEENOORGESTELDE kleur van die loper (oop diagonale).
-  // SLEGTE loper = eie pione op DIESELFDE kleur as die loper (geblokkeer deur eie pione).
-  // Wit se loper (donker vierkante, Be3) het oop diagonale. Swart se loper (ook donker) word
+  // ── Tipe 17: Goeie Biskop vs Slegte Biskop ─────────────────────────────────
+  // Tegniek: GOEIE biskop = eie pione op die TEENOORGESTELDE kleur van die biskop (oop diagonale).
+  // SLEGTE biskop = eie pione op DIESELFDE kleur as die biskop (geblokkeer deur eie pione).
+  // Wit se biskop (donker vierkante, Be3) het oop diagonale. Swart se biskop (ook donker) word
   // geblokkeer deur sy eie pione op donker vierkante (c5, e5).
   // Die wenplan: gebruik die konings-infiltrasie op die lig vierkante wat swart nie kan verdedig.
   17: {
@@ -1153,67 +1182,67 @@ const POSITIONS = {
     // Re-getag as promote — hulle is vandag speelbaar. G2 is 'n egte gelykspel
     // en is afgetree (sien retirement-blok hieronder).
     bronze: [
-      // B1: Ke2 Be3 Pc4 Pe4 vs Kd6 be7 pc5 pe5 — goeie loper teen slegte loper (be7 geblokkeer)
+      // B1: Ke2 Be3 Pc4 Pe4 vs Kd6 be7 pc5 pe5 — goeie biskop teen slegte biskop (be7 geblokkeer)
       // AFGETREE 2026-07-09: die §4 selfspel-uitrol (Opdrag 3) is hoogs wisselvallig
       // hier (28 op een lopie, 42 op 'n vars een) — dis 'n stadige posisionele
       // opbou, nie 'n geforseerde taktiek nie (diepte-24 PV vind selfs geen
       // bevordering binne die soektog nie). 'n veilige limiet (~50) is nie meer
       // 'n brons-posisie nie — selfde gebrek-klas as T04 S2/S3, T10 B3, T12 B1.
       { fen: '8/4b3/3k4/2p1p3/2P1P3/4B3/4K3/8 w - - 0 1',
-        note: 'Wit se Be3 het oop diagonale (goeie loper) — swart se be7 is geblokkeer deur sy eie pione op dieselfde kleur (slegte loper). Infiltreer met die koning!', moveLimit: 26,
+        note: 'Wit se Be3 het oop diagonale (goeie biskop) — swart se be7 is geblokkeer deur sy eie pione op dieselfde kleur (slegte biskop). Infiltreer met die koning!', moveLimit: 26,
         winCondition: 'promote', retired: true },
-      // B2: Ke2 Be3 Pc4 Pe4 vs Kd6 bf6 pc5 pe5 — slegte loper op f6
+      // B2: Ke2 Be3 Pc4 Pe4 vs Kd6 bf6 pc5 pe5 — slegte biskop op f6
       { fen: '8/8/3k1b2/2p1p3/2P1P3/4B3/4K3/8 w - - 0 1',
-        note: 'Swart se bf6 is op dieselfde donker kleur as sy pione op c5 en e5 — goeie vs slegte loper. Gebruik die lig vierkante om in te dring!', moveLimit: 26,
+        note: 'Swart se bf6 is op dieselfde donker kleur as sy pione op c5 en e5 — goeie vs slegte biskop. Gebruik die lig vierkante om in te dring!', moveLimit: 26,
         winCondition: 'promote' },
-      // B3: Ke2 Be3 Pc4 Pe4 vs Kd6 bg7 pc5 pe5 — slegte loper op g7
+      // B3: Ke2 Be3 Pc4 Pe4 vs Kd6 bg7 pc5 pe5 — slegte biskop op g7
       { fen: '8/6b1/3k4/2p1p3/2P1P3/4B3/4K3/8 w - - 0 1',
-        note: 'Swart se bg7 vasgesit agter sy pione — infiltreer met die wit koning op die lig vierkante wat swart se slegte loper nie kan beskerm nie', moveLimit: 26,
+        note: 'Swart se bg7 vasgesit agter sy pione — infiltreer met die wit koning op die lig vierkante wat swart se slegte biskop nie kan beskerm nie', moveLimit: 26,
         winCondition: 'promote' },
-      // B4 (Opdrag 8): dieselfde geraamte, slegte loper op d8. Selfspel: bevorder op wit-skuif 20.
+      // B4 (Opdrag 8): dieselfde geraamte, slegte biskop op d8. Selfspel: bevorder op wit-skuif 20.
       { fen: '3b4/8/3k4/2p1p3/2P1P3/4B3/4K3/8 w - - 0 1',
         note: 'Swart se bd8 is ver terug en steeds op donker vierkante — infiltreer met die koning op die lig vierkante', moveLimit: 26,
         winCondition: 'promote' },
     ],
     silver: [
-      // S1: Ke2 Be3 Pc4 Pe4 vs Kd6 bc7 pc5 pe5 — slegte loper op c7
+      // S1: Ke2 Be3 Pc4 Pe4 vs Kd6 bc7 pc5 pe5 — slegte biskop op c7
       { fen: '8/2b5/3k4/2p1p3/2P1P3/4B3/4K3/8 w - - 0 1',
-        note: 'Swart se bc7 is passief en geblokkeer — dring deur op die lig vierkante wat die slegte loper nie kan dek nie', moveLimit: 25,
+        note: 'Swart se bc7 is passief en geblokkeer — dring deur op die lig vierkante wat die slegte biskop nie kan dek nie', moveLimit: 25,
         winCondition: 'promote' },
-      // S2: Ke2 Be3 Pc4 Pe4 vs Kd6 bh6 pc5 pe5 — slegte loper op h6
+      // S2: Ke2 Be3 Pc4 Pe4 vs Kd6 bh6 pc5 pe5 — slegte biskop op h6
       { fen: '8/8/3k3b/2p1p3/2P1P3/4B3/4K3/8 w - - 0 1',
-        note: 'Swart se bh6 lyk aktief maar is geblokkeer deur donker-kleur pione — die goeie loper-konings-kombinasie wen die strukturele geveg', moveLimit: 25,
+        note: 'Swart se bh6 lyk aktief maar is geblokkeer deur donker-kleur pione — die goeie biskop-konings-kombinasie wen die strukturele geveg', moveLimit: 25,
         winCondition: 'promote' },
       // S3: Ke2 Be3 Pc4 Pe4 Pf4 vs Kd6 bf6 pc5 pe5 — wit het ekstra f-pion
       { fen: '8/8/3k1b2/2p1p3/2P1PP2/4B3/4K3/8 w - - 0 1',
-        note: 'Wit het ekstra Pf4 — gebruik die goeie loper saam met die ekstra pion om deur te breek teen die geblokkeerde slegte loper', moveLimit: 25,
+        note: 'Wit het ekstra Pf4 — gebruik die goeie biskop saam met die ekstra pion om deur te breek teen die geblokkeerde slegte biskop', moveLimit: 25,
         winCondition: 'promote' },
     ],
     gold: [
-      // G1: Ke2 Be3 Pc4 Pe4 vs Kd6 ba5 pc5 pe5 — slegte loper op a5, aktiefer geplaas
+      // G1: Ke2 Be3 Pc4 Pe4 vs Kd6 ba5 pc5 pe5 — slegte biskop op a5, aktiefer geplaas
       // moveLimit 24→30 2026-07-09: die §4 selfspel-uitrol (Opdrag 3) bevorder
       // op wit-skuif 25 — net bo die vorige limiet van 24. 30 bly ruim binne
       // goud se tipiese omvang (verstek 36).
       { fen: '8/8/3k4/b1p1p3/2P1P3/4B3/4K3/8 w - - 0 1',
-        note: 'Swart se ba5 lyk aktief — maar dis steeds op dieselfde donker kleur as sy pione. Wen die goeie-loper-eindspel teen die mees aktiewe slegte loper', moveLimit: 30,
+        note: 'Swart se ba5 lyk aktief — maar dis steeds op dieselfde donker kleur as sy pione. Wen die goeie-biskop-eindspel teen die mees aktiewe slegte biskop', moveLimit: 30,
         winCondition: 'promote' },
-      // G3 (Opdrag 8): dieselfde geraamte, slegte loper op b4 — nog aktiewer geplaas. Selfspel: bevorder op wit-skuif 28.
+      // G3 (Opdrag 8): dieselfde geraamte, slegte biskop op b4 — nog aktiewer geplaas. Selfspel: bevorder op wit-skuif 28.
       { fen: '8/8/3k4/2p1p3/1bP1P3/4B3/4K3/8 w - - 0 1',
         note: 'Swart se bb4 is die aktiefste plasing nog — steeds op donker vierkante. Voer die presisiespel uit om deur te breek', moveLimit: 32,
         winCondition: 'promote' },
-      // G2: Kd2 Be3 Pc4 Pe4 vs Kd6 bh4 pc5 pe5 — slegte loper by h4, aktiewe swart
+      // G2: Kd2 Be3 Pc4 Pe4 vs Kd6 bh4 pc5 pe5 — slegte biskop by h4, aktiewe swart
       // AFGETREE 2026-07-09: egte gelykspel (enjin: DRAWN +0.08 op diepte 28) — die
-      // slegte loper hou wel die vesting. Opdrag 9 (minder-stuk-eindspels) herbou dit.
+      // slegte biskop hou wel die vesting. Opdrag 9 (minder-stuk-eindspels) herbou dit.
       { fen: '8/8/3k4/2p1p3/2P1P1b1/4B3/3K4/8 w - - 0 1',
         note: 'Die moeilikste weergawe — swart se bh4 is aktief maar steeds geblokkeer deur donker pione. Voer die presisiespel uit om deur die verdediging te breek', moveLimit: 24,
         retired: true },
     ],
   },
 
-  // ── Tipe 18: Loper teen Ruiter ───────────────────────────────────────────
-  // Tegniek: in OOP posisies met pione op BEIDE vleuels is die loper sterker as die ruiter.
-  // Die loper beheer BEIDE vleuels gelyktydig — die ruiter kan nie twee plekke gelyk wees nie.
-  // Die wit loper op b3 het oop diagonale en ondersteun die a-pion TERWYL dit die h-pion monitor.
+  // ── Tipe 18: Biskop teen Ruiter ───────────────────────────────────────────
+  // Tegniek: in OOP posisies met pione op BEIDE vleuels is die biskop sterker as die ruiter.
+  // Die biskop beheer BEIDE vleuels gelyktydig — die ruiter kan nie twee plekke gelyk wees nie.
+  // Die wit biskop op b3 het oop diagonale en ondersteun die a-pion TERWYL dit die h-pion monitor.
   // Die swart ruiter moet tussen die twee dreigemente pendel — dit kan dit nie.
   // Brons: Maklike wen — swart se ruiter en pion ver van mekaar.
   // Silwer: Swart se ruiter meer sentraal, probeer beide dreigemente bestuur.
@@ -1222,17 +1251,17 @@ const POSITIONS = {
     bronze: [
       // B1: Kc5 Bd4 Pa6 vs Ke8 Ng8 — pion bevorder, ruiter vasgesit in hoek ver weg
       { fen: '4k1n1/8/P7/2K5/3B4/8/8/8 w - - 0 1',
-        note: 'Pion op a6 bevorder terwyl die ruiter op g8 té ver is — die loper dek die sleutelblokkie, ruiter kan nie help nie', moveLimit: 14 },
-      // B2: Ke6 Bf5 Pf6 vs Ka8 Ng8 — ruiter in hoek, pion bevorder met loper-steun
+        note: 'Pion op a6 bevorder terwyl die ruiter op g8 té ver is — die biskop dek die sleutelblokkie, ruiter kan nie help nie', moveLimit: 14 },
+      // B2: Ke6 Bf5 Pf6 vs Ka8 Ng8 — ruiter in hoek, pion bevorder met biskop-steun
       { fen: 'k5n1/8/4KP2/5B2/8/8/8/8 w - - 0 1',
-        note: 'Pion op f6 bevorder — swart se ruiter op g8 is opgesluit, die loper op f5 beheer die sleuteldiagonale' },
-      // B3: Ke6 Bc4 Pf6 vs Kg8 Na8 — ruiter op a8 vasgesit, loper en pion wen
+        note: 'Pion op f6 bevorder — swart se ruiter op g8 is opgesluit, die biskop op f5 beheer die sleuteldiagonale' },
+      // B3: Ke6 Bc4 Pf6 vs Kg8 Na8 — ruiter op a8 vasgesit, biskop en pion wen
       { fen: 'n5k1/8/4KP2/8/2B5/8/8/8 w - - 0 1',
-        note: 'Ruiter op a8 is beknop — bevorder die f-pion met loper-steun terwyl die ruiter magteloos toekyk' },
+        note: 'Ruiter op a8 is beknop — bevorder die f-pion met biskop-steun terwyl die ruiter magteloos toekyk' },
     ],
     // AFGETREE 2026-07-09 (al vyf oorspronklikes): al vyf was tabelbasis DRAW
-    // (0.00) — die loper-teen-ruiter-tema werk nie oor daardie afstande soos
-    // gekonstrueer nie. Opdrag 8 herbou silwer/goud op 'n ander tema: die loper
+    // (0.00) — die biskop-teen-ruiter-tema werk nie oor daardie afstande soos
+    // gekonstrueer nie. Opdrag 8 herbou silwer/goud op 'n ander tema: die biskop
     // se TWEE wyd-geskeide verbygeraakte pionne (a- en h-lêer) wat die kaal
     // ruiter nie gelyktydig kan jaag én blokkeer nie — tabelbasis-gesertifiseer
     // (≤7 stukke, kategorie 'win', C4 0-pat-slaggate op almal vier).
@@ -1245,7 +1274,7 @@ const POSITIONS = {
       // S5 (Opdrag 8): Kd1 Bc4 Pa2 Ph2 vs Ke5 Ng2 — soortgelyk, ander koningplasing.
       // Tabelbasis DTM=27 (14 wit-skuiwe).
       { fen: '8/8/8/4k3/2B5/8/P3n2P/3K4 w - - 0 1',
-        note: 'Die loper beheer beide vleuels gelyktydig terwyl die ruiter magteloos pendel — dryf een van die twee pionne deur',
+        note: 'Die biskop beheer beide vleuels gelyktydig terwyl die ruiter magteloos pendel — dryf een van die twee pionne deur',
         winCondition: 'promote' },
     ],
     gold: [
@@ -1262,12 +1291,12 @@ const POSITIONS = {
     ],
   },
 
-  // ── Tipe 19: Verkeerde Kleur Loper ───────────────────────────────────────
-  // Tegniek: met 'n toringspion (a- of h-pion) en die VERKEERDE KLEUR loper is die eindspel
+  // ── Tipe 19: Verkeerde Kleur Biskop ───────────────────────────────────────
+  // Tegniek: met 'n kasteelspion (a- of h-pion) en die VERKEERDE KLEUR biskop is die eindspel
   // normaalweg GELYKSPEL — swart hou net die koning in die hoek.
   // Die "redding": 'n EKSTRA pion op 'n ander lyn verbreek die gelykspel-verdediging.
-  // As jy slegs die toringspion het, moet jy WEET dat dit gelyk is en tydig help soek.
-  // Brons: Verkeerde kleur loper + toringspion (gelyk sonder ekstra pion) MAAR wit het ekstra redder-pion.
+  // As jy slegs die kasteelspion het, moet jy WEET dat dit gelyk is en tydig help soek.
+  // Brons: Verkeerde kleur biskop + kasteelspion (gelyk sonder ekstra pion) MAAR wit het ekstra redder-pion.
   // Silwer: Swart het ekstra verdedigende pione — moeiligere pad na bevordering.
   // Goud: Swart se koning aktief, delikate volgorde benodig om die gelykspel-slaggat te vermy.
   19: {
@@ -1306,16 +1335,16 @@ const POSITIONS = {
     silver: [
       // S1: Ka6 Pa7 Bc5(verkeerd) Pf4 vs Ka8 pc4 — swart het ekstra verdedigingspion
       { fen: 'k7/P7/K7/2B5/2p2P2/8/8/8 w - - 0 1',
-        note: "Swart het 'n pc4 om verdediging te kompliseer — vind die korrekte volgorde om die f-pion te bevorder teen die verkeerde-kleur-loper-verdediging" },
+        note: "Swart het 'n pc4 om verdediging te kompliseer — vind die korrekte volgorde om die f-pion te bevorder teen die verkeerde-kleur-biskop-verdediging" },
       // S2: Ka1 Bf5(verkeerd) Ph5 Pa3 vs Kh6 — swart se aktiewe koning
       { fen: '8/8/7k/5B1P/8/P7/8/K7 w - - 0 1',
         note: "Swart se Kh6 is aktief naby die h-pion — bevorder die a-pion as redder terwyl jy die gelykspel-slaggat vermy" },
       // S6 (Opdrag 8): die _dev hold-toetsposisie (Opdrag 2), nou 'n regte T19
       // silwer — wit is hier die SWAKKER kant en moet die verkeerde-kleur-hoek
-      // (h1, lig) hou teen swart se donker loper + h-pion. Reeds gebou en
+      // (h1, lig) hou teen swart se donker biskop + h-pion. Reeds gebou en
       // geverifieer in Opdrag 2; _dev-merker hieronder afgetree.
       { fen: '8/8/8/8/3b4/5k1p/8/6K1 w - - 0 1', winCondition: 'hold', holdMoves: 12,
-        note: "Die verkeerde loper kan nie die hoek dek nie — bly in die hoek en hou die gelykspel" },
+        note: "Die verkeerde biskop kan nie die hoek dek nie — bly in die hoek en hou die gelykspel" },
       // S3: Ka6 Pa7 Bc5(verkeerd) Pf4 vs Ka8 pd3 — swart se pion dreig bevordering
       // AFGETREE 2026-07-09: tabelbasis DRAW — swart se teenpion red die halfpunt (Opdrag 3).
       { fen: 'k7/P7/K7/2B5/5P2/3p4/8/8 w - - 0 1',
@@ -1326,7 +1355,7 @@ const POSITIONS = {
       // G1: Ka6 Pa7 Bc5(verkeerd) Pf4 vs Ka8 pc4 pd3 — twee verdedigingspione
       // AFGETREE 2026-07-09: tabelbasis DRAW — swart se teenpione red die halfpunt (Opdrag 3).
       { fen: 'k7/P7/K7/2B5/2p2P2/3p4/8/8 w - - 0 1',
-        note: "Twee swart pione bemoeilik die redding — vind die korrekte volgorde om die verkeerde-kleur-loper-gelykspel te verbreek met jou f-pion",
+        note: "Twee swart pione bemoeilik die redding — vind die korrekte volgorde om die verkeerde-kleur-biskop-gelykspel te verbreek met jou f-pion",
         retired: true },
       // G2: Kf6 Ph7 Bb5(lig,VERKEERD vir h8-donker) Pa3 vs Kh8 — delicate volgorde om pat te vermy
       { fen: '7k/7P/5K2/1B6/8/P7/8/8 w - - 0 1',
@@ -1340,36 +1369,36 @@ const POSITIONS = {
     ],
   },
 
-  // ── Tipe 22: Koningin teen Toring ────────────────────────────────────────
-  // Fase 5 "Fyn Kuns" (Opdrag 8b). Tegniek: jaag die toring met vurke/afkappings
+  // ── Tipe 22: Koningin teen Kasteel ────────────────────────────────────────
+  // Fase 5 "Fyn Kuns" (Opdrag 8b). Tegniek: jaag die kasteel met vurke/afkappings
   // totdat dit val, dan gewone K+Q-mat. 4 stukke, tabelbasis-eksak.
   22: {
     bronze: [
       // B1: tabelbasis DTM=3 wit-skuiwe.
       { fen: '8/8/8/6Q1/4K3/4r3/8/4k3 w - - 0 1',
-        note: 'Die toring staan langs die swart koning — vang dit dadelik en lewer dan gewone koningin-mat' },
+        note: 'Die kasteel staan langs die swart koning — vang dit dadelik en lewer dan gewone koningin-mat' },
       // B2: tabelbasis DTM=3 wit-skuiwe.
       { fen: '6k1/5r2/8/6K1/2Q5/8/8/8 w - - 0 1',
-        note: 'Jaag die toring met jou koning en koningin — dit kan nie vir altyd wegkruip nie' },
+        note: 'Jaag die kasteel met jou koning en koningin — dit kan nie vir altyd wegkruip nie' },
       // B3: tabelbasis DTM=3 wit-skuiwe.
       { fen: '8/8/8/3Q4/8/5K2/8/5r1k w - - 0 1',
-        note: "Skaak eers, dryf dan die toring in 'n hoek waar dit val" },
+        note: "Skaak eers, dryf dan die kasteel in 'n hoek waar dit val" },
     ],
     silver: [
       // S1: tabelbasis DTM=12 wit-skuiwe.
       { fen: '8/8/8/3Q4/8/3K4/8/1kr5 w - - 0 1',
-        note: 'Toring en koning is uitmekaar — gebruik skaak om die toring af te sny voor jy mat lewer' },
+        note: 'Kasteel en koning is uitmekaar — gebruik skaak om die kasteel af te sny voor jy mat lewer' },
       // S2: tabelbasis DTM=13 wit-skuiwe.
       { fen: '8/8/8/8/8/8/1r6/k2K1Q2 w - - 0 1',
-        note: 'Toring ver in die hoek — bou versigtig die net sonder om per ongeluk pat te gee' },
+        note: 'Kasteel ver in die hoek — bou versigtig die net sonder om per ongeluk pat te gee' },
     ],
     gold: [
       // G1: tabelbasis DTM=20 wit-skuiwe.
       { fen: '8/8/8/k1r5/8/2K5/8/4Q3 w - - 0 1',
-        note: 'Toring en koning werk saam om weg te kom — presiese koningsette nodig om die toring te vang' },
+        note: 'Kasteel en koning werk saam om weg te kom — presiese koningsette nodig om die kasteel te vang' },
       // G2: tabelbasis DTM=20 wit-skuiwe.
       { fen: '3k4/8/3r1K2/8/7Q/8/8/8 w - - 0 1',
-        note: 'Die langste jagtog — geduldig die toring insluit sonder om die tyd te mors' },
+        note: 'Die langste jagtog — geduldig die kasteel insluit sonder om die tyd te mors' },
     ],
   },
 
@@ -1405,9 +1434,9 @@ const POSITIONS = {
     ],
   },
 
-  // ── Tipe 24: Toring teen 2 Verbonde Pionne ───────────────────────────────
-  // Tegniek: die toring moet van agter/sykant aanval voor die pionne die 6de ry bereik.
-  // Brons se moveLimit is opgestoot (14/16) — 'n toring (anders as 'n koningin)
+  // ── Tipe 24: Kasteel teen 2 Verbonde Pionne ───────────────────────────────
+  // Tegniek: die kasteel moet van agter/sykant aanval voor die pionne die 6de ry bereik.
+  // Brons se moveLimit is opgestoot (14/16) — 'n kasteel (anders as 'n koningin)
   // kan hierdie materiaal nooit vinniger as DTM~8 wen nie; die verstek 12 se
   // 60%-begroting (7.2) is struktureel onbereikbaar hier, bevestig deur 382
   // tabelbasis-wen-kandidate te deursoek sonder 'n enkele dtm<8-geval.
@@ -1415,18 +1444,18 @@ const POSITIONS = {
     bronze: [
       // B1: tabelbasis DTM=8 wit-skuiwe.
       { fen: '8/4R3/8/8/1pp5/k2K4/8/8 w - - 0 1', moveLimit: 14,
-        note: 'Die toring val die pionne van agter aan — vang hulle voordat hulle ver kom' },
+        note: 'Die kasteel val die pionne van agter aan — vang hulle voordat hulle ver kom' },
       // B2: tabelbasis DTM=9 wit-skuiwe.
       { fen: '8/8/8/8/2R1Kppk/8/8/8 w - - 0 1', moveLimit: 16,
-        note: 'Toring en koning werk saam — sny die pionne af en vreet hulle op' },
+        note: 'Kasteel en koning werk saam — sny die pionne af en vreet hulle op' },
       // B3: tabelbasis DTM=9 wit-skuiwe.
       { fen: '2R5/8/2K5/1pp5/k7/8/8/8 w - - 0 1', moveLimit: 16,
-        note: "Wees geduldig — die toring moet eers 'n aanvalslyn kry voor dit kan toeslaan" },
+        note: "Wees geduldig — die kasteel moet eers 'n aanvalslyn kry voor dit kan toeslaan" },
     ],
     silver: [
       // S1: tabelbasis DTM=8 wit-skuiwe.
       { fen: '8/8/8/kppK4/8/8/8/4R3 w - - 0 1',
-        note: 'Swart se koning verdedig die pionne, maar die toring kan steeds deurbreek' },
+        note: 'Swart se koning verdedig die pionne, maar die kasteel kan steeds deurbreek' },
       // S2: tabelbasis DTM=9 wit-skuiwe.
       { fen: '2R5/8/8/1pp5/k2K4/8/8/8 w - - 0 1',
         note: 'Die pionne op die 5de ry het koningsteun — sny hulle eers af' },
@@ -1434,7 +1463,7 @@ const POSITIONS = {
     gold: [
       // G1: tabelbasis DTM=29 wit-skuiwe.
       { fen: '7K/8/3ppk2/8/8/8/1R6/8 w - - 0 1',
-        note: 'Pionne amper by die doel — die toring moet van ver af presies saamwerk met die koning' },
+        note: 'Pionne amper by die doel — die kasteel moet van ver af presies saamwerk met die koning' },
       // G2: tabelbasis DTM=24 wit-skuiwe.
       { fen: '5R2/8/3pp3/8/3k4/8/8/K7 w - - 0 1',
         note: 'Die swaarste tegniek — hou geduldig druk totdat die pionne val' },
@@ -1477,45 +1506,45 @@ const POSITIONS = {
     ],
   },
 
-  // ── Tipe 26: Loper-en-Pion teen Loper (selfde kleur) ─────────────────────
-  // Tegniek: twee diagonale, een loper — dryf hom van een af, bevorder op die ander.
+  // ── Tipe 26: Biskop-en-Pion teen Biskop (selfde kleur) ─────────────────────
+  // Tegniek: twee diagonale, een biskop — dryf hom van een af, bevorder op die ander.
   // Kandidate is met selfspel-uitrol geverifieer (nie net tabelbasis-DTM nie) —
   // dieselfde les as Tipe 25: 'n tabelbasis-wen konfigurasie bevorder nie altyd
   // binne regte selfspel nie ('n eerste brons-kandidaat, DTM=3, het gefaal en
   // is vervang).
   26: {
     bronze: [
-      // B1: verdedigende loper ver — selfspel-uitrol bevorder teen wit-skuif 2.
+      // B1: verdedigende biskop ver — selfspel-uitrol bevorder teen wit-skuif 2.
       { fen: '1b4k1/8/3P4/3KB3/8/8/8/8 w - - 0 1', winCondition: 'promote',
-        note: "Swart se loper is ver van die pion se pad — stoot deur met jou koning se steun" },
-      // B2: verdedigende loper ver — selfspel-uitrol bevorder teen wit-skuif 2.
+        note: "Swart se biskop is ver van die pion se pad — stoot deur met jou koning se steun" },
+      // B2: verdedigende biskop ver — selfspel-uitrol bevorder teen wit-skuif 2.
       { fen: '5k2/8/3P4/3K4/1B6/8/8/6b1 w - - 0 1', winCondition: 'promote',
-        note: 'Die verdedigende loper staan magteloos ver weg — bevorder maklik' },
-      // B3: verdedigende loper ver — selfspel-uitrol bevorder teen wit-skuif 3.
+        note: 'Die verdedigende biskop staan magteloos ver weg — bevorder maklik' },
+      // B3: verdedigende biskop ver — selfspel-uitrol bevorder teen wit-skuif 3.
       { fen: '7b/8/8/4PK1k/8/2B5/8/8 w - - 0 1', winCondition: 'promote',
-        note: 'Ver van die aksie — jou loper en koning werk saam sonder inmenging' },
+        note: 'Ver van die aksie — jou biskop en koning werk saam sonder inmenging' },
     ],
     silver: [
-      // S1: verdedigende loper naby — selfspel-uitrol bevorder teen wit-skuif 5.
+      // S1: verdedigende biskop naby — selfspel-uitrol bevorder teen wit-skuif 5.
       { fen: '4k3/2b5/3P4/3K4/5B2/8/8/8 w - - 0 1', winCondition: 'promote',
-        note: 'Swart se loper is nou naby — dryf hom van sy diagonaal af voor jy bevorder' },
-      // S2: verdedigende loper naby — selfspel-uitrol bevorder teen wit-skuif 6.
+        note: 'Swart se biskop is nou naby — dryf hom van sy diagonaal af voor jy bevorder' },
+      // S2: verdedigende biskop naby — selfspel-uitrol bevorder teen wit-skuif 6.
       { fen: '1B5k/6b1/3P4/4K3/8/8/8/8 w - - 0 1', winCondition: 'promote',
-        note: "Die verdedigende loper probeer die pion se pad dek — druk hom weg met presiese sette" },
+        note: "Die verdedigende biskop probeer die pion se pad dek — druk hom weg met presiese sette" },
     ],
     gold: [
-      // G1: verdedigende loper naby, hardste geval — selfspel-uitrol bevorder
+      // G1: verdedigende biskop naby, hardste geval — selfspel-uitrol bevorder
       // teen wit-skuif 13.
       { fen: 'k7/8/4P1b1/4K3/8/1B6/8/8 w - - 0 1', winCondition: 'promote',
-        note: 'Twee diagonale, een loper — swart kan nie altwee dek nie, maar dit neem geduld om dit te bewys' },
-      // G2: verdedigende loper naby — selfspel-uitrol bevorder teen wit-skuif 10.
+        note: 'Twee diagonale, een biskop — swart kan nie altwee dek nie, maar dit neem geduld om dit te bewys' },
+      // G2: verdedigende biskop naby — selfspel-uitrol bevorder teen wit-skuif 10.
       { fen: '8/8/6b1/3P3k/4K3/8/6B1/8 w - - 0 1', winCondition: 'promote',
-        note: 'Die swaarste geval — dryf die loper stap vir stap van die pion se pad af voor jy bevorder' },
+        note: 'Die swaarste geval — dryf die biskop stap vir stap van die pion se pad af voor jy bevorder' },
     ],
   },
 
-  // ── Tipe 27: Teenoorgestelde Lopers: Verdedig! ───────────────────────────
-  // Tegniek: wit se loper se kleur is die vesting — hou die blokkade, wen die tyd.
+  // ── Tipe 27: Teenoorgestelde Biskoppe: Verdedig! ───────────────────────────
+  // Tegniek: wit se biskop se kleur is die vesting — hou die blokkade, wen die tyd.
   // Eerste regte verdedigingskenteken. winCondition: 'hold'; holdMoves word
   // nie oorskryf nie (verstek na die tier se moveLimit, per app.js se
   // `posn.holdMoves || moveLimit`).
@@ -1540,12 +1569,12 @@ const POSITIONS = {
         note: 'Die vesting is klaar gebou — een stap weg en swart breek deur' },
       // B3: 3/4 skuiwe hou gelykspel; verlore voorbeeld Ka3.
       { fen: '8/8/8/1p3b2/K7/8/2kB4/8 w - - 0 1', winCondition: 'hold',
-        note: "Jou loper se kleur is jou vesting — hou net jou posisie en die gelykspel is verseël" },
+        note: "Jou biskop se kleur is jou vesting — hou net jou posisie en die gelykspel is verseël" },
     ],
     silver: [
       // S1: 9/13 skuiwe hou gelykspel; verlore voorbeeld Bf6.
       { fen: '8/4B3/8/3p1k2/3K4/8/6b1/8 w - - 0 1', winCondition: 'hold',
-        note: 'Swart se loper is die verkeerde kleur om jou vesting te breek — verdedig geduldig' },
+        note: 'Swart se biskop is die verkeerde kleur om jou vesting te breek — verdedig geduldig' },
       // S2: 10/15 skuiwe hou gelykspel; verlore voorbeeld Bf8.
       { fen: '6k1/4B3/8/3pK3/8/8/6b1/8 w - - 0 1', winCondition: 'hold',
         note: 'Meer speelruimte, maar steeds net een pad na die gelykspel — kies versigtig' },

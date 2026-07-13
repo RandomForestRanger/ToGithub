@@ -11,7 +11,7 @@ Build a chess endgame training web app called **"Skaakmat Afrigter"**. The playe
 
 ## Tech Stack
 
-Vanilla JS, no build step — matching the other three games' stack (see the shared `Chess_Games/CLAUDE.md`), not the React/Vite/Tailwind/chessground stack this section used to describe (that was an abandoned early rewrite; its files now live in `old_version/`, kept for reference, not shipped — see Known Issues / Open Items).
+Vanilla JS, no build step — matching the other three games' stack (see the shared `Chess_Games/CLAUDE.md`), not the React/Vite/Tailwind/chessground stack this section used to describe (that was an abandoned early rewrite; its files now live in `argief/old_version/`, kept for reference, not shipped — see Known Issues / Open Items).
 
 - **Chess logic:** `chess.js` 0.10.3, loaded via CDN `<script>` tag
 - **Board UI:** `chessboard.js` 1.0.0 (chrisoakman fork), loaded via CDN, plus jQuery (its dependency)
@@ -29,9 +29,9 @@ Each type corresponds to one badge. Listed by numeric ID, **not** play order —
 | # | Afrikaans Name | English Reference |
 |---|---|---|
 | 1 | Koning & Koningin teen Koning | King & Queen vs King |
-| 2 | Koning & Toring teen Koning | King & Rook vs King |
-| 3 | Koning & Twee Lopers teen Koning | King & Two Bishops vs King |
-| 4 | Koning, Loper & Ruiter teen Koning | King & Bishop & Knight vs King |
+| 2 | Koning & Kasteel teen Koning | King & Rook vs King |
+| 3 | Koning & Twee Biskoppe teen Koning | King & Two Bishops vs King |
+| 4 | Koning, Biskop & Ruiter teen Koning | King & Bishop & Knight vs King |
 | 5 | Koning & Twee Ruiters teen Koning | King & Two Knights vs King |
 | 6 | Koning & Pion teen Koning | King & Pawn vs King |
 | 7 | Verbygeraakte Pion Wedren | Passed Pawn Races |
@@ -41,18 +41,18 @@ Each type corresponds to one badge. Listed by numeric ID, **not** play order —
 | 12 | Buitenste Verbygeraakte Pion | Outside Passed Pawn |
 | 13 | Lucena-posisie | Lucena Position |
 | 14 | Philidor-posisie | Philidor Position |
-| 15 | Toring Agter Verbygeraakte Pion | Rook Behind Passed Pawn |
-| 16 | Aktiewe vs Passiewe Toring | Active vs Passive Rook |
-| 17 | Goeie Loper vs Slegte Loper | Good Bishop vs Bad Bishop |
-| 18 | Loper teen Ruiter | Bishop vs Knight |
-| 19 | Verkeerde Kleur Loper | Wrong-Coloured Bishop |
+| 15 | Kasteel Agter Verbygeraakte Pion | Rook Behind Passed Pawn |
+| 16 | Aktiewe vs Passiewe Kasteel | Active vs Passive Rook |
+| 17 | Goeie Biskop vs Slegte Biskop | Good Bishop vs Bad Bishop |
+| 18 | Biskop teen Ruiter | Bishop vs Knight |
+| 19 | Verkeerde Kleur Biskop | Wrong-Coloured Bishop |
 | 20 | Koningin teen Pion op 7de Ry | Queen vs Pawn on 7th Rank |
-| 22 | Koningin teen Toring | Queen vs Rook |
+| 22 | Koningin teen Kasteel | Queen vs Rook |
 | 23 | Koningin teen 2 Verbonde Pionne | Queen vs 2 Connected Pawns |
-| 24 | Toring teen 2 Verbonde Pionne | Rook vs 2 Connected Pawns |
+| 24 | Kasteel teen 2 Verbonde Pionne | Rook vs 2 Connected Pawns |
 | 25 | Ruiter-en-Pion teen Ruiter | Knight & Pawn vs Knight |
-| 26 | Loper-en-Pion teen Loper | Bishop & Pawn vs Bishop (same colour) |
-| 27 | Teenoorgestelde Lopers: Verdedig! | Opposite-Coloured Bishops: Defend! |
+| 26 | Biskop-en-Pion teen Biskop | Bishop & Pawn vs Bishop (same colour) |
+| 27 | Teenoorgestelde Biskoppe: Verdedig! | Opposite-Coloured Bishops: Defend! |
 
 > Type 21 (Hartjie van die Bord) was removed — the "central checkmate only" constraint was unachievable because the pawns in those positions didn't reliably cage the king away from the edge, and B+N naturally mates on edge squares.
 >
@@ -92,7 +92,7 @@ The (now 25) types are grouped into **5 fases** (`fases.js`), replacing the old 
 |---|---|---|
 | 1 | Basiese Mats | 1, 2, 3 |
 | 2 | Pioneindspele | 6, 7, 8, 9, 11, 12 |
-| 3 | Toringeindspele | 13, 14, 15, 16 |
+| 3 | Kasteeleindspele | 13, 14, 15, 16 |
 | 4 | Meesterklas | 4, 5, 17, 18, 19, 20 |
 | 5 | Fyn Kuns | 22, 23, 24, 25, 26, 27 |
 
@@ -179,15 +179,15 @@ A "Wenk" (Hint) button shows the single best move for white as a highlighted arr
 
 ## Post-Round Replay
 
-Triggered automatically after **failed** rounds only (wins — of any `winCondition` — skip straight to badge unlock/map, same as checkmate always did):
+Triggered automatically after **every** round, win or fail (Opdrag 9 §1 — previously wins skipped straight to badge-unlock/map; see Known Issues history below for why that was wrong):
 
 1. Board resets to the puzzle's original starting FEN
-2. Stockfish computes and plays the **perfect game from scratch**: optimal white moves vs optimal black responses
+2. Stockfish computes and plays the **strong game from scratch**: near-optimal white moves vs near-optimal black responses (Stockfish without tablebases — "strong," not "perfect," per Opdrag 9 §2's honesty fix)
 3. Each move is shown with a **2-second delay**
 4. Moves are displayed as arrows/highlights on the board
-5. Label is mode-aware: `mate` → *"Perfekte spel vanaf hierdie posisie"*; `promote` → *"Perfekte omskakeling vanaf hierdie posisie"*; `hold` → *"Perfekte verdediging vanaf hierdie posisie"*
+5. Label is mode-aware: `mate` → *"Sterk spel vanaf hierdie posisie"*; `promote` → *"Sterk omskakeling vanaf hierdie posisie"*; `hold` → *"Sterk verdediging vanaf hierdie posisie"*
 6. Termination is mode-aware too: `mate` runs to checkmate/stalemate/repetition (80-ply safety cap); `promote` stops one beat after the first white promotion; `hold` runs `holdMoves` full moves or stops early — proudly, not apologetically — on repetition
-7. After replay completes, show buttons: **"Volgende Rondte"** and **"Probeer Weer"**
+7. After replay completes, show buttons: **"Volgende Rondte"** and **"Probeer Weer"**. For a win, "Volgende Rondte" routes to badge-unlock (chaining to fase-unlock if that badge also crossed a gate) or straight back to the badge map, exactly as it always did — only the timing moved, from immediately to after the replay.
 
 ---
 
@@ -204,10 +204,11 @@ Triggered automatically after **failed** rounds only (wins — of any `winCondit
 - Chessboard (centre)
 - Top bar: current badge name + tier, **objective label** (*"Doel: Skaakmat"* / *"Doel: Promoveer 'n pion"* / *"Doel: Hou die gelykspel — oorleef {n} skuiwe"*, always visible next to the tier badge), move counter (*"Skuiwe oor: X"* counting down, or *"Oorleef nog: X"* counting up in `hold` mode)
 - Conditional hint button (*"Wenk"*) per tier rules above
+- **Sleutelgedagte panel (Opdrag 10):** a glass panel to the right of the board (`.sleutelgedagte-panel`, 260px, matching the shared Chess_Games "Analysis/Review" right-column convention) showing the current puzzle type's `sleutelgedagte` — a <100-word Afrikaans key-idea explanation of that endgame's core technique, addressed directly to the player ("jy"). Data lives per-type on `ENDGAME_TYPES[i].sleutelgedagte` in `positions.js`, all 25 types covered; populated in `startGame()` alongside the rest of the header. Not a full theory lesson — one thing to remember per type.
 - Piece capture display optional
 
 ### 3. Uitslag (Result Screen)
-- Win: skips this screen entirely (goes straight to badge unlock/map) — see §2 above for win messages by condition
+- Win: now shown like any other round (Opdrag 9 §1) — heading/icon/message vary by win reason (`checkmate`, `promote`, `hold_survived`, `hold_stalemate`, `hold_repetition`, `hold_insufficient`), styled with the `.win` heading colour (green). Transitions to replay after 2 seconds, same as failures.
 - Stalemate failure: *"Pat — Swart het geen wettige skuiwe nie, maar is nie in skaak nie. Ronde verby."* (mate/promote only — `hold` mode wins on stalemate)
 - Move limit failure: *"Tyd op — die outjie het weggekom. Wat van nog 'n rondte?"* (mate/promote only — `hold` mode wins on reaching `holdMoves`)
 - Repetition failure (mate/promote): *"Dieselfde posisie drie keer herhaal — Swart glip weg! Probeer weer."*
@@ -276,8 +277,8 @@ Triggered automatically after **failed** rounds only (wins — of any `winCondit
 | Gold | Goud |
 | King | Koning |
 | Queen | Koningin |
-| Rook | Toring |
-| Bishop | Loper |
+| Rook | Kasteel |
+| Bishop | Biskop |
 | Knight | Ruiter |
 | Pawn | Pion |
 | White | Wit |
@@ -303,20 +304,20 @@ Post-Opdrag-8b: **264 positions on file across types 1–20 and 22–27** (`_dev
 
 New curriculum group, gated by Fase 4's bronzes via the existing `isFaseUnlocked()` mechanism (no new app.js logic — verified against the real app.js code via a small vm-sandboxed harness, not just read). All six types generated via the Type 5 pipeline (local filter → tablebase query → band select → gauntlet) as a template, lean counts throughout (3B/2S/2G = 7 positions × 6 types = 42 new, 0 retirements — candidates that failed generation-time checks were swapped before ever reaching `positions.js`). Full per-position evidence (tablebase DTM/rollout/drawing-move-count, harness lines, corrections made mid-task) in `tools/opdrag_08b_manifest.md`.
 
-- **Type 22 (Koningin teen Toring, Q vs R, mate):** broad king/rook/queen sweep, tablebase-win-filtered, DTM-banded. Bronze's DTM≤7 band initially picked three mate-in-1s (rook already adjacent to the king — no hunt, no lesson); floor raised to DTM≥3 before final selection. 3/3/2, harness 7/7 OK.
+- **Type 22 (Koningin teen Kasteel, Q vs R, mate):** broad king/rook/queen sweep, tablebase-win-filtered, DTM-banded. Bronze's DTM≤7 band initially picked three mate-in-1s (rook already adjacent to the king — no hunt, no lesson); floor raised to DTM≥3 before final selection. 3/3/2, harness 7/7 OK.
 - **Type 23 (Koningin teen 2 Verbonde Pionne, mate):** pawn-phalanx construction (bronze/silver rank 4–5, gold rank 6), tablebase-win-only filter is the entire quality bar per spec. Gold's construction band was initially sorted cheapest-DTM-first like the other tiers — but pawns already on rank 6 are often just captured outright (DTM 3, *easier* than bronze); fixed to sort hardest-first within gold's band. 3/2/2, harness 7/7 OK.
-- **Type 24 (Toring teen 2 Verbonde Pionne, mate):** same construction as Type 23, rook instead of queen. Same gold-ordering fix applied pre-emptively. Structural finding (not a search gap): exhaustively widened the bronze search (382 win-candidates) and confirmed a rook cannot convert this material faster than DTM 8 — the default bronze budget (7.2) is structurally unreachable here. Resolved the established way: bumped `moveLimit` on the three bronze positions (14/16/16) rather than accept a WARN. 3/2/2, harness 7/7 OK, 0 WARN.
+- **Type 24 (Kasteel teen 2 Verbonde Pionne, mate):** same construction as Type 23, rook instead of queen. Same gold-ordering fix applied pre-emptively. Structural finding (not a search gap): exhaustively widened the bronze search (382 win-candidates) and confirmed a rook cannot convert this material faster than DTM 8 — the default bronze budget (7.2) is structurally unreachable here. Resolved the established way: bumped `moveLimit` on the three bronze positions (14/16/16) rather than accept a WARN. 3/2/2, harness 7/7 OK, 0 WARN.
 - **Type 25 (Ruiter-en-Pion teen Ruiter, promote):** curated skeleton, defender-knight near/far sets (brons=far/goud=near per spec). **Real lesson of this type:** tablebase DTM is not a reliable difficulty/convergence proxy for `promote` positions — first-pass gold (tablebase DTM=25, category=win) **failed the harness** (`geen bevordering binne 100 wit-skuiwe nie`, real self-play rollout never converged). Diagnosed by rollout-testing a broad candidate sample directly; replaced with a rollout-confirmed candidate (16 white-moves) and re-selected silver the same way (first pass was rollout=2, indistinguishable from bronze). Final picks are real-rollout-confirmed: bronze 2–4, silver 7–9, gold 13–16 white-moves. 3/2/2, harness 7/7 OK.
-- **Type 26 (Loper-en-Pion teen Loper, selfde kleur, promote):** same shape as Type 25 plus the same-colour-bishop constraint (opposite-colour is Type 27's material, never sampled here). Applied Type 25's lesson pre-emptively — rollout-checked every candidate *before* writing to positions.js, catching one more tablebase/real-play mismatch this way (a bronze pick swapped before it ever reached the harness). 3/2/2, harness 7/7 OK.
-- **Type 27 (Teenoorgestelde Lopers: Verdedig!, hold):** the game's first real defence badge — white K+B vs black K+B(opposite colour)+P, `winCondition: 'hold'`. Construction generated broadly and filtered to tablebase `category: 'draw'`; correctness is the tablebase's job. **Selection criterion (confirmed before generating):** among draw-candidates, count how many of white's legal moves also hold the draw (`classify_move_for_white` reused, tallying `'draw'` instead of C5's `'win'`), preferring ≤3 such moves. A full pass over all 198 draw-candidates projected to ~30 minutes (one tablebase query per legal move per candidate) — killed and re-run capped to a stratified 50-candidate sample (~7 min). Bronze hit the ≤3 criterion exactly (2/7, 2/9, 3/4 safe moves); the capped sample found no silver/gold that tight, so those use the tightest available candidates with a *confirmed* genuine losing move instead (silver 9–10/13–15 safe, gold 6/12–13 safe) — a documented shortfall against the letter of the criterion, not a silent one. **Live-fire:** all 7 confirmed to hold under real engine-vs-engine self-play; the wrong-defence demonstration (bronze #3, playing the identified losing move `1.Ka3??`) shows eval crashing to −762cp immediately, forced mate by ply 10, actual checkmate by ply 21 — comfortably inside `hold` mode's early-adjudication trigger, confirming the Opdrag-2 adjudicator would catch this exact mistake. 3/2/2, harness 7/7 OK.
+- **Type 26 (Biskop-en-Pion teen Biskop, selfde kleur, promote):** same shape as Type 25 plus the same-colour-bishop constraint (opposite-colour is Type 27's material, never sampled here). Applied Type 25's lesson pre-emptively — rollout-checked every candidate *before* writing to positions.js, catching one more tablebase/real-play mismatch this way (a bronze pick swapped before it ever reached the harness). 3/2/2, harness 7/7 OK.
+- **Type 27 (Teenoorgestelde Biskoppe: Verdedig!, hold):** the game's first real defence badge — white K+B vs black K+B(opposite colour)+P, `winCondition: 'hold'`. Construction generated broadly and filtered to tablebase `category: 'draw'`; correctness is the tablebase's job. **Selection criterion (confirmed before generating):** among draw-candidates, count how many of white's legal moves also hold the draw (`classify_move_for_white` reused, tallying `'draw'` instead of C5's `'win'`), preferring ≤3 such moves. A full pass over all 198 draw-candidates projected to ~30 minutes (one tablebase query per legal move per candidate) — killed and re-run capped to a stratified 50-candidate sample (~7 min). Bronze hit the ≤3 criterion exactly (2/7, 2/9, 3/4 safe moves); the capped sample found no silver/gold that tight, so those use the tightest available candidates with a *confirmed* genuine losing move instead (silver 9–10/13–15 safe, gold 6/12–13 safe) — a documented shortfall against the letter of the criterion, not a silent one. **Live-fire:** all 7 confirmed to hold under real engine-vs-engine self-play; the wrong-defence demonstration (bronze #3, playing the identified losing move `1.Ka3??`) shows eval crashing to −762cp immediately, forced mate by ply 10, actual checkmate by ply 21 — comfortably inside `hold` mode's early-adjudication trigger, confirming the Opdrag-2 adjudicator would catch this exact mistake. 3/2/2, harness 7/7 OK.
 - **Dedup scan** (`tools/scan_duplicates.py`, full file): 0 exact duplicates, 0 translation-aware near-duplicates among active positions. One pre-existing INFO shadow (T08 S6 vs retired T10 B2), unrelated to this task.
 
 ### Opdrag 8 additions (light-touch gap fill — no new certifiers, no re-theming)
 
-- **Type 16 (Aktiewe vs Passiewe Toring):** silver was down to 1 active (S1) after two retirements. Added 2 new silvers (S4, S5) — identical piece skeleton to S1, black king shifted to g6/h6. Self-play confirms clean, fast mates (9–11 white moves), 0 stalemate traps. Silver now 3/3.
-- **Type 17 (Goeie Loper vs Slegte Loper):** bronze was 2 (B1 retired), gold was 1 (G2 retired). Added 1 bronze (bad bishop shifted to d8) and 1 gold (bad bishop to b4, the most active placement yet) on the exact existing skeleton. Self-play: bronze promotes at white-move 20 (within its 26-move budget), gold at move 28 (bumped to `moveLimit: 32` for margin). Bronze 3/—, gold —/2.
-- **Type 18 (Loper teen Ruiter):** silver and gold were both fully empty (all 5 legacy positions were tablebase-drawn) — the real work this task. Rebuilt on new winning theory per the spec: bishop + two widely-separated passers (a- and h-file) vs a bare knight that cannot chase and blockade both. All 4 new positions (2 silver, 2 gold) are **tablebase-certified** (≤6 men, `category: 'win'`), DTM 27–51 plies (14–26 white moves), 0 stalemate traps at the root. Silver 0→2, gold 0→2.
-- **Type 19 (Verkeerde Kleur Loper):** file-checked against the spec's stated gap ("silver 1, gold 1") and found silver already had 2 active (S1, S2) — the spec's number was stale; per the task's own "trust the file" instruction, silver was left untouched. Added 1 gold (G3) via the same generate-and-verify protocol used for the Opdrag-3 bronzes: same a-pawn/wrong-bishop/h-pawn skeleton as B4/B5, plus an extra black pawn (g2) as a defensive resource near white's king. Tablebase-certified `win`, DTM 15 plies (8 white moves), 0 stalemate traps. Gold 1→2.
+- **Type 16 (Aktiewe vs Passiewe Kasteel):** silver was down to 1 active (S1) after two retirements. Added 2 new silvers (S4, S5) — identical piece skeleton to S1, black king shifted to g6/h6. Self-play confirms clean, fast mates (9–11 white moves), 0 stalemate traps. Silver now 3/3.
+- **Type 17 (Goeie Biskop vs Slegte Biskop):** bronze was 2 (B1 retired), gold was 1 (G2 retired). Added 1 bronze (bad bishop shifted to d8) and 1 gold (bad bishop to b4, the most active placement yet) on the exact existing skeleton. Self-play: bronze promotes at white-move 20 (within its 26-move budget), gold at move 28 (bumped to `moveLimit: 32` for margin). Bronze 3/—, gold —/2.
+- **Type 18 (Biskop teen Ruiter):** silver and gold were both fully empty (all 5 legacy positions were tablebase-drawn) — the real work this task. Rebuilt on new winning theory per the spec: bishop + two widely-separated passers (a- and h-file) vs a bare knight that cannot chase and blockade both. All 4 new positions (2 silver, 2 gold) are **tablebase-certified** (≤6 men, `category: 'win'`), DTM 27–51 plies (14–26 white moves), 0 stalemate traps at the root. Silver 0→2, gold 0→2.
+- **Type 19 (Verkeerde Kleur Biskop):** file-checked against the spec's stated gap ("silver 1, gold 1") and found silver already had 2 active (S1, S2) — the spec's number was stale; per the task's own "trust the file" instruction, silver was left untouched. Added 1 gold (G3) via the same generate-and-verify protocol used for the Opdrag-3 bronzes: same a-pawn/wrong-bishop/h-pawn skeleton as B4/B5, plus an extra black pawn (g2) as a defensive resource near white's king. Tablebase-certified `win`, DTM 15 plies (8 white moves), 0 stalemate traps. Gold 1→2.
 - **Optional `_dev` promotion (taken, ~10 min):** the Opdrag-2 hold-mode test fixture (white as the *weaker* side, holding the wrong-bishop corner against a bishop+pawn) was promoted to a real T19 silver (S6, `winCondition: 'hold'`, `holdMoves: 12`). The `_dev` copy was removed outright rather than retired-with-identical-FEN — retiring it would have tripped `scan_duplicates.py`'s exact-duplicate check for no benefit, since `_dev` was never part of the audit-trail convention that applies to the 20 real types. The `_dev` key itself stays (empty arrays) since `buildPool()` in `app.js` explicitly filters on it by name.
 - **Type 15:** not touched — no gap (spec confirmed no-touch).
 - All four types verified via `--fast` harness mode (0 ERRORs) plus targeted manual self-play/tablebase checks for every new position, since `--fast`'s single-PV-scan under-detects promotions in slow positional conversions (a known, pre-existing limitation, not a new defect — see the WARN pattern shared with untouched siblings in types 17/18).
@@ -356,19 +357,19 @@ Type 10 (Driehoeksbeweging) is no longer one of the app's types — cut permanen
 | 12 — Buitenste Verbygeraakte Pion | 5/3/2 | 6 (old B1–B3, S1, S3, G2) | ✅ | Opdrag 7: B2/B3/S1/S3 retired (zero black pawns — nothing to harvest); G2 retired (harvest via queen, not king). 10 new positions built on outside-file decoy + same-side harvest pair. **Bronze flagged**: forbidden-passer spot-check and perfect-replay sampling show bronze's decoy is present but not binding (race-shaped, 3-vs-2 material wins regardless) — acceptable for bronze, not a genuine C8 arc. Silver/gold sampling confirmed genuine decoy use. Documented fix if revisited: tighter 2-vs-2 material |
 | 13 — Lucena-posisie | 3/3/2 | 0 | ✅ | All 8 re-tagged `winCondition: 'promote'` — the bridge exists to force promotion |
 | 14 — Philidor-posisie | 3/3/2 | 0 | ✅ | Silwer #2 `moveLimit` bumped to 26 (budget) |
-| 15 — Toring Agter Verbygeraakte Pion | 3/3/2 | 0 | ✅ | Left as `mate` — Opdrag 8 revisits its difficulty curve |
-| 16 — Aktiewe vs Passiewe Toring | 3/3/2 | 2 (S2, S3) | ✅ | Opdrag 8: added 2 silvers (S4, S5) on S1's exact skeleton, black king g6/h6 — clean 9–11 move mates, 0 stalemate traps |
-| 17 — Goeie Loper vs Slegte Loper | 3/3/2 | 2 (B1, G2) | ✅ | Opdrag 8: added 1 bronze (bad bishop d8, promotes move 20) and 1 gold (bad bishop b4, promotes move 28, `moveLimit` 32) on the existing skeleton |
-| 18 — Loper teen Ruiter | 3/2/2 | 5 (all legacy S, all legacy G) | ✅ | Opdrag 8: rebuilt silver+gold on new theory — bishop + two widely-separated passers (a/h-file) vs bare knight that can't chase and blockade both. All 4 tablebase-certified `win`, DTM 27–51 plies, 0 stalemate traps |
-| 19 — Verkeerde Kleur Loper | 3/3/2 | 4 (B1, B3, S3, G1) | ✅ | Opdrag 8: file audit found silver already had 2 active (spec's "1" was stale, left untouched); added 1 gold (B4/B5-style skeleton + extra black defending pawn), tablebase DTM=15. Also: the Opdrag-2 `_dev` hold fixture promoted to a real silver (S6, `hold`, white as the weaker side) |
+| 15 — Kasteel Agter Verbygeraakte Pion | 3/3/2 | 0 | ✅ | Left as `mate` — Opdrag 8 revisits its difficulty curve |
+| 16 — Aktiewe vs Passiewe Kasteel | 3/3/2 | 2 (S2, S3) | ✅ | Opdrag 8: added 2 silvers (S4, S5) on S1's exact skeleton, black king g6/h6 — clean 9–11 move mates, 0 stalemate traps |
+| 17 — Goeie Biskop vs Slegte Biskop | 3/3/2 | 2 (B1, G2) | ✅ | Opdrag 8: added 1 bronze (bad bishop d8, promotes move 20) and 1 gold (bad bishop b4, promotes move 28, `moveLimit` 32) on the existing skeleton |
+| 18 — Biskop teen Ruiter | 3/2/2 | 5 (all legacy S, all legacy G) | ✅ | Opdrag 8: rebuilt silver+gold on new theory — bishop + two widely-separated passers (a/h-file) vs bare knight that can't chase and blockade both. All 4 tablebase-certified `win`, DTM 27–51 plies, 0 stalemate traps |
+| 19 — Verkeerde Kleur Biskop | 3/3/2 | 4 (B1, B3, S3, G1) | ✅ | Opdrag 8: file audit found silver already had 2 active (spec's "1" was stale, left untouched); added 1 gold (B4/B5-style skeleton + extra black defending pawn), tablebase DTM=15. Also: the Opdrag-2 `_dev` hold fixture promoted to a real silver (S6, `hold`, white as the weaker side) |
 | 20 — Koningin teen Pion op 7de Ry | 3/3/2 | 0 | ✅ | Brons #3 `moveLimit` bumped to 17 (budget) |
 | ~~21 — Hartjie van die Bord~~ | — | — | ❌ Removed | Central-checkmate constraint unachievable with B+N |
-| 22 — Koningin teen Toring | 3/2/2 | 0 | ✅ | Opdrag 8b: broad K/Q/R sweep, tablebase DTM-banded (bronze floor raised to DTM≥3 to avoid mate-in-1 picks) |
+| 22 — Koningin teen Kasteel | 3/2/2 | 0 | ✅ | Opdrag 8b: broad K/Q/R sweep, tablebase DTM-banded (bronze floor raised to DTM≥3 to avoid mate-in-1 picks) |
 | 23 — Koningin teen 2 Verbonde Pionne | 3/2/2 | 0 | ✅ | Opdrag 8b: pawn-phalanx construction (bronze/silver rank 4–5, gold rank 6); gold selection fixed to hardest-first within its band |
-| 24 — Toring teen 2 Verbonde Pionne | 3/2/2 | 0 | ✅ | Opdrag 8b: same construction as T23 with a rook; bronze `moveLimit` bumped (14/16/16) — a rook structurally cannot convert this material faster than DTM 8, confirmed via a 382-candidate search |
+| 24 — Kasteel teen 2 Verbonde Pionne | 3/2/2 | 0 | ✅ | Opdrag 8b: same construction as T23 with a rook; bronze `moveLimit` bumped (14/16/16) — a rook structurally cannot convert this material faster than DTM 8, confirmed via a 382-candidate search |
 | 25 — Ruiter-en-Pion teen Ruiter | 3/2/2 | 0 | ✅ | Opdrag 8b: defender-knight near/far construction; final picks selected by real self-play rollout, not tablebase DTM, after a tablebase-win gold candidate failed the harness outright |
-| 26 — Loper-en-Pion teen Loper (selfde kleur) | 3/2/2 | 0 | ✅ | Opdrag 8b: same-colour-bishop constraint added to T25's shape; every candidate rollout-checked before writing to positions.js, catching one more tablebase/real-play mismatch pre-emptively |
-| 27 — Teenoorgestelde Lopers: Verdedig! | 3/2/2 | 0 | ✅ | Opdrag 8b: first `hold`-mode type since T19 S6 — opposite-colour bishops, tablebase `draw`-filtered. Selection by reversed-C5 (count drawing moves, prefer ≤3); bronze hit that bar, silver/gold used the tightest available with a confirmed genuine losing move instead (documented shortfall). Live-fire confirmed both correct defence and a wrong-defence adjudication trigger |
+| 26 — Biskop-en-Pion teen Biskop (selfde kleur) | 3/2/2 | 0 | ✅ | Opdrag 8b: same-colour-bishop constraint added to T25's shape; every candidate rollout-checked before writing to positions.js, catching one more tablebase/real-play mismatch pre-emptively |
+| 27 — Teenoorgestelde Biskoppe: Verdedig! | 3/2/2 | 0 | ✅ | Opdrag 8b: first `hold`-mode type since T19 S6 — opposite-colour bishops, tablebase `draw`-filtered. Selection by reversed-C5 (count drawing moves, prefer ≤3); bronze hit that bar, silver/gold used the tightest available with a confirmed genuine losing move instead (documented shortfall). Live-fire confirmed both correct defence and a wrong-defence adjudication trigger |
 | _dev (test scaffolding) | 0/0/0 | — | ✅ Emptied (Opdrag 8) | Its one hold-mode fixture was promoted to a real T19 silver (see above) and removed here (not retired — `_dev` was never part of the audit-trail convention, and a retired copy with an identical FEN would only have tripped the exact-duplicate scan for no benefit). The `_dev` key itself stays, empty, since `buildPool()` in `app.js` filters on it by name. |
 
 **Next:** Opdrag 8b (Fase 5 "Fyn Kuns", six new types 22–27) is complete — 0 ERRORs across all six, dedup-clean, Fase 5 gating verified against the real app.js. Opdrag 8 (light-touch gap fill for 16/17/18/19) remains complete from before. Remaining rebuild ownership per the roadmap: Opdrag 9 → minor-piece endings, specifically Type 17's B1/G2 (retired, genuine draws) and Type 12's bronze decoy-certification gap (flagged in Opdrag 7); Type 27's silver/gold could be revisited with a wider (uncapped) reversed-C5 search if a tighter ≤3-drawing-move example is ever wanted.
@@ -378,7 +379,7 @@ Type 10 (Driehoeksbeweging) is no longer one of the app's types — cut permanen
 ## Known Issues / Open Items
 
 - **Wins skip the result/replay screens entirely** (`finishRound()` in `app.js` routes any win straight to badge-unlock or the badge map, regardless of `winCondition`). This predates Opdrag 2 — it's the original checkmate-only behaviour, just generalised to all three conditions — but it contradicts the "replay after every round" teaching principle implied by Post-Round Replay's framing above. Worth reconciling: even a win might be worth showing the "perfect game" replay for comparison. To be addressed in Opdrag 12 (replay/hints/final QA).
-- **`old_version/` — an abandoned React/Vite/Tailwind/chessground rewrite**, archived (not deleted) during a repo cleanup: `App.jsx` + components + hooks, `package.json`/`vite.config.js`/`tailwind.config.js`/`postcss.config.js`, a stale forked copy of `positions.js` under `src/data/`, and the Stockfish assets that build expected under `public/`. Never shipped — `netlify.toml` has always deployed the vanilla-JS app directly, no build step. Also archived alongside it: three redundant early precursors to `tools/verify_positions.py` (`check_bronze.py`/`.js`/`.mjs`, a narrower "bronze mate-in-≤12 only" check), and `chess_endgame_trainer_brief.md` (an early draft of this very file). None of this is referenced by `index.html`, `app.js`, or `tools/` — safe to ignore unless resurrecting the React rewrite specifically.
+- **`argief/old_version/` — an abandoned React/Vite/Tailwind/chessground rewrite**, archived (not deleted) during a repo cleanup: `App.jsx` + components + hooks, `package.json`/`vite.config.js`/`tailwind.config.js`/`postcss.config.js`, a stale forked copy of `positions.js` under `src/data/`, and the Stockfish assets that build expected under `public/`. Never shipped — `netlify.toml` has always deployed the vanilla-JS app directly, no build step. Also archived alongside it: three redundant early precursors to `tools/verify_positions.py` (`check_bronze.py`/`.js`/`.mjs`, a narrower "bronze mate-in-≤12 only" check), and `chess_endgame_trainer_brief.md` (an early draft of this very file). None of this is referenced by `index.html`, `app.js`, or `tools/` — safe to ignore unless resurrecting the React rewrite specifically. Moved from `old_version/` (project root) to `argief/old_version/` in Opdrag 9's repo-hygiene pass, alongside the ten completed `Opdrag_01`–`Opdrag_08b` task specs (also now under `argief/`) — `Opdrag_09_Finale_QA.md` stays at the root while it's the active task. `netlify.toml`'s build step (see Deployment below) excludes `argief/` from what actually gets published.
 
 ---
 

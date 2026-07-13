@@ -47,7 +47,7 @@ const STALEMATE_MSGS = [
 
 // ─── Wenvoorwaarde-boodskappe (mate | promote | hold) — Opdrag 2, §2 ───────────
 
-const PROMOTION_PIECE_NAMES = { q: 'koningin', n: 'ruiter', b: 'loper', r: 'toring' }
+const PROMOTION_PIECE_NAMES = { q: 'koningin', n: 'ruiter', b: 'biskop', r: 'kasteel' }
 
 function objectiveLabel(winCondition, holdMoves) {
   if (winCondition === 'promote') return "Doel: Promoveer 'n pion"
@@ -615,6 +615,9 @@ function startGame(puzzle) {
   document.getElementById('game-type-name').textContent = typeData ? typeData.name : ''
   document.getElementById('game-type-sub').textContent  = tierConfig.label
 
+  // Sybalk regs: sleutelgedagte (Opdrag 10)
+  document.getElementById('sleutelgedagte-text').textContent = typeData ? typeData.sleutelgedagte : ''
+
   const objectiveEl = document.getElementById('game-objective')
   objectiveEl.textContent = objectiveLabel(winCondition, holdMoves)
   objectiveEl.className   = 'game-objective' + (winCondition !== 'mate' ? ' ' + winCondition : '')
@@ -912,18 +915,17 @@ async function finishRound(decision) {
       if (justUnlocked.length) state.newlyUnlockedFase = justUnlocked[0]
     }
 
-    // Wen: slaan die uitslag-skerm en herspeel oor — reguit na kenteken-ontsluit of -kaart.
-    // Fase-ontsluiting (indien enige) volg NÁ die kenteken-skerm — sien finishBadgeUnlock().
-    if (state.newlyEarnedBadge) {
-      showBadgeUnlock(state.newlyEarnedBadge)
-    } else {
-      renderBadgeMap()
-      showScreen('badges')
-    }
-    return
+    // Opdrag 9 §1: wins now follow the same Uitslag -> Herspeel path as
+    // failures (previously skipped both, straight to badge-unlock/-map --
+    // flagged as a known issue since Opdrag 2). state.newlyEarnedBadge /
+    // newlyUnlockedFase are already set above; the "Volgende Rondte" button's
+    // handler (see DOMContentLoaded) already reads them to route to
+    // showBadgeUnlock() (which itself chains to showFaseUnlock() via
+    // finishBadgeUnlock() when applicable) or back to the badge map -- no
+    // duplicate routing logic needed here.
   }
 
-  // Mislukkings: wys uitslag, dan herspeel vir leer
+  // Wys uitslag, dan herspeel vir leer (wen sowel as verloor)
   showResult(decision)
   setTimeout(function () {
     startReplay(state.startFen)
@@ -938,7 +940,27 @@ function showResult(decision) {
   const reason = decision.reason
   let icon, heading, cls, message
 
-  if (reason === 'stalemate') {
+  if (reason === 'checkmate') {
+    icon    = '🎉'
+    heading = 'Skaakmat!'
+    cls     = 'win'
+    message = decision.message
+  } else if (reason === 'promote') {
+    icon    = '👑'
+    heading = 'Promosie!'
+    cls     = 'win'
+    message = decision.message
+  } else if (reason === 'hold_survived') {
+    icon    = '🛡️'
+    heading = 'Vesting Gehou!'
+    cls     = 'win'
+    message = decision.message
+  } else if (reason === 'hold_stalemate' || reason === 'hold_repetition' || reason === 'hold_insufficient') {
+    icon    = '🤝'
+    heading = 'Gelykspel!'
+    cls     = 'win'
+    message = decision.message
+  } else if (reason === 'stalemate') {
     icon    = STALEMATE_EMOJIS[Math.floor(Math.random() * STALEMATE_EMOJIS.length)]
     heading = 'Pat!'
     cls     = 'stalemate'
@@ -1000,9 +1022,9 @@ function startReplay(fen) {
 
   const cond = state.currentPuzzle ? (state.currentPuzzle.winCondition || 'mate') : 'mate'
   document.getElementById('replay-label').textContent =
-    cond === 'promote' ? 'Perfekte omskakeling vanaf hierdie posisie' :
-    cond === 'hold'    ? 'Perfekte verdediging vanaf hierdie posisie' :
-    'Perfekte spel vanaf hierdie posisie'
+    cond === 'promote' ? 'Sterk omskakeling vanaf hierdie posisie' :
+    cond === 'hold'    ? 'Sterk verdediging vanaf hierdie posisie' :
+    'Sterk spel vanaf hierdie posisie'
 
   clearArrow('replay-arrow-svg')
   document.getElementById('move-list').innerHTML = ''
