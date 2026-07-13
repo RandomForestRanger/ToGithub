@@ -1,64 +1,26 @@
 # Verifikasieverslag — Skaakmat Afrigter posisies.js
 
-- Gegenereer: 2026-07-13 15:01:41
+- Gegenereer: 2026-07-13 15:10:08
 - Enjin: Stockfish 18
-- Diepte-instellings: C2=20, C3=20, C5=oorgeslaan (--fast)
-- Modus: --fast
+- Diepte-instellings: C2=28, C3=30+15.0s, C5=18
+- Modus: volledig
 - Totaal: 264 posisies | Aktief: 206 · Afgetree: 58
-- Aktief — OK=165 WARN=40 ERROR=1
+- Aktief — OK=198 WARN=8 ERROR=0
 
-## ERRORS (1)
-
-| Tipe | Pos | FEN | Uitspraak | Besonderhede |
-|---|---|---|---|---|
-| Koning & Pion teen Koning (T6) | Brons #3 | `8/8/3KP3/8/8/8/8/3k4 w - - 0 1` | ERROR | [C3/ERROR] PV-skandering (--fast): bevordering eers op wit-skuif 7, limiet is 6 |
-
-## WARNINGS (40)
+## WARNINGS (8)
 
 | Tipe | Pos | FEN | Uitspraak | Besonderhede |
 |---|---|---|---|---|
 | Koning & Twee Biskoppe teen Koning (T3) | Brons #1 | `k1B5/2B5/2K5/8/8/8/8/8 w - - 0 1` | WARN | [C4/WARN] 1/22 skuiwe gee onmiddellike pat (Kb6) |
 | Koning, Biskop & Ruiter teen Koning (T4) | Brons #1 | `k1B5/2K5/3N4/8/8/8/8/8 w - - 0 1` | WARN | [C4/WARN] 1/18 skuiwe gee onmiddellike pat (Nb5) |
 | Koning, Biskop & Ruiter teen Koning (T4) | Silwer #1 | `8/8/8/3N3k/4K3/8/B7/8 w - - 0 1` | WARN | [C3/WARN] DTM=23 (cache) oorskry silver-begroting (18.0 = 75% van 24) |
-| Koning & Pion teen Koning (T6) | Brons #5 | `8/8/3K4/3P4/8/8/8/3k4 w - - 0 1` | WARN | [C3/WARN] PV-skandering (--fast): bevordering op skuif 8 oorskry bronze begroting (6.6) |
-| Koning & Pion teen Koning (T6) | Goud #1 | `8/8/8/8/8/3P4/K4k2/8 w - - 0 1` | WARN | [C3/WARN] PV bevorder nie binne die soektog nie — hersien met die hand |
 | Verbygeraakte Pion Wedren (T7) | Brons #2 | `k7/8/K1P5/8/8/8/8/8 w - - 0 1` | WARN | [C4/WARN] 1/4 skuiwe gee onmiddellike pat (c7) |
-| Opposisie & Koningaktiwiteit (T8) | Brons #6 | `8/8/1k6/8/2PK4/8/8/8 w - - 0 1` | WARN | [C3/WARN] PV bevorder nie binne die soektog nie — hersien met die hand |
-| Opposisie & Koningaktiwiteit (T8) | Brons #7 | `8/6k1/8/8/6PK/8/8/8 w - - 0 1` | WARN | [C3/WARN] PV bevorder nie binne die soektog nie — hersien met die hand |
-| Opposisie & Koningaktiwiteit (T8) | Brons #9 | `8/8/2K1k3/8/3P4/8/8/8 w - - 0 1` | WARN | [C3/WARN] PV bevorder nie binne die soektog nie — hersien met die hand |
-| Opposisie & Koningaktiwiteit (T8) | Brons #10 | `8/2k5/8/2K5/8/1P6/8/8 w - - 0 1` | WARN | [C3/WARN] PV bevorder nie binne die soektog nie — hersien met die hand |
-| Opposisie & Koningaktiwiteit (T8) | Silwer #6 | `8/3k4/8/1K6/2P5/8/8/8 w - - 0 1` | WARN | [C3/WARN] PV-skandering (--fast): bevordering op skuif 8 oorskry silver begroting (6.8) |
-| Opposisie & Koningaktiwiteit (T8) | Goud #3 | `8/2k5/8/8/1PK5/8/8/8 w - - 0 1` | WARN | [C3/WARN] PV bevorder nie binne die soektog nie — hersien met die hand |
-| Opposisie & Koningaktiwiteit (T8) | Goud #4 | `8/8/8/3k4/8/1P6/K7/8 w - - 0 1` | WARN | [C3/WARN] PV bevorder nie binne die soektog nie — hersien met die hand |
-| Zugzwang (T9) | Brons #4 | `8/3k4/8/4K3/8/3P4/8/8 w - - 0 1` | WARN | [C3/WARN] PV bevorder nie binne die soektog nie — hersien met die hand |
-| Zugzwang (T9) | Brons #5 | `8/8/8/3k4/8/2K5/3P4/8 w - - 0 1` | WARN | [C3/WARN] PV bevorder nie binne die soektog nie — hersien met die hand |
-| Zugzwang (T9) | Brons #6 | `8/7k/8/8/5P2/5K2/8/8 w - - 0 1` | WARN | [C3/WARN] PV bevorder nie binne die soektog nie — hersien met die hand |
-| Zugzwang (T9) | Silwer #1 | `8/8/5k2/3P4/3K4/8/8/8 w - - 0 1` | WARN | [C3/WARN] PV bevorder nie binne die soektog nie — hersien met die hand |
-| Zugzwang (T9) | Silwer #4 | `8/8/8/1k1p4/3P4/P1K5/8/8 w - - 0 1` | WARN | [C3/WARN] PV bevorder nie binne die soektog nie — hersien met die hand |
-| Zugzwang (T9) | Silwer #5 | `8/8/5p1k/5P2/6K1/7P/8/8 w - - 0 1` | WARN | [C3/WARN] PV bevorder nie binne die soektog nie — hersien met die hand |
-| Zugzwang (T9) | Goud #4 | `8/8/8/4p1k1/4P3/5K1P/8/8 w - - 0 1` | WARN | [C3/WARN] PV bevorder nie binne die soektog nie — hersien met die hand |
-| Buitenste Verbygeraakte Pion (T12) | Brons #5 | `8/1pp5/8/4k2P/8/8/1PP5/6K1 w - - 0 1` | WARN | [C3/WARN] PV bevorder nie binne die soektog nie — hersien met die hand |
-| Buitenste Verbygeraakte Pion (T12) | Silwer #1 | `8/5pp1/3k4/P7/8/8/5PP1/6K1 w - - 0 1` | WARN | [C3/WARN] PV bevorder nie binne die soektog nie — hersien met die hand |
-| Buitenste Verbygeraakte Pion (T12) | Silwer #2 | `8/6pp/3k4/P7/8/8/6PP/6K1 w - - 0 1` | WARN | [C3/WARN] PV bevorder nie binne die soektog nie — hersien met die hand |
-| Buitenste Verbygeraakte Pion (T12) | Silwer #3 | `3k4/6pp/8/P7/8/8/6PP/6K1 w - - 0 1` | WARN | [C3/WARN] PV bevorder nie binne die soektog nie — hersien met die hand |
-| Buitenste Verbygeraakte Pion (T12) | Goud #1 | `8/5pp1/8/P2k4/8/8/5PP1/6K1 w - - 0 1` | WARN | [C3/WARN] PV bevorder nie binne die soektog nie — hersien met die hand |
-| Buitenste Verbygeraakte Pion (T12) | Goud #2 | `8/1pp5/4k3/7P/8/8/1PP5/6K1 w - - 0 1` | WARN | [C3/WARN] PV bevorder nie binne die soektog nie — hersien met die hand |
-| Goeie Biskop vs Slegte Biskop (T17) | Brons #2 | `8/8/3k1b2/2p1p3/2P1P3/4B3/4K3/8 w - - 0 1` | WARN | [C2/WARN] onsekere sone (diepte 20): +2.73 — hersien met die hand; [C3/WARN] PV bevorder nie binne die soektog nie — hersien met die hand |
-| Goeie Biskop vs Slegte Biskop (T17) | Brons #3 | `8/6b1/3k4/2p1p3/2P1P3/4B3/4K3/8 w - - 0 1` | WARN | [C3/WARN] PV bevorder nie binne die soektog nie — hersien met die hand |
-| Goeie Biskop vs Slegte Biskop (T17) | Brons #4 | `3b4/8/3k4/2p1p3/2P1P3/4B3/4K3/8 w - - 0 1` | WARN | [C3/WARN] PV bevorder nie binne die soektog nie — hersien met die hand |
-| Goeie Biskop vs Slegte Biskop (T17) | Silwer #1 | `8/2b5/3k4/2p1p3/2P1P3/4B3/4K3/8 w - - 0 1` | WARN | [C3/WARN] PV bevorder nie binne die soektog nie — hersien met die hand |
-| Goeie Biskop vs Slegte Biskop (T17) | Silwer #2 | `8/8/3k3b/2p1p3/2P1P3/4B3/4K3/8 w - - 0 1` | WARN | [C3/WARN] PV-skandering (--fast): bevordering op skuif 25 oorskry silver begroting (18.8) |
-| Goeie Biskop vs Slegte Biskop (T17) | Silwer #3 | `8/8/3k1b2/2p1p3/2P1PP2/4B3/4K3/8 w - - 0 1` | WARN | [C3/WARN] PV bevorder nie binne die soektog nie — hersien met die hand |
-| Goeie Biskop vs Slegte Biskop (T17) | Goud #1 | `8/8/3k4/b1p1p3/2P1P3/4B3/4K3/8 w - - 0 1` | WARN | [C3/WARN] PV bevorder nie binne die soektog nie — hersien met die hand |
-| Goeie Biskop vs Slegte Biskop (T17) | Goud #2 | `8/8/3k4/2p1p3/1bP1P3/4B3/4K3/8 w - - 0 1` | WARN | [C3/WARN] PV bevorder nie binne die soektog nie — hersien met die hand |
-| Biskop teen Ruiter (T18) | Silwer #1 | `8/8/6k1/8/3K4/1B6/P5n1/8 w - - 0 1` | WARN | [C3/WARN] PV bevorder nie binne die soektog nie — hersien met die hand |
-| Biskop teen Ruiter (T18) | Silwer #2 | `8/8/8/4k3/2B5/8/P3n2P/3K4 w - - 0 1` | WARN | [C3/WARN] PV bevorder nie binne die soektog nie — hersien met die hand |
-| Biskop teen Ruiter (T18) | Goud #1 | `8/8/3k4/8/2B5/8/P4n1P/3K4 w - - 0 1` | WARN | [C3/WARN] PV bevorder nie binne die soektog nie — hersien met die hand |
-| Biskop teen Ruiter (T18) | Goud #2 | `8/8/8/2k1n3/2B5/8/P6P/3K4 w - - 0 1` | WARN | [C3/WARN] PV bevorder nie binne die soektog nie — hersien met die hand |
+| Buitenste Verbygeraakte Pion (T12) | Brons #5 | `8/1pp5/8/4k2P/8/8/1PP5/6K1 w - - 0 1` | WARN | [C3/WARN] selfspel-uitrol: bevordering op skuif 20 oorskry bronze begroting (13.2) |
+| Goeie Biskop vs Slegte Biskop (T17) | Brons #2 | `8/8/3k1b2/2p1p3/2P1P3/4B3/4K3/8 w - - 0 1` | WARN | [C3/WARN] selfspel-uitrol: bevordering op skuif 18 oorskry bronze begroting (15.6) |
+| Goeie Biskop vs Slegte Biskop (T17) | Brons #4 | `3b4/8/3k4/2p1p3/2P1P3/4B3/4K3/8 w - - 0 1` | WARN | [C3/WARN] selfspel-uitrol: bevordering op skuif 22 oorskry bronze begroting (15.6) |
 | Verkeerde Kleur Biskop (T19) | Goud #2 | `7k/7P/5K2/1B6/8/P7/8/8 w - - 0 1` | WARN | [C4/WARN] 2/17 skuiwe gee onmiddellike pat (Kg6, Bd3) |
-| Ruiter-en-Pion teen Ruiter (T25) | Goud #1 | `4N3/8/1n1PK3/7k/8/8/8/8 w - - 0 1` | WARN | [C3/WARN] PV bevorder nie binne die soektog nie — hersien met die hand |
 
-<details><summary>OK (165) — saamgevou</summary>
+<details><summary>OK (198) — saamgevou</summary>
 
 | Tipe | Pos | FEN | Uitspraak | Besonderhede |
 |---|---|---|---|---|
@@ -104,10 +66,13 @@
 | Koning & Twee Ruiters teen Koning (T5) | Goud #4 | `8/8/8/1N6/4p3/4N3/8/1k2K3 w - - 0 1` | OK | alles in orde |
 | Koning & Pion teen Koning (T6) | Brons #1 | `8/3P4/2K5/8/8/8/8/3k4 w - - 0 1` | OK | alles in orde |
 | Koning & Pion teen Koning (T6) | Brons #2 | `8/4P3/3K4/8/8/8/8/6k1 w - - 0 1` | OK | alles in orde |
+| Koning & Pion teen Koning (T6) | Brons #3 | `8/8/3KP3/8/8/8/8/3k4 w - - 0 1` | OK | alles in orde |
 | Koning & Pion teen Koning (T6) | Brons #4 | `8/8/4KP2/8/8/8/8/2k5 w - - 0 1` | OK | alles in orde |
+| Koning & Pion teen Koning (T6) | Brons #5 | `8/8/3K4/3P4/8/8/8/3k4 w - - 0 1` | OK | alles in orde |
 | Koning & Pion teen Koning (T6) | Silwer #1 | `8/8/8/3KP3/8/8/8/3k4 w - - 0 1` | OK | alles in orde |
 | Koning & Pion teen Koning (T6) | Silwer #2 | `8/8/8/8/3KP3/8/8/3k4 w - - 0 1` | OK | alles in orde |
 | Koning & Pion teen Koning (T6) | Silwer #3 | `8/8/8/8/8/3KP3/8/3k4 w - - 0 1` | OK | alles in orde |
+| Koning & Pion teen Koning (T6) | Goud #1 | `8/8/8/8/8/3P4/K4k2/8 w - - 0 1` | OK | alles in orde |
 | Koning & Pion teen Koning (T6) | Goud #2 | `8/8/8/8/3P4/3K4/8/5k2 w - - 0 1` | OK | alles in orde |
 | Verbygeraakte Pion Wedren (T7) | Brons #1 | `2k5/4P3/4K3/8/8/8/8/8 w - - 0 1` | OK | alles in orde |
 | Verbygeraakte Pion Wedren (T7) | Brons #3 | `K7/1P6/8/8/8/8/8/5k2 w - - 0 1` | OK | alles in orde |
@@ -118,10 +83,24 @@
 | Verbygeraakte Pion Wedren (T7) | Silwer #3 | `8/8/P3k3/1p6/3K4/8/8/8 w - - 0 1` | OK | alles in orde |
 | Verbygeraakte Pion Wedren (T7) | Goud #1 | `8/1P6/8/8/8/6k1/6p1/1K6 w - - 0 1` | OK | alles in orde |
 | Verbygeraakte Pion Wedren (T7) | Goud #2 | `8/P7/8/8/8/5k2/6p1/6K1 w - - 0 1` | OK | alles in orde |
+| Opposisie & Koningaktiwiteit (T8) | Brons #6 | `8/8/1k6/8/2PK4/8/8/8 w - - 0 1` | OK | alles in orde |
+| Opposisie & Koningaktiwiteit (T8) | Brons #7 | `8/6k1/8/8/6PK/8/8/8 w - - 0 1` | OK | alles in orde |
 | Opposisie & Koningaktiwiteit (T8) | Brons #8 | `5k2/8/8/4P1K1/8/8/8/8 w - - 0 1` | OK | alles in orde |
+| Opposisie & Koningaktiwiteit (T8) | Brons #9 | `8/8/2K1k3/8/3P4/8/8/8 w - - 0 1` | OK | alles in orde |
+| Opposisie & Koningaktiwiteit (T8) | Brons #10 | `8/2k5/8/2K5/8/1P6/8/8 w - - 0 1` | OK | alles in orde |
 | Opposisie & Koningaktiwiteit (T8) | Silwer #4 | `4k3/8/6K1/4P3/8/8/8/8 w - - 0 1` | OK | alles in orde |
 | Opposisie & Koningaktiwiteit (T8) | Silwer #5 | `8/8/7k/8/5KP1/8/8/8 w - - 0 1` | OK | alles in orde |
+| Opposisie & Koningaktiwiteit (T8) | Silwer #6 | `8/3k4/8/1K6/2P5/8/8/8 w - - 0 1` | OK | alles in orde |
+| Opposisie & Koningaktiwiteit (T8) | Goud #3 | `8/2k5/8/8/1PK5/8/8/8 w - - 0 1` | OK | alles in orde |
+| Opposisie & Koningaktiwiteit (T8) | Goud #4 | `8/8/8/3k4/8/1P6/K7/8 w - - 0 1` | OK | alles in orde |
+| Zugzwang (T9) | Brons #4 | `8/3k4/8/4K3/8/3P4/8/8 w - - 0 1` | OK | alles in orde |
+| Zugzwang (T9) | Brons #5 | `8/8/8/3k4/8/2K5/3P4/8 w - - 0 1` | OK | alles in orde |
+| Zugzwang (T9) | Brons #6 | `8/7k/8/8/5P2/5K2/8/8 w - - 0 1` | OK | alles in orde |
+| Zugzwang (T9) | Silwer #1 | `8/8/5k2/3P4/3K4/8/8/8 w - - 0 1` | OK | alles in orde |
+| Zugzwang (T9) | Silwer #4 | `8/8/8/1k1p4/3P4/P1K5/8/8 w - - 0 1` | OK | alles in orde |
+| Zugzwang (T9) | Silwer #5 | `8/8/5p1k/5P2/6K1/7P/8/8 w - - 0 1` | OK | alles in orde |
 | Zugzwang (T9) | Goud #3 | `8/k7/2p5/2P5/P1K5/8/8/8 w - - 0 1` | OK | alles in orde |
+| Zugzwang (T9) | Goud #4 | `8/8/8/4p1k1/4P3/5K1P/8/8 w - - 0 1` | OK | alles in orde |
 | Piondeurbraak (T11) | Brons #1 | `8/3k4/ppp5/PPP5/8/3K4/8/8 w - - 0 1` | OK | alles in orde |
 | Piondeurbraak (T11) | Brons #2 | `8/4k3/1ppp4/1PPP4/8/8/5K2/8 w - - 0 1` | OK | alles in orde |
 | Piondeurbraak (T11) | Brons #3 | `8/5k2/2ppp3/2PPP3/8/8/8/4K3 w - - 0 1` | OK | alles in orde |
@@ -136,6 +115,11 @@
 | Buitenste Verbygeraakte Pion (T12) | Brons #2 | `8/1pp5/8/7P/3k4/8/1PP5/6K1 w - - 0 1` | OK | alles in orde |
 | Buitenste Verbygeraakte Pion (T12) | Brons #3 | `8/6pp/8/P3k3/8/8/6PP/6K1 w - - 0 1` | OK | alles in orde |
 | Buitenste Verbygeraakte Pion (T12) | Brons #4 | `8/6pp/4k3/P7/8/8/6PP/6K1 w - - 0 1` | OK | alles in orde |
+| Buitenste Verbygeraakte Pion (T12) | Silwer #1 | `8/5pp1/3k4/P7/8/8/5PP1/6K1 w - - 0 1` | OK | alles in orde |
+| Buitenste Verbygeraakte Pion (T12) | Silwer #2 | `8/6pp/3k4/P7/8/8/6PP/6K1 w - - 0 1` | OK | alles in orde |
+| Buitenste Verbygeraakte Pion (T12) | Silwer #3 | `3k4/6pp/8/P7/8/8/6PP/6K1 w - - 0 1` | OK | alles in orde |
+| Buitenste Verbygeraakte Pion (T12) | Goud #1 | `8/5pp1/8/P2k4/8/8/5PP1/6K1 w - - 0 1` | OK | alles in orde |
+| Buitenste Verbygeraakte Pion (T12) | Goud #2 | `8/1pp5/4k3/7P/8/8/1PP5/6K1 w - - 0 1` | OK | alles in orde |
 | Lucena-posisie (T13) | Brons #1 | `3K4/3P4/8/8/8/6k1/r7/3R4 w - - 0 1` | OK | alles in orde |
 | Lucena-posisie (T13) | Brons #2 | `4K3/4P3/8/8/4R3/8/8/r2k4 w - - 0 1` | OK | alles in orde |
 | Lucena-posisie (T13) | Brons #3 | `2K5/2P5/8/8/8/5k2/r7/2R5 w - - 0 1` | OK | alles in orde |
@@ -168,9 +152,19 @@
 | Aktiewe vs Passiewe Kasteel (T16) | Silwer #3 | `8/1R6/7k/8/3K2P1/8/8/1r6 w - - 0 1` | OK | alles in orde |
 | Aktiewe vs Passiewe Kasteel (T16) | Goud #1 | `8/1R6/8/5k2/3K4/8/6P1/1r6 w - - 0 1` | OK | alles in orde |
 | Aktiewe vs Passiewe Kasteel (T16) | Goud #2 | `8/4R3/8/1k6/3K4/8/4P3/1r6 w - - 0 1` | OK | alles in orde |
+| Goeie Biskop vs Slegte Biskop (T17) | Brons #3 | `8/6b1/3k4/2p1p3/2P1P3/4B3/4K3/8 w - - 0 1` | OK | alles in orde |
+| Goeie Biskop vs Slegte Biskop (T17) | Silwer #1 | `8/2b5/3k4/2p1p3/2P1P3/4B3/4K3/8 w - - 0 1` | OK | alles in orde |
+| Goeie Biskop vs Slegte Biskop (T17) | Silwer #2 | `8/8/3k3b/2p1p3/2P1P3/4B3/4K3/8 w - - 0 1` | OK | alles in orde |
+| Goeie Biskop vs Slegte Biskop (T17) | Silwer #3 | `8/8/3k1b2/2p1p3/2P1PP2/4B3/4K3/8 w - - 0 1` | OK | alles in orde |
+| Goeie Biskop vs Slegte Biskop (T17) | Goud #1 | `8/8/3k4/b1p1p3/2P1P3/4B3/4K3/8 w - - 0 1` | OK | alles in orde |
+| Goeie Biskop vs Slegte Biskop (T17) | Goud #2 | `8/8/3k4/2p1p3/1bP1P3/4B3/4K3/8 w - - 0 1` | OK | alles in orde |
 | Biskop teen Ruiter (T18) | Brons #1 | `4k1n1/8/P7/2K5/3B4/8/8/8 w - - 0 1` | OK | alles in orde |
 | Biskop teen Ruiter (T18) | Brons #2 | `k5n1/8/4KP2/5B2/8/8/8/8 w - - 0 1` | OK | alles in orde |
 | Biskop teen Ruiter (T18) | Brons #3 | `n5k1/8/4KP2/8/2B5/8/8/8 w - - 0 1` | OK | alles in orde |
+| Biskop teen Ruiter (T18) | Silwer #1 | `8/8/6k1/8/3K4/1B6/P5n1/8 w - - 0 1` | OK | alles in orde |
+| Biskop teen Ruiter (T18) | Silwer #2 | `8/8/8/4k3/2B5/8/P3n2P/3K4 w - - 0 1` | OK | alles in orde |
+| Biskop teen Ruiter (T18) | Goud #1 | `8/8/3k4/8/2B5/8/P4n1P/3K4 w - - 0 1` | OK | alles in orde |
+| Biskop teen Ruiter (T18) | Goud #2 | `8/8/8/2k1n3/2B5/8/P6P/3K4 w - - 0 1` | OK | alles in orde |
 | Verkeerde Kleur Biskop (T19) | Brons #2 | `8/8/7k/5B1P/P7/8/8/K7 w - - 0 1` | OK | alles in orde |
 | Verkeerde Kleur Biskop (T19) | Brons #4 | `8/8/P5Bk/7P/8/8/8/4K3 w - - 0 1` | OK | alles in orde |
 | Verkeerde Kleur Biskop (T19) | Brons #5 | `7k/7P/6B1/P7/8/8/8/5K2 w - - 0 1` | OK | alles in orde |
@@ -212,6 +206,7 @@
 | Ruiter-en-Pion teen Ruiter (T25) | Brons #3 | `k7/1NK5/3P4/8/7n/8/8/8 w - - 0 1` | OK | alles in orde |
 | Ruiter-en-Pion teen Ruiter (T25) | Silwer #1 | `3k4/2N5/4P1n1/5K2/8/8/8/8 w - - 0 1` | OK | alles in orde |
 | Ruiter-en-Pion teen Ruiter (T25) | Silwer #2 | `3k4/8/5n2/4PK2/6N1/8/8/8 w - - 0 1` | OK | alles in orde |
+| Ruiter-en-Pion teen Ruiter (T25) | Goud #1 | `4N3/8/1n1PK3/7k/8/8/8/8 w - - 0 1` | OK | alles in orde |
 | Ruiter-en-Pion teen Ruiter (T25) | Goud #2 | `k7/3N1n2/8/4P3/5K2/8/8/8 w - - 0 1` | OK | alles in orde |
 | Biskop-en-Pion teen Biskop (T26) | Brons #1 | `1b4k1/8/3P4/3KB3/8/8/8/8 w - - 0 1` | OK | alles in orde |
 | Biskop-en-Pion teen Biskop (T26) | Brons #2 | `5k2/8/3P4/3K4/1B6/8/8/6b1 w - - 0 1` | OK | alles in orde |
