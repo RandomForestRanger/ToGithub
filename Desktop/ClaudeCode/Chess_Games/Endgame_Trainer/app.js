@@ -45,6 +45,22 @@ const STALEMATE_MSGS = [
   "🦄 Die towerperd het jou bewering geblokkeer! Swart sit vas — maar dis nie genoeg nie!",
 ]
 
+// Opdrag 12: sleutelgedagte-katjie se grapkies — omtrent 1 uit 10 rondtes kry
+// die katjie iets onnosels te sê in plaas van die eintlike sleutelgedagte.
+const KAT_GRAPPIES = [
+  "Miaau miaau miiauuuu!",
+  "Ek hou van warm melkies!",
+  "Het ek 'n muis geruik?",
+  "Kwaadkat staatkat",
+  "Kris de Kat was 'n Straatsangerskat",
+  "O die Kat kom weer, want hy...",
+  "Ek is katjie van die baan!",
+  "Een aand op 'n kattebasaar...",
+  "Ek is nie 'n katjie wat jy sonder handskoene wil aanpak nie",
+  "Sjuut... ek jag 'n stippellyn!",
+  "Ek's 'n stert wat op vier pote loop!",
+]
+
 // ─── Wenvoorwaarde-boodskappe (mate | promote | hold) — Opdrag 2, §2 ───────────
 
 const PROMOTION_PIECE_NAMES = { q: 'koningin', n: 'ruiter', b: 'biskop', r: 'kasteel' }
@@ -615,8 +631,32 @@ function startGame(puzzle) {
   document.getElementById('game-type-name').textContent = typeData ? typeData.name : ''
   document.getElementById('game-type-sub').textContent  = tierConfig.label
 
-  // Sybalk regs: sleutelgedagte (Opdrag 10)
-  document.getElementById('sleutelgedagte-text').textContent = typeData ? typeData.sleutelgedagte : ''
+  // Sybalk regs: sleutelgedagte (Opdrag 10) — omtrent 1 uit 10 rondtes praat
+  // die katjie onsin in plaas daarvan (Opdrag 12).
+  const sleutelgedagteHeadingEl = document.getElementById('sleutelgedagte-heading')
+  const isGrappie = Math.random() < 0.1
+  if (isGrappie) {
+    document.getElementById('sleutelgedagte-text').textContent =
+      KAT_GRAPPIES[Math.floor(Math.random() * KAT_GRAPPIES.length)]
+    sleutelgedagteHeadingEl.style.display = 'none'
+  } else {
+    document.getElementById('sleutelgedagte-text').textContent = typeData ? typeData.sleutelgedagte : ''
+    sleutelgedagteHeadingEl.style.display = ''
+  }
+
+  // Kentekenkat: wys die tipe se maskot, met die hoogste vlak se medalje
+  // (of geen medalje as bronse nog nie verdien is nie) — Opdrag 11.
+  const catImg = document.getElementById('sleutelgedagte-cat')
+  if (typeData) {
+    const earnedTier = highestEarnedTier(typeData.id)
+    const catTier     = earnedTier === 'none' ? 'normal' : earnedTier
+    const catId       = String(typeData.id).length < 2 ? '0' + typeData.id : String(typeData.id)
+    catImg.src = 'assets/cats/type' + catId + '_' + catTier + '.png'
+    catImg.alt = typeData.name + ' kat (' + catTier + ')'
+    catImg.style.visibility = 'visible'
+  } else {
+    catImg.style.visibility = 'hidden'
+  }
 
   const objectiveEl = document.getElementById('game-objective')
   objectiveEl.textContent = objectiveLabel(winCondition, holdMoves)

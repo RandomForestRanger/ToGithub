@@ -32,10 +32,12 @@ python3 -m http.server 8080
 
 ```
 index.html, app.js, positions.js, fases.js, styles.css, stockfish-worker.js   # the shipped app
+assets/cats/             # 100 badge-mascot cat PNGs (25 types x 4 tiers), also shipped — see Kentekenkat below
+New_Cat.png              # source reference cat for the assets/cats/ generator, kept for regeneration
 netlify.toml            # deploy config; build step copies the above into dist/ (gitignored)
 CLAUDE.md                # this file
 SPEELTOETS.md            # one-page Afrikaans playtest checklist for the coach
-tools/                   # verification harness + one-off position generators (see below)
+tools/                   # verification harness + one-off position/asset generators (see below)
 argief/                  # archive: old_version/ (abandoned React rewrite) + completed Opdrag_01-08b specs
 Opdrag_09_Finale_QA.md   # the active task spec, until it's done too
 ```
@@ -45,6 +47,8 @@ Opdrag_09_Finale_QA.md   # the active task spec, until it's done too
 - `extract_positions.cjs` — Node helper `verify_positions.py` shells out to, to parse `positions.js`'s bare `const` declarations into JSON without reimplementing a JS parser
 - `scan_duplicates.py` — exact + translation-aware near-duplicate scan across all positions
 - `generate_type5.py`, `select_type5.py`, `generate_type22.py`...`generate_type27.py` — one-off candidate generators for the types built via the generate-and-verify pipeline (see the recipe below); kept as templates for future types, not run automatically
+- `build_cats_from_single.py` — **the live generator** for `assets/cats/`, see Kentekenkat below; run it again if `New_Cat.png` changes
+- `generate_cat_sprites.py`, `extract_cat_reference.py`, `build_cat_sprites_from_ref.py` — superseded attempts at the same asset set (from-scratch procedural cats, then extraction from a multi-cat sprite sheet), kept as a record of what didn't work rather than deleted — see Kentekenkat below for why
 - `opdrag_06_purge_manifest.md`, `opdrag_08_manifest.md`, `opdrag_08b_manifest.md` — per-task manifests with full per-position evidence (tablebase DTM, rollout numbers, corrections made mid-task)
 - `tb_cache.json` (gitignored) — Lichess tablebase response cache; delete to force fresh lookups
 - `verification_report.md` — overwritten by every harness run, committed anyway as a snapshot
@@ -207,7 +211,8 @@ Triggered automatically after **every** round, win or fail:
 - Chessboard, centre
 - Top bar: badge name + tier, objective label (*"Doel: Skaakmat"* / *"Doel: Promoveer 'n pion"* / *"Doel: Hou die gelykspel — oorleef {n} skuiwe"*), move counter
 - Conditional hint button per tier rules above
-- **Sleutelgedagte panel:** a glass panel to the right of the board (`.sleutelgedagte-panel`, 260px — matches the shared Chess_Games "Analysis/Review" right-column convention) showing the current type's key-idea explanation: a <100-word Afrikaans paragraph on the core technique, addressed directly to the player. Data on `ENDGAME_TYPES[i].sleutelgedagte` in `positions.js` (all 25 types), populated in `startGame()`. One thing to remember per type, not a theory lesson.
+- **Sybalk links:** compact 2-column badge grid (`.badge-sidebar`, 112px), same helper (`renderSidebarBadges`) also serves the Replay screen. 25 is odd, so the grid always ends with one badge alone in column 1 — `.sidebar-badge-item:last-child` spans both columns and centres itself so it doesn't look stranded.
+- **Sleutelgedagte panel:** a glass panel to the right of the board (`.sleutelgedagte-panel`, 260px — matches the shared Chess_Games "Analysis/Review" right-column convention). The key-idea text sits in a comic-style speech bubble (`.speech-bubble`, CSS triangle tail pointing down) attributed to the type's mascot cat (`.sleutelgedagte-cat`, ~85px) shown below it — see Kentekenkat below. Normally the bubble shows the current type's key-idea explanation: a <100-word Afrikaans paragraph on the core technique, addressed directly to the player (`ENDGAME_TYPES[i].sleutelgedagte` in `positions.js`, all 25 types). About 1 round in 10 the bubble shows a silly cat one-liner from `KAT_GRAPPIES` instead (and the "💡 Sleutelgedagte" heading hides itself for that round). All populated in `startGame()`. One thing to remember per type, not a theory lesson.
 
 ### 3. Uitslag (Result Screen)
 Shown for every round, win or fail. Heading/icon/message vary by reason (`checkmate`, `promote`, `hold_survived`, `hold_stalemate`, `hold_repetition`, `hold_insufficient` for wins; `stalemate`, `black_checkmate`, `repetition`, `limit`, `hold_mated`, `hold_adjudicated` for failures) — wins styled green (`.win`), stalemate red, other failures orange. Transitions to replay after 2 seconds.
@@ -220,6 +225,21 @@ Shown when a badge tier is newly earned. *"Nuwe vlak ontsluit. Ramkat!"* Brief c
 
 ### 6. Fase Ontsluit (Fase Unlock Screen)
 Shown immediately after badge-unlock, never concurrently (`finishRound()` snapshots unlocked fases before `earnBadge()` runs, diffs after, stashes any newly-crossed gate on `state.newlyUnlockedFase`, consumed by `finishBadgeUnlock()`). Fase name, row of type icons, *"Nuwe Fase Ontsluit! Ramkat!"* Auto-dismisses after ~4s or via *"Terug na Kentekens"*.
+
+---
+
+## Kentekenkat (Badge Mascot)
+
+Each of the 25 types has its own mascot cat, shown in the Sleutelgedagte panel below the speech bubble. It wears no medal until Brons is earned for that type, then swaps to a bronze/silver/gold necklace pendant — driven by `highestEarnedTier(typeData.id)`, the same source of truth the badge system already uses, re-evaluated every `startGame()` call (`catImg.src = 'assets/cats/type' + catId + '_' + catTier + '.png'`).
+
+**Asset pipeline** (`tools/build_cats_from_single.py` → `assets/cats/type{ID}_{tier}.png`, 25 types × 4 tiers = 100 PNGs):
+- Source is a single reference image, `New_Cat.png` (user-supplied, gold necklace already on it) — not a multi-cat sprite sheet. An earlier attempt extracted cats from a 9×4-cell NanoBanana grid sheet; every cell's tail curled into the gap toward its neighbour, so no fixed crop boundary could avoid slicing through one cat's tail or bleeding in a stray fragment from the next. A single isolated cat sidesteps that entire class of bug — nothing adjacent to crop around.
+- Its background is a baked-in checkerboard (not real alpha) — stripped via flood-fill from the image border over near-grey pixels; the cat's black outline reliably contains the fill so the interior fur is untouched.
+- The necklace (chest-band region + gold colour threshold) is isolated, inpainted out with the surrounding chest colour for the medal-less "normal" tier, and recoloured in place — not redrawn — for bronze/silver/gold, preserving the original chain's shading/highlight pattern.
+- Types 1–11 (first 10 in this doc's numeric order) get a gentle, low-saturation recolour (grey, chocolate, ginger, black, blue-grey, brown tabby, etc.) so they read as realistic cat colours; types 12–27 get a vivid hue-rotated + saturation-boosted "zany" coat. All 25 share one silhouette/pose — colour and medal are the only variety, a deliberate trade-off after two sprite-sheet extraction attempts (`generate_cat_sprites.py`, `build_cat_sprites_from_ref.py`) both produced cut/malformed cats despite looking fine on a spot-check.
+- **Standing lesson for any future regeneration:** verify every one of the 100 output files by eye, not a sample — both failed attempts passed a 5-6-image spot-check and broke once every type was actually looked at.
+
+**Speech bubble & grapkies:** the sleutelgedagte text sits in `.speech-bubble` (CSS triangle tail pointing down at the cat below it) so it reads as the cat talking, not a plain panel of prose. About 1 round in 10 (`Math.random() < 0.1` in `startGame()`), the bubble shows a random line from `KAT_GRAPPIES` (in `app.js`) instead of the real key-idea text, and the "💡 Sleutelgedagte" heading hides itself for that round — a heading over a meow would be a non-sequitur.
 
 ---
 

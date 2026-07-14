@@ -286,6 +286,13 @@ header p {
 .sidebar-badge-item.tier-silver { background: rgba(168,168,168,0.12); }
 .sidebar-badge-item.tier-gold   { background: rgba(255,215,0,0.12); }
 
+/* 25 types is odd, so the last badge always lands alone in column 1 —
+   span both columns and centre it instead of leaving it stranded. */
+.sidebar-badge-item:last-child {
+  grid-column: 1 / -1;
+  justify-self: center;
+}
+
 .sidebar-icon { font-size: 1.1rem; line-height: 1; }
 
 .sidebar-pips {
@@ -333,6 +340,46 @@ header p {
   font-size: 0.85rem;
   line-height: 1.5;
   color: #e8e8e8;
+}
+.speech-bubble {
+  position: relative;
+  background: rgba(255, 255, 255, 0.14);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 14px;
+  padding: 10px 12px;
+  margin-bottom: 14px;
+}
+.speech-bubble::before {
+  content: '';
+  position: absolute;
+  bottom: -11px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 10px solid transparent;
+  border-right: 10px solid transparent;
+  border-top: 11px solid rgba(255, 255, 255, 0.3);
+}
+.speech-bubble::after {
+  content: '';
+  position: absolute;
+  bottom: -9px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 8px solid transparent;
+  border-right: 8px solid transparent;
+  border-top: 9px solid rgba(255, 255, 255, 0.14);
+}
+.sleutelgedagte-cat {
+  display: block;
+  width: 100%;
+  max-width: 85px;
+  margin: 4px auto 0;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
 }
 
 /* ─── Twee-klik uitlig (Bird Opening styl: ring + grys kolletjie) ─────────────── */
@@ -625,6 +672,17 @@ header p {
 }
 
 /* ─── Responsive ─────────────────────────────────────────────────────────────── */
+/* Full three-column row (sidebar 112px + board ~520px + sleutelgedagte 260px)
+   needs ~950px; below that it must wrap or it overflows and gets clipped by
+   body's overflow-x:hidden — sidebar and panel silently pushed off-screen. */
+@media (max-width: 1000px) {
+  .game-layout { flex-wrap: wrap; justify-content: center; }
+  .sleutelgedagte-panel {
+    order: 3;
+    width: 100%;
+    max-width: 520px;
+  }
+}
 @media (max-width: 700px) {
   .badge-grid-inner { grid-template-columns: repeat(2, 1fr); }
   header h1    { font-size: 1.5rem; }
