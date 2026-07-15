@@ -2,7 +2,7 @@ name: Deploy Chess Games to GitHub Pages
 
 on:
   push:
-    branches: [main, add-RandomForestRanger]
+    branches: [master, add-RandomForestRanger]
     paths:
       - 'Desktop/ClaudeCode/Chess_Games/**'
       - '.github/workflows/deploy-pages.yml'
@@ -28,21 +28,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: npm
-          cache-dependency-path: Desktop/ClaudeCode/Chess_Games/Endgame_Trainer/package.json
-
-      - name: Install Endgame Trainer dependencies
-        working-directory: Desktop/ClaudeCode/Chess_Games/Endgame_Trainer
-        run: npm install
-
-      - name: Build Endgame Trainer
-        working-directory: Desktop/ClaudeCode/Chess_Games/Endgame_Trainer
-        run: npm run build
-
       - name: Assemble site
         run: |
           mkdir -p site/Endgame_Trainer
@@ -50,8 +35,13 @@ jobs:
           mkdir -p site/Bird_Opening
           mkdir -p site/Spanish_Opening
 
-          # Endgame Trainer (Vite build output)
-          cp -r Desktop/ClaudeCode/Chess_Games/Endgame_Trainer/dist/. site/Endgame_Trainer/
+          # Endgame Trainer (plain static app, no build step)
+          cp Desktop/ClaudeCode/Chess_Games/Endgame_Trainer/index.html   site/Endgame_Trainer/
+          cp Desktop/ClaudeCode/Chess_Games/Endgame_Trainer/app.js       site/Endgame_Trainer/
+          cp Desktop/ClaudeCode/Chess_Games/Endgame_Trainer/styles.css   site/Endgame_Trainer/
+          cp Desktop/ClaudeCode/Chess_Games/Endgame_Trainer/positions.js site/Endgame_Trainer/
+          cp Desktop/ClaudeCode/Chess_Games/Endgame_Trainer/fases.js     site/Endgame_Trainer/
+          cp -r Desktop/ClaudeCode/Chess_Games/Endgame_Trainer/assets    site/Endgame_Trainer/
 
           # Plain HTML games
           cp Desktop/ClaudeCode/Chess_Games/Vind_die_Flater/index.html site/Vind_die_Flater/
