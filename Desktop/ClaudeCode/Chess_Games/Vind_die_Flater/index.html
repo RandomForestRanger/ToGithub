@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="af">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🔍 Vind die Flater</title>
+
+    <!-- Chess.js for move validation -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js"></script>
+
+
+    <!-- Chessboard.js -->
+    <link rel="stylesheet" href="https://unpkg.com/@chrisoakman/chessboardjs@1.0.0/dist/chessboard-1.0.0.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+    <script src="https://unpkg.com/@chrisoakman/chessboardjs@1.0.0/dist/chessboard-1.0.0.min.js"></script>
+
+    <!-- Custom styles -->
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🔍 Vind die Flater</h1>
+            <p class="subtitle">Vind die Flater — Wen die Spel</p>
+        </header>
+
+        <div class="stats-panel">
+            <div class="stat-box player-box">
+                <span class="stat-label">Speler</span>
+                <select id="player-select" class="player-select">
+                    <option value="" disabled selected>— Kies speler —</option>
+                    <option value="Debora">Debora</option>
+                    <option value="Jacobus">Jacobus</option>
+                    <option value="Thomas">Thomas</option>
+                    <option value="Martin">Martin</option>
+                    <option value="Coach Corno">Coach Corno</option>
+                    <option value="Birdman">Birdman</option>
+                </select>
+            </div>
+            <div class="stat-box">
+                <span class="stat-label">Skuif</span>
+                <span class="stat-value" id="move-counter">0/16</span>
+            </div>
+            <div class="stat-box flaters-box">
+                <span class="stat-label">Flaters Gevind</span>
+                <span class="stat-value" id="flaters-gevind">0</span>
+            </div>
+            <div class="stat-box badges-box">
+                <span class="stat-label">Kentekens</span>
+                <span class="stat-value" id="badges-count">0</span>
+            </div>
+            <div class="stat-box eval-box">
+                <span class="stat-label">Evaluasie</span>
+                <span class="stat-value" id="position-eval">0.0</span>
+            </div>
+        </div>
+
+        <!-- Main layout: badges | board | analysis panel -->
+        <div class="main-layout">
+
+            <!-- Badge Panel (LEFT side) -->
+            <div class="badge-panel" id="badge-panel">
+                <h3>Kentekens</h3>
+                <div class="badge-tooltip" id="badge-tooltip">
+                    <p id="tooltip-text">Beweeg oor 'n kenteken om meer te leer.</p>
+                </div>
+                <div class="badge-list">
+                    <!-- Opening badges -->
+                    <div class="badge-item locked" id="badge-ruy-lopez" data-badge="ruy-lopez">
+                        <span class="badge-icon">🌶️</span>
+                        <div class="badge-info">
+                            <span class="badge-name">Spaanse Spel</span>
+                            <span class="badge-desc">Eval ≤ -1.0 teen Ruy Lopez</span>
+                        </div>
+                    </div>
+                    <div class="badge-item locked" id="badge-italian" data-badge="italian">
+                        <span class="badge-icon">🍕</span>
+                        <div class="badge-info">
+                            <span class="badge-name">Italiaanse Spel</span>
+                            <span class="badge-desc">Eval ≤ -1.0 teen Italian</span>
+                        </div>
+                    </div>
+                    <div class="badge-item locked" id="badge-scotch" data-badge="scotch">
+                        <span class="badge-icon">🏰</span>
+                        <div class="badge-info">
+                            <span class="badge-name">Skotse Spel</span>
+                            <span class="badge-desc">Eval ≤ -1.0 teen Scotch</span>
+                        </div>
+                    </div>
+                    <div class="badge-item locked" id="badge-vienna" data-badge="vienna">
+                        <span class="badge-icon">🎭</span>
+                        <div class="badge-info">
+                            <span class="badge-name">Weense Spel</span>
+                            <span class="badge-desc">Eval ≤ -1.0 teen Vienna</span>
+                        </div>
+                    </div>
+                    <div class="badge-item locked" id="badge-bird" data-badge="bird">
+                        <span class="badge-icon">🎩</span>
+                        <div class="badge-info">
+                            <span class="badge-name">Bird Gebyt</span>
+                            <span class="badge-desc">Eval ≤ -1.0 teen Bird</span>
+                        </div>
+                    </div>
+                    <div class="badge-item locked" id="badge-queens-gambit" data-badge="queens-gambit">
+                        <span class="badge-icon">👑</span>
+                        <div class="badge-info">
+                            <span class="badge-name">Koningin se Gambiet</span>
+                            <span class="badge-desc">Eval ≤ -1.0 teen QG</span>
+                        </div>
+                    </div>
+                    <div class="badge-item locked" id="badge-kings-indian" data-badge="kings-indian">
+                        <span class="badge-icon">🐅</span>
+                        <div class="badge-info">
+                            <span class="badge-name">Indiese Jagter</span>
+                            <span class="badge-desc">Eval ≤ -1.0 teen KID</span>
+                        </div>
+                    </div>
+                    <div class="badge-item locked" id="badge-nimzo" data-badge="nimzo">
+                        <span class="badge-icon">🌀</span>
+                        <div class="badge-info">
+                            <span class="badge-name">Nimzo Ninja</span>
+                            <span class="badge-desc">Eval ≤ -1.0 teen Nimzo</span>
+                        </div>
+                    </div>
+                    <div class="badge-item locked" id="badge-english" data-badge="english">
+                        <span class="badge-icon">🏴</span>
+                        <div class="badge-info">
+                            <span class="badge-name">Engelse Oorlog</span>
+                            <span class="badge-desc">Eval ≤ -1.0 teen English</span>
+                        </div>
+                    </div>
+                    <div class="badge-item locked" id="badge-london" data-badge="london">
+                        <span class="badge-icon">🏙️</span>
+                        <div class="badge-info">
+                            <span class="badge-name">Londense Held</span>
+                            <span class="badge-desc">Eval ≤ -1.0 teen London</span>
+                        </div>
+                    </div>
+                    <div class="badge-item locked" id="badge-french" data-badge="french">
+                        <span class="badge-icon">🥖</span>
+                        <div class="badge-info">
+                            <span class="badge-name">Franse Weerstand</span>
+                            <span class="badge-desc">Eval ≤ -1.0 teen French</span>
+                        </div>
+                    </div>
+                    <div class="badge-item locked" id="badge-caro-kann" data-badge="caro-kann">
+                        <span class="badge-icon">🛡️</span>
+                        <div class="badge-info">
+                            <span class="badge-name">Caro-Kanner</span>
+                            <span class="badge-desc">Eval ≤ -1.0 teen Caro-Kann</span>
+                        </div>
+                    </div>
+                    <div class="badge-item locked" id="badge-scandinavian" data-badge="scandinavian">
+                        <span class="badge-icon">🌊</span>
+                        <div class="badge-info">
+                            <span class="badge-name">Skandinawiese Viking</span>
+                            <span class="badge-desc">Eval ≤ -1.0 teen Scandi</span>
+                        </div>
+                    </div>
+                    <div class="badge-item locked" id="badge-colle" data-badge="colle">
+                        <span class="badge-icon">🏔️</span>
+                        <div class="badge-info">
+                            <span class="badge-name">Colle Kraker</span>
+                            <span class="badge-desc">Eval ≤ -1.0 teen Colle</span>
+                        </div>
+                    </div>
+                    <!-- Special badges -->
+                    <div class="badge-item locked" id="badge-flater-gevind" data-badge="flater-gevind">
+                        <span class="badge-icon">🎯</span>
+                        <div class="badge-info">
+                            <span class="badge-name">Flater Gevind</span>
+                            <span class="badge-desc">Eerste korrekte opsporing</span>
+                        </div>
+                    </div>
+                    <div class="badge-item locked" id="badge-10-flaters" data-badge="10-flaters">
+                        <span class="badge-icon">😂</span>
+                        <div class="badge-info">
+                            <span class="badge-name">Lekker Maters!</span>
+                            <span class="badge-desc">10 Flaters gevind</span>
+                        </div>
+                    </div>
+                    <div class="badge-item locked" id="badge-koningin-gevang" data-badge="koningin-gevang">
+                        <span class="badge-icon">♛</span>
+                        <div class="badge-info">
+                            <span class="badge-name">Koningin Gevang</span>
+                            <span class="badge-desc">Vang Wit se koningin</span>
+                        </div>
+                    </div>
+                    <div class="badge-item locked" id="badge-skaakmat" data-badge="skaakmat">
+                        <span class="badge-icon">💀</span>
+                        <div class="badge-info">
+                            <span class="badge-name">Skaakmat!</span>
+                            <span class="badge-desc">Gee Wit mat voor skuif 16</span>
+                        </div>
+                    </div>
+                    <div class="badge-item locked" id="badge-10-top-skuiwe" data-badge="10-top-skuiwe">
+                        <span class="badge-icon">🌟</span>
+                        <div class="badge-info">
+                            <span class="badge-name">10 Top Skuiwe</span>
+                            <span class="badge-desc">10 #1 Lichess-skuiwe</span>
+                        </div>
+                    </div>
+                    <div class="badge-item locked" id="badge-dominant" data-badge="dominant">
+                        <span class="badge-icon">🔥</span>
+                        <div class="badge-info">
+                            <span class="badge-name">Dominante Spel</span>
+                            <span class="badge-desc">Eval ≤ -2.0 aan die einde</span>
+                        </div>
+                    </div>
+                    <div class="badge-item locked" id="badge-teorie-ken" data-badge="teorie-ken">
+                        <span class="badge-icon">🧠</span>
+                        <div class="badge-info">
+                            <span class="badge-name">Teoretiese Spel</span>
+                            <span class="badge-desc">8 aaneenlopende top-2 skuiwe</span>
+                        </div>
+                    </div>
+                    <div class="badge-item locked" id="badge-eerste-vangskoot" data-badge="eerste-vangskoot">
+                        <span class="badge-icon">⚔️</span>
+                        <div class="badge-info">
+                            <span class="badge-name">Eerste Vangskoot</span>
+                            <span class="badge-desc">Eerste keer jy 'n stuk vang</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Center Column: Board and info -->
+            <div class="center-column">
+                <!-- Loading indicator -->
+                <div id="engine-loading" class="engine-loading">
+                    <span class="loading"></span>
+                    <span>Stockfish laai...</span>
+                </div>
+
+                <div class="board-container">
+                    <div id="board" style="width: min(480px, calc(100vw - 60px))"></div>
+                </div>
+
+                <!-- Flater Button -->
+                <div id="flater-btn-container">
+                    <button id="flater-btn" class="flater-btn" disabled>
+                        Hierdie lyk soos 'n flater!
+                    </button>
+                </div>
+
+                <div class="info-panel">
+                    <div class="message-box" id="message-box">
+                        <p id="game-message">Welkom! Klik "Nuwe Spel" om te begin.</p>
+                    </div>
+                </div>
+
+                <div class="move-history">
+                    <h3>Skuifgeskiedenis</h3>
+                    <div id="history-list"></div>
+                </div>
+
+                <div class="controls">
+                    <button id="new-game-btn" class="btn btn-primary">Nuwe Spel</button>
+                </div>
+            </div>
+
+            <!-- Analysis Panel (shown during game) -->
+            <div class="analysis-panel" id="analysis-panel">
+                <h3>Skuif Analise</h3>
+                <div class="opening-hint-box" id="opening-hint-box" style="display:none;">
+                    <p id="opening-hint-text"></p>
+                </div>
+                <div class="analysis-section">
+                    <h4>🤖 Stockfish Beste (Swart):</h4>
+                    <div id="stockfish-moves" class="analysis-moves">
+                        <p class="analysis-placeholder">Speel 'n skuif...</p>
+                    </div>
+                </div>
+                <div class="analysis-section">
+                    <h4>📊 Lichess Gewildste:</h4>
+                    <div id="lichess-moves" class="analysis-moves">
+                        <p class="analysis-placeholder">Speel 'n skuif...</p>
+                    </div>
+                </div>
+                <div class="your-move-section" id="your-move-section" style="display: none;">
+                    <h4>🎯 Jou Skuif:</h4>
+                    <div id="your-move-info"></div>
+                </div>
+            </div>
+
+            <!-- Review Panel (shown after game ends) -->
+            <div class="review-panel" id="review-panel" style="display: none;">
+                <h3>Hersien Jou Spel</h3>
+                <div class="review-controls">
+                    <button id="review-back-btn" class="btn btn-review">← Terug</button>
+                    <span id="review-position">Skuif 0</span>
+                    <button id="review-forward-btn" class="btn btn-review">Vorentoe →</button>
+                </div>
+                <div class="best-moves-panel" id="best-moves-panel">
+                    <h4>Beste Skuiwe Hier:</h4>
+                    <div id="best-moves-list"></div>
+                </div>
+                <button id="exit-review-btn" class="btn btn-secondary btn-small">Verlaat Hersiening</button>
+            </div>
+
+        </div>
+
+        <!-- Badge Unlock Notification -->
+        <div class="badge-notification" id="badge-notification">
+            <span class="notif-icon" id="notif-icon"></span>
+            <span class="notif-text" id="notif-text"></span>
+        </div>
+
+        <!-- Game Over Modal -->
+        <div class="modal" id="game-over-modal">
+            <div class="modal-content">
+                <h2 id="modal-title">Spel Voltooi!</h2>
+                <p id="modal-result"></p>
+                <p id="modal-blunder-reveal"></p>
+                <p id="modal-eval"></p>
+                <div id="modal-badges-earned" style="display: none;">
+                    <p class="badges-earned-title">Kentekens Verdien:</p>
+                    <div id="badges-earned-list"></div>
+                </div>
+                <div class="modal-buttons">
+                    <button id="modal-review" class="btn btn-secondary">Hersien Spel</button>
+                    <button id="modal-new-game" class="btn btn-primary">Nuwe Spel</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>

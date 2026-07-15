@@ -1,0 +1,125 @@
+name: Deploy Chess Games to GitHub Pages
+
+on:
+  push:
+    branches: [master, add-RandomForestRanger]
+    paths:
+      - 'Desktop/ClaudeCode/Chess_Games/**'
+      - '.github/workflows/deploy-pages.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Assemble site
+        run: |
+          mkdir -p site/Endgame_Trainer
+          mkdir -p site/Vind_die_Flater
+          mkdir -p site/Bird_Opening
+          mkdir -p site/Spanish_Opening
+
+          # Endgame Trainer (plain static app, no build step)
+          cp Desktop/ClaudeCode/Chess_Games/Endgame_Trainer/index.html   site/Endgame_Trainer/
+          cp Desktop/ClaudeCode/Chess_Games/Endgame_Trainer/app.js       site/Endgame_Trainer/
+          cp Desktop/ClaudeCode/Chess_Games/Endgame_Trainer/styles.css   site/Endgame_Trainer/
+          cp Desktop/ClaudeCode/Chess_Games/Endgame_Trainer/positions.js site/Endgame_Trainer/
+          cp Desktop/ClaudeCode/Chess_Games/Endgame_Trainer/fases.js     site/Endgame_Trainer/
+          cp -r Desktop/ClaudeCode/Chess_Games/Endgame_Trainer/assets    site/Endgame_Trainer/
+
+          # Plain HTML games
+          cp Desktop/ClaudeCode/Chess_Games/Vind_die_Flater/index.html site/Vind_die_Flater/
+          cp Desktop/ClaudeCode/Chess_Games/Vind_die_Flater/app.js    site/Vind_die_Flater/
+          cp Desktop/ClaudeCode/Chess_Games/Vind_die_Flater/styles.css site/Vind_die_Flater/
+
+          cp Desktop/ClaudeCode/Chess_Games/Bird_Opening/index.html site/Bird_Opening/
+          cp Desktop/ClaudeCode/Chess_Games/Bird_Opening/app.js    site/Bird_Opening/
+          cp Desktop/ClaudeCode/Chess_Games/Bird_Opening/styles.css site/Bird_Opening/
+
+          cp Desktop/ClaudeCode/Chess_Games/Spanish_Opening/index.html site/Spanish_Opening/
+          cp Desktop/ClaudeCode/Chess_Games/Spanish_Opening/app.js    site/Spanish_Opening/
+          cp Desktop/ClaudeCode/Chess_Games/Spanish_Opening/styles.css site/Spanish_Opening/
+
+      - name: Create landing page
+        run: |
+          cat > site/index.html << 'EOF'
+          <!DOCTYPE html>
+          <html lang="af">
+          <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Skaak Oefenaars</title>
+            <style>
+              body { margin: 0; font-family: 'Segoe UI', sans-serif; min-height: 100vh;
+                     background: linear-gradient(135deg, #1a1a2e, #16213e, #0f3460);
+                     color: #e8e8e8; display: flex; flex-direction: column; align-items: center;
+                     justify-content: center; }
+              h1 { color: #f39c12; font-size: 2.5rem; margin-bottom: 0.5rem; }
+              p { color: #aaa; margin-bottom: 2.5rem; }
+              .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+                      gap: 1.5rem; max-width: 900px; width: 90%; }
+              a { text-decoration: none; background: rgba(255,255,255,0.08);
+                  border: 1px solid rgba(255,255,255,0.15); border-radius: 12px;
+                  padding: 2rem; text-align: center; transition: transform .2s, background .2s; }
+              a:hover { transform: translateY(-4px); background: rgba(255,255,255,0.14); }
+              .icon { font-size: 3rem; }
+              .name { color: #f39c12; font-weight: bold; margin: 0.75rem 0 0.4rem; font-size: 1.1rem; }
+              .desc { color: #aaa; font-size: 0.9rem; }
+            </style>
+          </head>
+          <body>
+            <h1>♟ Skaak Oefenaars</h1>
+            <p>Kies 'n speletjie om te oefen</p>
+            <div class="grid">
+              <a href="Endgame_Trainer/">
+                <div class="icon">🏅</div>
+                <div class="name">Skaakmat Afrigter</div>
+                <div class="desc">20 eindspel-tipes, 200 posisies</div>
+              </a>
+              <a href="Vind_die_Flater/">
+                <div class="icon">🔍</div>
+                <div class="name">Vind die Flater</div>
+                <div class="desc">Spoor Wit se opsetlike blunder op</div>
+              </a>
+              <a href="Spanish_Opening/">
+                <div class="icon">🇪🇸</div>
+                <div class="name">Spaanse Opening</div>
+                <div class="desc">Leer die Ruy Lopez</div>
+              </a>
+              <a href="Bird_Opening/">
+                <div class="icon">🐦</div>
+                <div class="name">Voël Opening</div>
+                <div class="desc">Leer die Bird Opening (1.f4)</div>
+              </a>
+            </div>
+          </body>
+          </html>
+          EOF
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: site/
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

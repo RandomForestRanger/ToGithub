@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="af">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Kom Speel Saam!</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    :root {
+      --cream:     #f5ede0;
+      --sand:      #e8d5b7;
+      --ochre:     #c9933a;
+      --gold:      #e8b84b;
+      --brown:     #7a4f2e;
+      --dark-brown:#4a2e10;
+      --green:     #6b8f4e;
+      --dark-green:#4a6635;
+      --card-bg:   #fffbf4;
+      --shadow:    rgba(74, 46, 16, 0.15);
+    }
+
+    body {
+      font-family: 'Nunito', sans-serif;
+      background-color: var(--cream);
+      background-image:
+        radial-gradient(circle at 20% 20%, rgba(201, 147, 58, 0.08) 0%, transparent 50%),
+        radial-gradient(circle at 80% 80%, rgba(107, 143, 78, 0.08) 0%, transparent 50%),
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='60'%3E%3Cpath d='M0 30 Q15 15 30 30 Q45 45 60 30' stroke='%23c9933a' stroke-width='0.4' fill='none' opacity='0.2'/%3E%3C/svg%3E");
+      min-height: 100vh;
+      color: var(--dark-brown);
+    }
+
+    /* ── HEADER ── */
+    header {
+      text-align: center;
+      padding: 3rem 1.5rem 2rem;
+      background: linear-gradient(160deg, #e8c97a 0%, #d4a84b 40%, #b87d2a 100%);
+      clip-path: ellipse(120% 100% at 50% 0%);
+      padding-bottom: 4rem;
+      position: relative;
+    }
+
+    header::after {
+      content: '';
+      position: absolute;
+      bottom: -1px;
+      left: 0;
+      right: 0;
+      height: 30px;
+      background: var(--cream);
+      clip-path: ellipse(55% 100% at 50% 100%);
+    }
+
+    .header-badge {
+      display: inline-block;
+      background: rgba(255,255,255,0.25);
+      border-radius: 50px;
+      padding: 0.3rem 1rem;
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: var(--dark-brown);
+      letter-spacing: 0.05em;
+      margin-bottom: 1rem;
+    }
+
+    h1 {
+      font-family: 'Fredoka One', cursive;
+      font-size: clamp(2.4rem, 7vw, 4rem);
+      color: var(--dark-brown);
+      text-shadow: 2px 3px 0 rgba(255,255,255,0.4);
+      line-height: 1.1;
+      margin-bottom: 0.6rem;
+    }
+
+    .subtitle {
+      font-size: clamp(1rem, 3vw, 1.3rem);
+      font-weight: 600;
+      color: var(--brown);
+      opacity: 0.9;
+    }
+
+    /* ── GRID ── */
+    main {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 2.5rem 1.5rem 3rem;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1.8rem;
+    }
+
+    @media (max-width: 820px) {
+      .grid { grid-template-columns: repeat(2, 1fr); }
+    }
+
+    @media (max-width: 500px) {
+      .grid { grid-template-columns: 1fr; }
+    }
+
+    /* ── CARDS ── */
+    .card {
+      background: var(--card-bg);
+      border-radius: 20px;
+      padding: 2rem 1.5rem 1.5rem;
+      text-align: center;
+      text-decoration: none;
+      color: inherit;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.75rem;
+      box-shadow:
+        0 4px 12px var(--shadow),
+        0 1px 3px rgba(0,0,0,0.07);
+      border: 2px solid transparent;
+      transition:
+        transform 0.22s ease,
+        box-shadow 0.22s ease,
+        border-color 0.22s ease;
+      -webkit-tap-highlight-color: transparent;
+      touch-action: manipulation;
+      user-select: none;
+    }
+
+    /* hover only on pointer devices (mouse/trackpad) — not sticky on iPad touch */
+    @media (hover: hover) {
+      .card:hover {
+        transform: scale(1.05) translateY(-4px);
+        box-shadow:
+          0 12px 28px var(--shadow),
+          0 3px 8px rgba(0,0,0,0.1);
+        border-color: var(--gold);
+      }
+    }
+
+    /* always show focus ring for keyboard nav */
+    .card:focus-visible {
+      border-color: var(--gold);
+      outline: none;
+    }
+
+    /* tactile press feedback on touch */
+    .card:active {
+      transform: scale(0.97);
+      transition-duration: 0.08s;
+    }
+
+    .card-icon {
+      font-size: 3.2rem;
+      line-height: 1;
+      filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
+    }
+
+    .card-icon svg {
+      display: block;
+      margin: 0 auto;
+    }
+
+    .card-title {
+      font-family: 'Fredoka One', cursive;
+      font-size: clamp(1.15rem, 2.5vw, 1.4rem);
+      color: var(--brown);
+      line-height: 1.2;
+    }
+
+    .card-desc {
+      font-size: clamp(1rem, 2vw, 1.1rem);
+      font-weight: 600;
+      color: #6b5a48;
+      line-height: 1.5;
+      flex-grow: 1;
+    }
+
+    .btn {
+      display: inline-block;
+      margin-top: 0.5rem;
+      padding: 0.65rem 1.6rem;
+      background: linear-gradient(135deg, var(--ochre), #b86d1a);
+      color: #fff;
+      font-family: 'Fredoka One', cursive;
+      font-size: 1.05rem;
+      border-radius: 50px;
+      letter-spacing: 0.03em;
+      box-shadow: 0 3px 8px rgba(122, 79, 46, 0.35);
+      transition: filter 0.18s ease, box-shadow 0.18s ease;
+    }
+
+    @media (hover: hover) {
+      .card:hover .btn {
+        filter: brightness(1.1);
+        box-shadow: 0 5px 14px rgba(122, 79, 46, 0.45);
+      }
+    }
+
+    /* larger touch target on touch devices */
+    @media (hover: none) {
+      .btn {
+        padding: 0.8rem 2rem;
+        font-size: 1.1rem;
+      }
+    }
+
+    /* Card accent colours */
+    .card--chess   { --accent: #6b8f4e; }
+    .card--spanish { --accent: #c9933a; }
+    .card--italian { --accent: #7a4f2e; }
+    .card--blunder { --accent: #b84b4b; }
+    .card--matkat  { --accent: #4b7ab8; }
+    .card--adi     { --accent: #8a5fa8; }
+
+    .card--chess   .card-title { color: var(--dark-green); }
+    .card--spanish .card-title { color: #8a5a10; }
+    .card--italian .card-title { color: var(--brown); }
+    .card--blunder .card-title { color: #7a2020; }
+    .card--matkat  .card-title { color: #1a3a6e; }
+    .card--adi     .card-title { color: #4a1f6e; }
+
+    .card--chess   .btn { background: linear-gradient(135deg, #6b8f4e, #4a6635); }
+    .card--spanish .btn { background: linear-gradient(135deg, #c9933a, #8a5a10); }
+    .card--italian .btn { background: linear-gradient(135deg, #9e6b3e, #6b3e15); }
+    .card--blunder .btn { background: linear-gradient(135deg, #c95a5a, #8a2020); }
+    .card--matkat  .btn { background: linear-gradient(135deg, #5a8ac9, #1a3a7a); }
+    .card--adi     .btn { background: linear-gradient(135deg, #9e6bc9, #5a2090); }
+
+    /* ── FOOTER ── */
+    footer {
+      text-align: center;
+      padding: 1.5rem 1rem 2rem;
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--brown);
+      border-top: 2px dashed var(--sand);
+      margin-top: 1rem;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="header-badge">🎲 Speletjies Portaal</div>
+    <h1>Kom Speel Saam! 🎲</h1>
+    <p class="subtitle">Kies jou speletjie en begin die pret</p>
+  </header>
+
+  <main>
+    <div class="grid">
+
+      <a href="https://begin-bird-bietjie.netlify.app/" class="card card--chess">
+        <div class="card-icon">🦅</div>
+        <div class="card-title">Leer die Bird Speel</div>
+        <p class="card-desc">Ontdek 'n slim skaakbeweging wat jou vriende sal verbaas!</p>
+        <span class="btn">Speel nou!</span>
+      </a>
+
+      <a href="https://spaanse-opening-lekkergeit.netlify.app/" class="card card--spanish">
+        <div class="card-icon">🔥</div>
+        <div class="card-title">Die Spaanse Opening</div>
+        <p class="card-desc">Leer hoe grootmeesters die spel begin met die Spaanse opening.</p>
+        <span class="btn">Speel nou!</span>
+      </a>
+
+      <a href="https://italiaanse-opening.netlify.app/" class="card card--italian">
+        <div class="card-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="72" height="72" style="image-rendering:pixelated">
+            <!-- hair -->
+            <rect x="56" y="8" width="144" height="8" fill="#2C1810"/>
+            <rect x="48" y="16" width="160" height="8" fill="#2C1810"/>
+            <rect x="40" y="24" width="176" height="8" fill="#2C1810"/>
+            <rect x="40" y="32" width="16" height="32" fill="#2C1810"/>
+            <rect x="200" y="32" width="16" height="32" fill="#2C1810"/>
+            <!-- face -->
+            <rect x="56" y="32" width="144" height="200" fill="#F0C080"/>
+            <rect x="48" y="56" width="8" height="152" fill="#F0C080"/>
+            <rect x="200" y="56" width="8" height="152" fill="#F0C080"/>
+            <rect x="64" y="232" width="128" height="8" fill="#F0C080"/>
+            <rect x="80" y="240" width="96" height="8" fill="#F0C080"/>
+            <!-- ears -->
+            <rect x="32" y="96" width="16" height="40" fill="#F0C080"/>
+            <rect x="208" y="96" width="16" height="40" fill="#F0C080"/>
+            <rect x="40" y="104" width="8" height="24" fill="#D4956A"/>
+            <rect x="216" y="104" width="8" height="24" fill="#D4956A"/>
+            <!-- cheeks -->
+            <rect x="56" y="120" width="32" height="24" fill="#E08070" opacity="0.38"/>
+            <rect x="168" y="120" width="32" height="24" fill="#E08070" opacity="0.38"/>
+            <!-- nose -->
+            <rect x="112" y="128" width="32" height="8" fill="#D4956A"/>
+            <rect x="104" y="136" width="16" height="8" fill="#D4956A"/>
+            <rect x="136" y="136" width="16" height="8" fill="#D4956A"/>
+            <!-- mustache -->
+            <rect x="72" y="160" width="112" height="8" fill="#2C1810"/>
+            <rect x="64" y="168" width="48" height="8" fill="#2C1810"/>
+            <rect x="144" y="168" width="48" height="8" fill="#2C1810"/>
+            <rect x="64" y="176" width="32" height="8" fill="#2C1810"/>
+            <rect x="160" y="176" width="32" height="8" fill="#2C1810"/>
+            <rect x="64" y="184" width="16" height="8" fill="#2C1810"/>
+            <rect x="176" y="184" width="16" height="8" fill="#2C1810"/>
+            <!-- collar & tie -->
+            <rect x="64" y="240" width="128" height="16" fill="#FFFFFF"/>
+            <rect x="112" y="232" width="32" height="16" fill="#CC0000"/>
+            <rect x="120" y="248" width="16" height="8" fill="#CC0000"/>
+            <!-- eyebrows (ecstatic) -->
+            <rect x="64" y="64" width="40" height="8" fill="#2C1810"/>
+            <rect x="152" y="64" width="40" height="8" fill="#2C1810"/>
+            <!-- eyes: gold star shapes -->
+            <rect x="80" y="80" width="32" height="8" fill="#FFD700"/>
+            <rect x="88" y="72" width="16" height="24" fill="#FFD700"/>
+            <rect x="144" y="80" width="32" height="8" fill="#FFD700"/>
+            <rect x="152" y="72" width="16" height="24" fill="#FFD700"/>
+            <!-- mouth: huge grin -->
+            <rect x="72" y="184" width="8" height="8" fill="#CC4444"/>
+            <rect x="176" y="184" width="8" height="8" fill="#CC4444"/>
+            <rect x="72" y="192" width="112" height="24" fill="#CC4444"/>
+            <rect x="80" y="200" width="96" height="8" fill="#FFFDE8"/>
+            <rect x="88" y="208" width="80" height="8" fill="#FFFDE8"/>
+            <!-- corner sparkles -->
+            <rect x="16" y="24" width="8" height="24" fill="#FFD700"/>
+            <rect x="8" y="32" width="24" height="8" fill="#FFD700"/>
+            <rect x="232" y="24" width="8" height="24" fill="#FFD700"/>
+            <rect x="224" y="32" width="24" height="8" fill="#FFD700"/>
+            <rect x="24" y="56" width="8" height="8" fill="#FFD700"/>
+            <rect x="224" y="56" width="8" height="8" fill="#FFD700"/>
+          </svg>
+        </div>
+        <div class="card-title">Meester Giacomo se Akademie</div>
+        <p class="card-desc">Meester Giacomo leer jou die Italiaanse manier om skaak te speel.</p>
+        <span class="btn">Speel nou!</span>
+      </a>
+
+      <a href="https://flater-vind.netlify.app/" class="card card--blunder">
+        <div class="card-icon">🔍</div>
+        <div class="card-title">Vind die Flater</div>
+        <p class="card-desc">Kan jy die fout raaksien? Vind die flater voor dit te laat is!</p>
+        <span class="btn">Speel nou!</span>
+      </a>
+
+      <a href="https://mat-kat.netlify.app/" class="card card--matkat">
+        <div class="card-icon">🐱</div>
+        <div class="card-title">Mat-Kat</div>
+        <p class="card-desc">Oefen jou eindspel en leer hoe om mat te gee soos 'n kampioen.</p>
+        <span class="btn">Speel nou!</span>
+      </a>
+
+      <a href="https://adi-joy.netlify.app/" class="card card--adi">
+        <div class="card-icon">
+          <svg viewBox="0 0 120 150" xmlns="http://www.w3.org/2000/svg" width="58" height="72" style="display:block;margin:0 auto">
+            <!-- body / shirt -->
+            <rect x="16" y="118" width="88" height="32" fill="#E67E22"/>
+            <ellipse cx="60" cy="148" rx="44" ry="20" fill="#E67E22"/>
+            <path d="M16 118 Q60 110 104 118" fill="#D4691A"/>
+            <!-- neck -->
+            <rect x="52" y="106" width="16" height="16" rx="4" fill="#9B6B3A"/>
+            <!-- ears -->
+            <ellipse cx="25" cy="78" rx="7" ry="9" fill="#9B6B3A"/>
+            <ellipse cx="95" cy="78" rx="7" ry="9" fill="#9B6B3A"/>
+            <!-- head -->
+            <ellipse cx="60" cy="76" rx="34" ry="38" fill="#9B6B3A"/>
+            <!-- hair (afro) -->
+            <circle cx="36" cy="52" r="13" fill="#1A0A00"/>
+            <circle cx="49" cy="43" r="14" fill="#1A0A00"/>
+            <circle cx="60" cy="40" r="14" fill="#1A0A00"/>
+            <circle cx="71" cy="43" r="14" fill="#1A0A00"/>
+            <circle cx="84" cy="52" r="13" fill="#1A0A00"/>
+            <ellipse cx="60" cy="56" rx="32" ry="12" fill="#9B6B3A"/>
+            <!-- eyebrows (excited) -->
+            <path d="M38 55 Q46 50 53 54" stroke="#1A0A00" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+            <path d="M67 54 Q74 50 82 55" stroke="#1A0A00" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+            <!-- eyes (wide excited) -->
+            <circle cx="46" cy="70" r="7" fill="white"/>
+            <circle cx="46" cy="70" r="5" fill="#1A0A00"/>
+            <circle cx="48" cy="68" r="1.8" fill="white"/>
+            <circle cx="74" cy="70" r="7" fill="white"/>
+            <circle cx="74" cy="70" r="5" fill="#1A0A00"/>
+            <circle cx="76" cy="68" r="1.8" fill="white"/>
+            <text x="28" y="62" font-size="11" fill="#FFD700">★</text>
+            <text x="81" y="62" font-size="11" fill="#FFD700">★</text>
+            <!-- nose -->
+            <path d="M56 80 Q60 84 64 80" stroke="#7A4520" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+            <!-- mouth (big open smile) -->
+            <ellipse cx="60" cy="91" rx="13" ry="9" fill="#C07050"/>
+            <ellipse cx="60" cy="88" rx="11" ry="5" fill="white"/>
+            <path d="M53 83 Q60 81 67 83" stroke="#5A2E10" stroke-width="2" fill="none"/>
+          </svg>
+        </div>
+        <div class="card-title">Adi – Die Mancala Speletjie</div>
+        <p class="card-desc">Speel Adi, 'n ou Afrika-speletjie met klippies en komme. Baie pret!</p>
+        <span class="btn">Speel nou!</span>
+      </a>
+
+    </div>
+  </main>
+
+  <footer>
+    Gemaak met ❤️ vir nuuskierige kinders
+  </footer>
+
+</body>
+</html>

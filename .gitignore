@@ -1,0 +1,29 @@
+# --- Fence: this repo's root is the home directory, but only
+# Desktop/ClaudeCode/ (and the existing Pages deploy workflow) should
+# ever be trackable. Everything else -- credentials, personal docs,
+# dotfiles, caches -- is ignored by default so it can never be
+# accidentally staged or committed.
+
+# Deny everything by default
+/*
+
+# Re-allow the top-level paths we deliberately track
+!/.github/
+!/Desktop/
+!/.gitignore
+
+# .github: only the existing GitHub Pages deploy workflow
+/.github/*
+!/.github/workflows/
+/.github/workflows/*
+!/.github/workflows/deploy-pages.yml
+
+# Desktop: only the ClaudeCode project folder
+/Desktop/*
+!/Desktop/ClaudeCode/
+
+# --- R artifacts (kept from prior .gitignore) ---
+.Rproj.user
+.Rhistory
+.RData
+.Ruserdata

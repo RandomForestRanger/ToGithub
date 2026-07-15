@@ -1,0 +1,15 @@
+# Catch-all hygiene rules for sub-projects that don't have their own
+# .gitignore. Individual project folders can override/extend these.
+
+node_modules/
+dist/
+build/
+out/
+.DS_Store
+*.log
+.env
+.env.local
+.env.*.local
+.venv/
+__pycache__/
+.pytest_cache/

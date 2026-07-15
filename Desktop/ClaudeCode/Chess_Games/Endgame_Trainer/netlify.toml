@@ -1,0 +1,17 @@
+[build]
+  command = "mkdir -p dist && cp index.html styles.css positions.js fases.js app.js stockfish-worker.js dist/ && cp -r assets dist/"
+  publish = "dist"
+
+# Opdrag 9 repo-hygiene pass: publish = "." used to serve the whole working
+# tree (tools/, argief/, CLAUDE.md, task specs) alongside the app. The build
+# command above copies only the six files index.html actually loads (5 via
+# <script>/<link> tags, plus stockfish-worker.js via `new Worker(...)` in
+# app.js), plus assets/ (Opdrag 11's 100 badge-mascot cat PNGs, referenced by
+# path from app.js rather than a <script>/<link> tag so the six-file list
+# above doesn't catch it), into dist/, and dist/ is what's published --
+# everything else is now structurally excluded, not just conventionally
+# ignored.
+#
+# Local dev is unaffected: still serve the repo root directly, no build step
+# needed for that. python3 -m http.server 8080
+# (Web Workers require HTTP; opening index.html as a file:// URL will not work)

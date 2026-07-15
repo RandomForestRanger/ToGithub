@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="af">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ruy Lopez Oefening</title>
+    <link rel="stylesheet" href="https://unpkg.com/@chrisoakman/chessboardjs@1.0.0/dist/chessboard-1.0.0.min.css">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Left Panel: Badges -->
+        <div class="panel badge-panel">
+            <h2>Kentekens</h2>
+            <div class="badge-grid" id="badge-grid">
+                <!-- Opening Variation Badges (22) - Spanish themed -->
+                <div class="badge locked" data-badge="morphy" title="Morphy Verdediging">
+                    <span class="badge-icon">🎩</span>
+                    <span class="badge-name">Morphy</span>
+                </div>
+                <div class="badge locked" data-badge="berlin" title="Berlin Verdediging">
+                    <span class="badge-icon">🐻</span>
+                    <span class="badge-name">Berlin</span>
+                </div>
+                <div class="badge locked" data-badge="exchange" title="Ruil Variasie">
+                    <span class="badge-icon">🤝</span>
+                    <span class="badge-name">Ruil</span>
+                </div>
+                <div class="badge locked" data-badge="open" title="Oop Spel">
+                    <span class="badge-icon">🚪</span>
+                    <span class="badge-name">Oop</span>
+                </div>
+                <div class="badge locked" data-badge="closed" title="Geslote Spel">
+                    <span class="badge-icon">🔐</span>
+                    <span class="badge-name">Geslote</span>
+                </div>
+                <div class="badge locked" data-badge="bird" title="Bird se Variasie">
+                    <span class="badge-icon">🦅</span>
+                    <span class="badge-name">Bird</span>
+                </div>
+                <div class="badge locked" data-badge="steinitz" title="Steinitz Verdediging">
+                    <span class="badge-icon">👑</span>
+                    <span class="badge-name">Steinitz</span>
+                </div>
+                <div class="badge locked" data-badge="marshall" title="Marshall Aanval">
+                    <span class="badge-icon">⚔️</span>
+                    <span class="badge-name">Marshall</span>
+                </div>
+                <div class="badge locked" data-badge="breyer" title="Breyer Variasie">
+                    <span class="badge-icon">🔄</span>
+                    <span class="badge-name">Breyer</span>
+                </div>
+                <div class="badge locked" data-badge="zaitsev" title="Zaitsev Variasie">
+                    <span class="badge-icon">📖</span>
+                    <span class="badge-name">Zaitsev</span>
+                </div>
+                <div class="badge locked" data-badge="chigorin" title="Chigorin Druk">
+                    <span class="badge-icon">🎯</span>
+                    <span class="badge-name">Chigorin</span>
+                </div>
+                <div class="badge locked" data-badge="archangel" title="Archangel Variasie">
+                    <span class="badge-icon">👼</span>
+                    <span class="badge-name">Archangel</span>
+                </div>
+                <div class="badge locked" data-badge="schliemann" title="Schliemann Gambiet">
+                    <span class="badge-icon">🎰</span>
+                    <span class="badge-name">Schliemann</span>
+                </div>
+                <div class="badge locked" data-badge="cozio" title="Cozio Ontdekker">
+                    <span class="badge-icon">🔭</span>
+                    <span class="badge-name">Cozio</span>
+                </div>
+                <div class="badge locked" data-badge="classical" title="Klassieke Verdediging">
+                    <span class="badge-icon">🏛️</span>
+                    <span class="badge-name">Klassiek</span>
+                </div>
+                <div class="badge locked" data-badge="smyslov" title="Smyslov Meester">
+                    <span class="badge-icon">🎭</span>
+                    <span class="badge-name">Smyslov</span>
+                </div>
+                <div class="badge locked" data-badge="kholmov" title="Kholmov se Keuse">
+                    <span class="badge-icon">💎</span>
+                    <span class="badge-name">Kholmov</span>
+                </div>
+                <div class="badge locked" data-badge="keres" title="Keres Lyn">
+                    <span class="badge-icon">🌊</span>
+                    <span class="badge-name">Keres</span>
+                </div>
+                <div class="badge locked" data-badge="averbakh" title="Averbakh Verdediging">
+                    <span class="badge-icon">🛡️</span>
+                    <span class="badge-name">Averbakh</span>
+                </div>
+                <div class="badge locked" data-badge="worrall" title="Worrall Aanval">
+                    <span class="badge-icon">👸</span>
+                    <span class="badge-name">Worrall</span>
+                </div>
+                <div class="badge locked" data-badge="anti_marshall" title="Anti-Marshall">
+                    <span class="badge-icon">🛑</span>
+                    <span class="badge-name">Anti-Marshall</span>
+                </div>
+                <div class="badge locked" data-badge="delayed_exchange" title="Uitgestelde Ruil">
+                    <span class="badge-icon">⏳</span>
+                    <span class="badge-name">Uitg. Ruil</span>
+                </div>
+
+                <!-- Achievement Badges (14) - Spanish themed -->
+                <div class="badge locked" data-badge="queen_capture" title="Dame Gevang!">
+                    <span class="badge-icon">🥘</span>
+                    <span class="badge-name">Paella!</span>
+                </div>
+                <div class="badge locked" data-badge="first_blood" title="Eerste Bloed">
+                    <span class="badge-icon">🐂</span>
+                    <span class="badge-name">Toro!</span>
+                </div>
+                <div class="badge locked" data-badge="seven_perfect" title="7 Perfekte Skuiwe">
+                    <span class="badge-icon">🌟</span>
+                    <span class="badge-name">7 Perfek</span>
+                </div>
+                <div class="badge locked" data-badge="twelve_perfect" title="12 Perfekte Skuiwe">
+                    <span class="badge-icon">🌠</span>
+                    <span class="badge-name">12 Perfek</span>
+                </div>
+                <div class="badge locked" data-badge="sixteen_perfect" title="16 Perfekte Skuiwe">
+                    <span class="badge-icon">⭐</span>
+                    <span class="badge-name">16 Perfek</span>
+                </div>
+                <div class="badge locked" data-badge="perfect_game" title="Perfekte Spel">
+                    <span class="badge-icon">💯</span>
+                    <span class="badge-name">Perfecto!</span>
+                </div>
+                <div class="badge locked" data-badge="castled" title="Gerokeerde Koning">
+                    <span class="badge-icon">🏰</span>
+                    <span class="badge-name">Castillo</span>
+                </div>
+                <div class="badge locked" data-badge="center_control" title="Sentrum Beheer">
+                    <span class="badge-icon">🌻</span>
+                    <span class="badge-name">Sentrum</span>
+                </div>
+                <div class="badge locked" data-badge="checkmate" title="Skaakmat Oorwinning">
+                    <span class="badge-icon">🏆</span>
+                    <span class="badge-name">Campeón!</span>
+                </div>
+                <div class="badge locked" data-badge="noahs_ark" title="Noah's Ark Oorlewer">
+                    <span class="badge-icon">🚢</span>
+                    <span class="badge-name">Noah's Ark</span>
+                </div>
+                <div class="badge locked" data-badge="gajewski" title="Gajewski Gambieteer">
+                    <span class="badge-icon">🔥</span>
+                    <span class="badge-name">Fuego!</span>
+                </div>
+                <div class="badge locked" data-badge="cinderella" title="Cinderella Loper">
+                    <span class="badge-icon">💃</span>
+                    <span class="badge-name">Flamenco</span>
+                </div>
+                <div class="badge locked" data-badge="carbon" title="Carbón - Swak Spel">
+                    <span class="badge-icon">&#x26AB;</span>
+                    <span class="badge-name">Carbón</span>
+                </div>
+                <div class="badge locked" data-badge="chorizo" title="Chorizo Meester">
+                    <span class="badge-icon">🌶️</span>
+                    <span class="badge-name">Chorizo</span>
+                </div>
+            </div>
+
+            <div class="badge-tooltip" id="badge-tooltip">
+                <p id="tooltip-text">Beweeg oor 'n kenteken vir meer inligting</p>
+            </div>
+        </div>
+
+        <!-- Center Panel: Board and Info -->
+        <div class="panel center-panel">
+            <div class="header">
+                <h1>🇪🇸 Die Spaanse Opening: Oefen die wonderlike Ruy Lopez! 🇪🇸</h1>
+                <div class="player-select">
+                    <label for="player">Speler:</label>
+                    <select id="player">
+                        <option value="J">J</option>
+                        <option value="L">L</option>
+                        <option value="KC">KC</option>
+                        <option value="CA">CA</option>
+                        <option value="MB">MB</option>
+                        <option value="T">T</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="stats-panel">
+                <div class="stat">
+                    <span class="stat-label">Skuif:</span>
+                    <span class="stat-value" id="move-count">0/20</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-label">Telling:</span>
+                    <span class="stat-value" id="current-score">0/100</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-label">Beste:</span>
+                    <span class="stat-value" id="high-score">0</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-label">Evaluering:</span>
+                    <span class="stat-value" id="position-eval">0.0</span>
+                </div>
+            </div>
+
+            <div class="progress-container">
+                <div class="progress-bar" id="progress-bar"></div>
+                <span class="progress-text" id="progress-text">0%</span>
+            </div>
+
+            <div class="board-container">
+                <div id="board"></div>
+            </div>
+
+            <!-- Score Popup -->
+            <div class="score-popup hidden" id="score-popup">
+                <span class="score-popup-text" id="score-popup-text"></span>
+            </div>
+
+            <div class="controls">
+                <button id="new-game-btn" class="btn btn-primary">Nuwe Spel</button>
+                <button id="hint-btn" class="btn btn-secondary" disabled>Wenk</button>
+            </div>
+
+            <div class="educational-message" id="educational-message">
+                <p>Die Ruy Lopez is vernoem na 'n Spaanse priester uit die 16de eeu.</p>
+            </div>
+        </div>
+
+        <!-- Right Panel: Move History and Analysis -->
+        <div class="panel right-panel">
+            <div class="analysis-panel" id="analysis-panel">
+                <h3>Analise</h3>
+                <div class="move-suggestions" id="move-suggestions">
+                    <p class="waiting-message">Maak jou skuif...</p>
+                </div>
+                <div class="analysis-section">
+                    <h4>🤖 Stockfish Beste:</h4>
+                    <div id="stockfish-analysis" class="analysis-moves">
+                        <p class="analysis-placeholder">Speel 'n skuif...</p>
+                    </div>
+                </div>
+                <div class="analysis-section">
+                    <h4>📊 Lichess Gewildste:</h4>
+                    <div id="lichess-analysis" class="analysis-moves">
+                        <p class="analysis-placeholder">Speel 'n skuif...</p>
+                    </div>
+                </div>
+                <div class="your-move-analysis-section" id="your-move-analysis-section" style="display: none;">
+                    <h4>🎯 Jou Skuif:</h4>
+                    <div id="your-move-analysis-info"></div>
+                </div>
+            </div>
+
+            <div class="move-history-panel">
+                <h3>Skuifgeskiedenis</h3>
+                <div class="move-history" id="move-history">
+                    <!-- Moves will be added here -->
+                </div>
+            </div>
+
+            <div class="review-panel hidden" id="review-panel">
+                <h3>Hersiening</h3>
+                <div class="review-controls">
+                    <button id="review-start" class="btn btn-small">⏮</button>
+                    <button id="review-back" class="btn btn-small">◀</button>
+                    <button id="review-forward" class="btn btn-small">▶</button>
+                    <button id="review-end" class="btn btn-small">⏭</button>
+                </div>
+                <div class="review-info" id="review-info">
+                    <p>Posisie: <span id="review-position">0</span></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Game Over Modal -->
+    <div class="modal hidden" id="game-over-modal">
+        <div class="modal-content">
+            <h2 id="modal-title">Spel Klaar!</h2>
+            <div class="modal-stats">
+                <p>Finale Telling: <span id="final-score">0</span>/100</p>
+                <p id="high-score-message" class="hidden">Nuwe Hoogste Telling!</p>
+            </div>
+            <div class="modal-badges" id="modal-badges">
+                <h3>Kentekens Verdien:</h3>
+                <div class="earned-badges" id="earned-badges">
+                    <!-- Earned badges shown here -->
+                </div>
+            </div>
+            <div class="modal-buttons">
+                <button id="modal-review-btn" class="btn btn-secondary">Hersien Spel</button>
+                <button id="modal-new-game-btn" class="btn btn-primary">Nuwe Spel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Badge Notification -->
+    <div class="badge-notification hidden" id="badge-notification">
+        <div class="notification-content">
+            <span class="notification-icon" id="notification-icon">🏆</span>
+            <span class="notification-text" id="notification-text">Kenteken Ontsluit!</span>
+        </div>
+    </div>
+
+    <!-- Loading Spinner -->
+    <div class="loading-overlay hidden" id="loading-overlay">
+        <div class="spinner"></div>
+        <p>Stockfish laai...</p>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://unpkg.com/@chrisoakman/chessboardjs@1.0.0/dist/chessboard-1.0.0.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>

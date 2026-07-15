@@ -1,0 +1,2293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Adi — West African Mancala</title>
+<style>
+/* ── Reset & base ──────────────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+  min-height: 100vh;
+  color: #e8e8e8;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── Header ────────────────────────────────────────────────────────────────── */
+header {
+  position: relative;
+  text-align: center;
+  padding: 18px 20px 10px;
+}
+.lang-toggle {
+  position: absolute;
+  top: 18px;
+  right: 20px;
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.2);
+  color: #e8e8e8;
+  padding: 4px 14px;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  letter-spacing: 0.06em;
+  transition: background 0.15s;
+}
+.lang-toggle:hover { background: rgba(255,255,255,0.16); }
+header h1 {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #f39c12;
+  text-shadow: 0 2px 12px rgba(243,156,18,0.4);
+  letter-spacing: 0.04em;
+}
+header p {
+  color: #a0a0a0;
+  font-size: 0.85rem;
+  margin-top: 3px;
+}
+
+/* ── Layout ────────────────────────────────────────────────────────────────── */
+.layout {
+  display: flex;
+  flex: 1;
+  gap: 16px;
+  padding: 0 16px 24px;
+  max-width: 1480px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+/* ── Left sidebar: guide ───────────────────────────────────────────────────── */
+.guide {
+  width: 240px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* ── Right sidebar: computer reasoning ────────────────────────────────────── */
+.explain-panel {
+  width: 255px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.explain-idle {
+  color: #555;
+  font-size: 0.82rem;
+  font-style: italic;
+  line-height: 1.55;
+}
+.explain-factor {
+  display: flex;
+  gap: 9px;
+  padding: 7px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  font-size: 0.81rem;
+  color: #c0c0c0;
+  line-height: 1.6;
+}
+.explain-factor:last-child { border-bottom: none; }
+.factor-icon {
+  font-size: 1rem;
+  flex-shrink: 0;
+  width: 20px;
+  text-align: center;
+  padding-top: 1px;
+}
+.explain-mode-label {
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-weight: 700;
+  color: rgba(243,156,18,0.55);
+  margin-bottom: 8px;
+}
+
+.glass {
+  background: rgba(255,255,255,0.07);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 12px;
+  padding: 14px 16px;
+}
+
+.guide-section h3 {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: #f39c12;
+  margin-bottom: 8px;
+}
+.guide-section p, .guide-section li {
+  font-size: 0.82rem;
+  color: #c0c0c0;
+  line-height: 1.6;
+}
+.guide-section ul { padding-left: 16px; }
+.guide-section li { margin-bottom: 5px; }
+.guide-section .highlight {
+  color: #f39c12;
+  font-weight: 600;
+}
+.guide-section .rule-block {
+  background: rgba(243,156,18,0.08);
+  border-left: 3px solid #f39c12;
+  border-radius: 0 6px 6px 0;
+  padding: 7px 10px;
+  margin: 6px 0;
+  font-size: 0.8rem;
+  color: #ddd;
+  line-height: 1.55;
+}
+
+/* Difficulty */
+.diff-row {
+  display: flex;
+  gap: 8px;
+  margin-top: 4px;
+}
+.diff-btn {
+  flex: 1;
+  padding: 8px 4px;
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 8px;
+  background: rgba(255,255,255,0.06);
+  color: #c0c0c0;
+  cursor: pointer;
+  font-size: 0.8rem;
+  font-weight: 600;
+  transition: all 0.2s;
+  text-align: center;
+}
+.diff-btn:hover { background: rgba(243,156,18,0.12); border-color: #f39c12; }
+.diff-btn.active {
+  background: linear-gradient(135deg, #f39c12, #e67e22);
+  border-color: transparent;
+  color: #fff;
+  box-shadow: 0 3px 12px rgba(243,156,18,0.35);
+}
+
+.btn-new {
+  width: 100%;
+  padding: 11px;
+  background: linear-gradient(135deg, #f39c12, #e67e22);
+  border: none;
+  border-radius: 9px;
+  color: #fff;
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+  letter-spacing: 0.03em;
+  transition: all 0.2s;
+  text-transform: uppercase;
+}
+.btn-new:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 20px rgba(243,156,18,0.4);
+}
+
+/* ── Game area (center) ────────────────────────────────────────────────────── */
+.game-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+}
+
+/* Round & score strip */
+.score-strip {
+  display: flex;
+  gap: 14px;
+  width: 100%;
+  max-width: 760px;
+}
+.score-card {
+  flex: 1;
+  text-align: center;
+  padding: 10px 14px;
+  border-radius: 10px;
+}
+.score-card.p1 { background: rgba(243,156,18,0.12); border: 1px solid rgba(243,156,18,0.25); }
+.score-card.p2 { background: rgba(100,116,139,0.15); border: 1px solid rgba(100,116,139,0.3); }
+.score-card.round-card { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); }
+.score-card .label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 1px; color: #888; }
+.score-card .value { font-size: 1.6rem; font-weight: 700; margin-top: 2px; }
+.score-card.p1 .value { color: #f39c12; }
+.score-card.p2 .value { color: #94a3b8; }
+.score-card.round-card .value { color: #e8e8e8; }
+
+/* ── The Board ─────────────────────────────────────────────────────────────── */
+.board-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.board {
+  background:
+    repeating-linear-gradient(
+      90deg,
+      rgba(0,0,0,0.04) 0px, rgba(0,0,0,0.04) 1px,
+      transparent 1px, transparent 28px
+    ),
+    repeating-linear-gradient(
+      0deg,
+      rgba(0,0,0,0.04) 0px, rgba(0,0,0,0.04) 1px,
+      transparent 1px, transparent 28px
+    ),
+    linear-gradient(160deg, #a0632a 0%, #7a4118 20%, #8b4d20 40%, #9a5a2c 60%, #7a3e15 80%, #8b4520 100%);
+  border-radius: 22px;
+  padding: 18px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  box-shadow:
+    0 8px 40px rgba(0,0,0,0.7),
+    inset 0 1px 3px rgba(255,200,120,0.15),
+    inset 0 -2px 6px rgba(0,0,0,0.4);
+  border: 3px solid #5a2e0a;
+  position: relative;
+}
+
+/* Wood grain overlay */
+.board::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 20px;
+  background: repeating-linear-gradient(
+    17deg,
+    transparent, transparent 12px,
+    rgba(0,0,0,0.03) 12px, rgba(0,0,0,0.03) 13px
+  );
+  pointer-events: none;
+}
+
+.holes-row {
+  display: flex;
+  gap: 10px;
+}
+
+/* ── Hole ──────────────────────────────────────────────────────────────────── */
+.hole {
+  width: 82px;
+  height: 82px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 42% 38%, #1f0d06 0%, #120804 100%);
+  box-shadow:
+    inset 0 5px 12px rgba(0,0,0,0.85),
+    inset 0 -2px 4px rgba(160,90,40,0.2),
+    0 2px 4px rgba(0,0,0,0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  cursor: default;
+  transition: box-shadow 0.18s, transform 0.12s;
+  flex-shrink: 0;
+}
+
+.hole.clickable {
+  cursor: pointer;
+}
+.hole.clickable:hover {
+  box-shadow:
+    inset 0 5px 12px rgba(0,0,0,0.75),
+    inset 0 -2px 4px rgba(160,90,40,0.2),
+    0 0 0 3px rgba(243,156,18,0.7),
+    0 0 18px rgba(243,156,18,0.3);
+  transform: scale(1.04);
+}
+.hole.forbidden {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.hole.empty-hole { opacity: 0.6; }
+.hole.sowing-source {
+  box-shadow:
+    inset 0 5px 12px rgba(0,0,0,0.85),
+    0 0 0 4px rgba(255,220,50,0.9),
+    0 0 24px rgba(255,220,50,0.4);
+  transform: scale(0.93);
+}
+.hole.seed-landing {
+  animation: seedLand 0.6s ease-out forwards;
+}
+@keyframes seedLand {
+  0% {
+    box-shadow:
+      inset 0 5px 12px rgba(0,0,0,0.65),
+      0 0 0 5px rgba(80,190,255,0.95),
+      0 0 26px rgba(80,190,255,0.55);
+    transform: scale(1.05);
+  }
+  100% {
+    box-shadow:
+      inset 0 5px 12px rgba(0,0,0,0.85),
+      inset 0 -2px 4px rgba(160,90,40,0.2),
+      0 2px 4px rgba(0,0,0,0.5);
+    transform: scale(1);
+  }
+}
+.hole.just-captured {
+  animation: captureFlash 1.9s ease-out forwards;
+}
+@keyframes captureFlash {
+  0%, 18% {
+    box-shadow:
+      inset 0 5px 12px rgba(0,0,0,0.55),
+      0 0 0 6px rgba(243,156,18,1),
+      0 0 40px rgba(243,156,18,0.85);
+    transform: scale(1.07);
+  }
+  55% {
+    box-shadow:
+      inset 0 5px 12px rgba(0,0,0,0.75),
+      0 0 0 3px rgba(243,156,18,0.5),
+      0 0 18px rgba(243,156,18,0.3);
+    transform: scale(1.02);
+  }
+  100% {
+    box-shadow:
+      inset 0 5px 12px rgba(0,0,0,0.85),
+      inset 0 -2px 4px rgba(160,90,40,0.2),
+      0 2px 4px rgba(0,0,0,0.5);
+    transform: scale(1);
+  }
+}
+.hole.last-moved {
+  box-shadow:
+    inset 0 5px 12px rgba(0,0,0,0.75),
+    0 0 0 2px rgba(52,152,219,0.6),
+    0 0 12px rgba(52,152,219,0.2);
+}
+.hole.inactive-hole {
+  opacity: 0.25;
+  cursor: default;
+  pointer-events: none;
+}
+
+/* Seeds inside hole */
+.seeds-grid {
+  display: grid;
+  gap: 3px;
+  position: absolute;
+  pointer-events: none;
+}
+.seed {
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #f5e6c8, #c8a870);
+  box-shadow: 0 1px 2px rgba(0,0,0,0.6);
+}
+.seed-count-label {
+  position: absolute;
+  bottom: 6px;
+  right: 8px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: rgba(245,230,200,0.7);
+  pointer-events: none;
+  line-height: 1;
+}
+.count-big {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: rgba(245,230,200,0.9);
+  text-shadow: 0 1px 3px rgba(0,0,0,0.8);
+  pointer-events: none;
+}
+/* Forbidden marker */
+.hole.forbidden::after {
+  content: '🍁';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 1.4rem;
+  pointer-events: none;
+  opacity: 0.75;
+}
+
+/* ── Store (Kalah) ─────────────────────────────────────────────────────────── */
+.store {
+  width: 72px;
+  height: 174px;
+  border-radius: 36px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  flex-shrink: 0;
+  box-shadow:
+    inset 0 6px 14px rgba(0,0,0,0.85),
+    inset 0 -2px 4px rgba(160,90,40,0.2),
+    0 2px 4px rgba(0,0,0,0.5);
+  position: relative;
+}
+.store.p1-store {
+  background: radial-gradient(ellipse at 40% 30%, #1f0d06 0%, #0e0503 100%);
+  border: 2px solid rgba(243,156,18,0.25);
+}
+.store.p2-store {
+  background: radial-gradient(ellipse at 40% 30%, #1c1826 0%, #0e0a14 100%);
+  border: 2px solid rgba(100,116,139,0.25);
+}
+.store-count {
+  font-size: 2rem;
+  font-weight: 800;
+  line-height: 1;
+}
+.store.p1-store .store-count { color: #f39c12; }
+.store.p2-store .store-count { color: #94a3b8; }
+.store-label {
+  font-size: 0.62rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+.store.p1-store .store-label { color: rgba(243,156,18,0.6); }
+.store.p2-store .store-label { color: rgba(148,163,184,0.6); }
+
+/* Row labels */
+.row-label {
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-weight: 600;
+  margin: 0 2px;
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+}
+.row-label.p2-label { color: rgba(148,163,184,0.5); transform: rotate(180deg); }
+.row-label.p1-label { color: rgba(243,156,18,0.5); }
+
+/* ── Status bar ────────────────────────────────────────────────────────────── */
+.status-bar {
+  width: 100%;
+  max-width: 760px;
+  text-align: center;
+  padding: 12px 20px;
+  min-height: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+.status-bar .msg {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #e8e8e8;
+}
+.status-bar .capture-badge {
+  background: rgba(243,156,18,0.2);
+  border: 1px solid rgba(243,156,18,0.4);
+  border-radius: 20px;
+  padding: 3px 12px;
+  font-size: 0.82rem;
+  color: #f39c12;
+  font-weight: 700;
+}
+.thinking-dots span {
+  display: inline-block;
+  animation: blink 1.2s infinite;
+  color: #94a3b8;
+  font-size: 1.4rem;
+  line-height: 0.5;
+}
+.thinking-dots span:nth-child(2) { animation-delay: 0.2s; }
+.thinking-dots span:nth-child(3) { animation-delay: 0.4s; }
+@keyframes blink { 0%,80%,100%{opacity:0.2} 40%{opacity:1} }
+
+/* ── Game over overlay ─────────────────────────────────────────────────────── */
+.overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.75);
+  z-index: 100;
+  align-items: center;
+  justify-content: center;
+}
+.overlay.show { display: flex; }
+.modal {
+  background: linear-gradient(135deg, #1a1a2e, #16213e);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 18px;
+  padding: 36px 44px;
+  text-align: center;
+  max-width: 380px;
+  width: 90%;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.7);
+}
+.modal .winner-icon { font-size: 3.5rem; margin-bottom: 12px; }
+.modal h2 { font-size: 1.8rem; color: #f39c12; margin-bottom: 6px; }
+.modal .final-score { font-size: 1rem; color: #a0a0a0; margin-bottom: 24px; }
+.modal .final-score strong { color: #e8e8e8; }
+.modal .btn-new { max-width: 200px; margin: 0 auto; }
+
+/* ── Move history ──────────────────────────────────────────────────────────── */
+.history-wrap {
+  width: 100%;
+  max-width: 760px;
+}
+.history-wrap h3 {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: #888;
+  margin-bottom: 6px;
+}
+.history-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+.history-item {
+  font-size: 0.75rem;
+  padding: 3px 9px;
+  border-radius: 12px;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.08);
+  color: #a0a0a0;
+  font-family: monospace;
+}
+.history-item.capture { border-color: rgba(243,156,18,0.4); color: #f39c12; }
+
+/* ── Character cards (left sidebar) ───────────────────────────────────────── */
+.char-cards { display: flex; flex-direction: column; gap: 7px; }
+.char-card {
+  display: flex; align-items: center; gap: 10px;
+  padding: 7px 9px; border-radius: 10px;
+  background: rgba(255,255,255,0.04);
+  border: 2px solid rgba(255,255,255,0.08);
+  cursor: pointer; transition: all 0.2s;
+}
+.char-card:hover { background: rgba(243,156,18,0.08); border-color: rgba(243,156,18,0.3); }
+.char-card.selected { background: rgba(243,156,18,0.13); border-color: rgba(243,156,18,0.65); box-shadow: 0 0 14px rgba(243,156,18,0.15); }
+.char-thumb { width: 46px; height: 58px; flex-shrink: 0; border-radius: 7px; overflow: hidden; background: rgba(0,0,0,0.2); }
+.char-thumb svg { width: 100%; height: 100%; display: block; }
+.char-card-info { flex: 1; }
+.char-card-name { font-size: 0.84rem; font-weight: 700; color: #e8e8e8; }
+.char-card-title-sm { font-size: 0.68rem; color: #888; margin-top: 1px; }
+.char-card-diff { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.8px; font-weight: 700; margin-top: 3px; }
+.char-card-diff.easy   { color: #2ecc71; }
+.char-card-diff.medium { color: #f39c12; }
+.char-card-diff.hard   { color: #e74c3c; }
+
+/* ── Character portrait (right sidebar) ────────────────────────────────────── */
+.char-portrait-panel { text-align: center; padding: 14px 14px 10px; }
+#char-portrait-svg { display: inline-block; }
+#char-portrait-svg svg { width: 112px; height: 140px; border-radius: 14px; filter: drop-shadow(0 4px 14px rgba(0,0,0,0.5)); }
+.char-display-name { font-size: 1rem; font-weight: 700; color: #e8e8e8; margin-top: 8px; }
+.char-display-title { font-size: 0.7rem; color: #888; text-transform: uppercase; letter-spacing: 0.8px; margin-top: 2px; }
+.char-quote {
+  margin-top: 8px; font-size: 0.78rem; color: #aaa; font-style: italic;
+  background: rgba(255,255,255,0.05); border-radius: 8px; padding: 5px 9px;
+  min-height: 30px; line-height: 1.45; transition: opacity 0.3s;
+}
+
+/* ── Hole tooltip ──────────────────────────────────────────────────────────── */
+.hole-tooltip {
+  position: fixed;
+  background: rgba(10,10,22,0.97);
+  border: 1px solid rgba(255,255,255,0.13);
+  border-radius: 10px;
+  padding: 9px 13px;
+  font-size: 0.78rem;
+  color: #c8c8c8;
+  line-height: 1.55;
+  max-width: 230px;
+  pointer-events: none;
+  z-index: 300;
+  display: none;
+  box-shadow: 0 6px 22px rgba(0,0,0,0.6);
+}
+.hole-tooltip.show { display: block; }
+.hole-tooltip strong { color: #e8e8e8; }
+.hole-tooltip .tip-icon {
+  display: block;
+  font-size: 1rem;
+  margin-bottom: 4px;
+}
+.hole-tooltip.tip-forbidden { border-color: rgba(239,68,68,0.35); }
+.hole-tooltip.tip-inactive  { border-color: rgba(255,255,255,0.08); }
+
+/* ── Scrollbar ─────────────────────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 3px; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🪵 Adi</h1>
+  <p id="header-subtitle">A two-row mancala game of the Ewe people of Togo &amp; Ghana</p>
+  <button class="lang-toggle" id="lang-toggle" onclick="toggleLanguage()">AF</button>
+</header>
+
+<div class="layout">
+
+  <!-- ── Left sidebar ──────────────────────────────────────────────────── -->
+  <aside class="guide">
+
+    <div class="glass guide-section" id="guide-about">
+      <h3>About Adi</h3>
+      <p>Adi is played on an elaborately carved wooden board. Capture seeds from your opponent to grow your store across multiple rounds — until one player can no longer fill a row.</p>
+    </div>
+
+    <div class="glass guide-section" id="guide-howtoplay">
+      <h3>How to Play</h3>
+      <ul>
+        <li>You are <span class="highlight">Player 1 (bottom)</span>. The computer plays the top row.</li>
+        <li>Click any hole in your row with seeds to <span class="highlight">sow anti-clockwise</span> — seeds spread right along your row, then left along the top row.</li>
+        <li>You <strong>cannot</strong> sow from the same hole twice in a row until the opponent sows into it.</li>
+        <li>Holes you cannot use show <span style="color:#ef4444">✕</span>.</li>
+      </ul>
+    </div>
+
+    <div class="glass guide-section" id="guide-captures">
+      <h3>Captures</h3>
+      <div class="rule-block">
+        If your last seed lands in an <strong>opponent's hole</strong> and makes the count exactly <span class="highlight">3</span> → capture all 3!
+      </div>
+      <div class="rule-block">
+        <strong>Chain capture:</strong> If the hole just before the captured hole <em>also</em> has exactly 3, capture that too — keep going backwards!
+      </div>
+    </div>
+
+    <div class="glass guide-section" id="guide-endofround">
+      <h3>End of Round</h3>
+      <p>When <strong>no more captures are possible</strong> by either player, the round ends:</p>
+      <ul style="margin-top:6px">
+        <li>Remaining seeds on each side go to that player's store.</li>
+        <li>The player with <em>fewer</em> seeds refills holes right-to-left with 4 each.</li>
+        <li>The opponent fills the <em>same number</em> of opposite holes.</li>
+      </ul>
+    </div>
+
+    <div class="glass guide-section" id="guide-winning">
+      <h3>Winning</h3>
+      <p>The game ends when a player <strong>cannot fill even one hole</strong> (fewer than 4 seeds left). Their opponent wins!</p>
+    </div>
+
+    <div class="glass guide-section">
+      <h3 id="guide-choose-h3">Choose Opponent</h3>
+      <div class="char-cards">
+        <div class="char-card selected" data-char="kofi" onclick="selectCharacter('kofi')">
+          <div class="char-thumb" id="thumb-kofi"></div>
+          <div class="char-card-info">
+            <div class="char-card-name">Kofi</div>
+            <div class="char-card-title-sm">Village Champion</div>
+            <div class="char-card-diff easy">Easy</div>
+          </div>
+        </div>
+        <div class="char-card" data-char="nefertari" onclick="selectCharacter('nefertari')">
+          <div class="char-thumb" id="thumb-nefertari"></div>
+          <div class="char-card-info">
+            <div class="char-card-name">Nefertari</div>
+            <div class="char-card-title-sm">Princess of the Nile</div>
+            <div class="char-card-diff medium">Medium</div>
+          </div>
+        </div>
+        <div class="char-card" data-char="melissa" onclick="selectCharacter('melissa')">
+          <div class="char-thumb" id="thumb-melissa"></div>
+          <div class="char-card-info">
+            <div class="char-card-name">Melissa</div>
+            <div class="char-card-title-sm">Star Player</div>
+            <div class="char-card-diff medium">Medium</div>
+          </div>
+        </div>
+        <div class="char-card" data-char="professor" onclick="selectCharacter('professor')">
+          <div class="char-thumb" id="thumb-professor"></div>
+          <div class="char-card-info">
+            <div class="char-card-name">Prof. Addo</div>
+            <div class="char-card-title-sm">Grand Scholar</div>
+            <div class="char-card-diff hard">Hard</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <button class="btn-new" id="btn-new-game" onclick="startNewGame()">▶ New Game</button>
+
+  </aside>
+
+  <!-- ── Game area ──────────────────────────────────────────────────────── -->
+  <main class="game-area">
+
+    <!-- Score strip -->
+    <div class="score-strip">
+      <div class="score-card p1">
+        <div class="label" id="label-p1-store">Your Store</div>
+        <div class="value" id="p1-store-display">0</div>
+      </div>
+      <div class="score-card round-card">
+        <div class="label" id="label-round">Round</div>
+        <div class="value" id="round-display">1</div>
+      </div>
+      <div class="score-card p2">
+        <div class="label" id="label-p2-store">Computer Store</div>
+        <div class="value" id="p2-store-display">0</div>
+      </div>
+    </div>
+
+    <!-- Board -->
+    <div class="board-wrap">
+      <!-- P2 store (left) -->
+      <div class="store p2-store" id="store-p2">
+        <div class="store-count" id="p2-store-count">0</div>
+        <div class="store-label" id="label-computer-store">Computer</div>
+      </div>
+
+      <!-- Holes -->
+      <div class="board">
+        <!-- P2 row (top) — displayed right-to-left: holes 11,10,9,8,7,6 -->
+        <div class="holes-row" id="row-p2">
+          <!-- populated by JS -->
+        </div>
+        <!-- P1 row (bottom) — holes 0,1,2,3,4,5 -->
+        <div class="holes-row" id="row-p1">
+          <!-- populated by JS -->
+        </div>
+      </div>
+
+      <!-- P1 store (right) -->
+      <div class="store p1-store" id="store-p1">
+        <div class="store-count" id="p1-store-count">0</div>
+        <div class="store-label" id="label-you-store">You</div>
+      </div>
+    </div>
+
+    <!-- Status -->
+    <div class="status-bar glass" id="status-bar">
+      <span class="msg" id="status-msg">Press New Game to start</span>
+    </div>
+
+    <!-- Move history -->
+    <div class="history-wrap glass">
+      <h3 id="move-history-heading">Move History</h3>
+      <div class="history-list" id="history-list"></div>
+    </div>
+
+  </main>
+
+  <!-- ── Right sidebar: computer reasoning ─────────────────────────────── -->
+  <aside class="explain-panel">
+    <!-- Character portrait -->
+    <div class="glass char-portrait-panel">
+      <div id="char-portrait-svg"></div>
+      <div class="char-display-name" id="char-display-name">Kofi</div>
+      <div class="char-display-title" id="char-display-title">Village Champion</div>
+      <div class="char-quote" id="char-quote">"Let's play!"</div>
+    </div>
+    <!-- Reasoning -->
+    <div class="glass guide-section">
+      <h3 id="reasoning-heading">Computer's Reasoning</h3>
+      <div id="explain-content">
+        <p class="explain-idle" id="explain-idle-text">The computer's explanation will appear here after it chooses a move.</p>
+      </div>
+    </div>
+  </aside>
+
+</div>
+
+<!-- Hole tooltip -->
+<div id="hole-tooltip" class="hole-tooltip"></div>
+
+<!-- Game over modal -->
+<div class="overlay" id="overlay">
+  <div class="modal">
+    <div class="winner-icon" id="winner-icon">🏆</div>
+    <h2 id="winner-title">You Win!</h2>
+    <p class="final-score" id="final-score"></p>
+    <button class="btn-new" id="btn-play-again" onclick="startNewGame(); document.getElementById('overlay').classList.remove('show')">Play Again</button>
+  </div>
+</div>
+
+<script>
+/* ═══════════════════════════════════════════════════════════════════════════
+   GAME STATE
+   Holes 0-5  = P1 (bottom), Holes 6-11 = P2 (top)
+   Sowing order (CCW): 0→1→2→3→4→5→6→7→8→9→10→11→0…
+   Visual display: P2 row shows as [11][10][9][8][7][6] left→right
+═══════════════════════════════════════════════════════════════════════════ */
+
+class GameState {
+  constructor() {
+    this.holes       = Array(12).fill(4);
+    this.p1Store     = 0;
+    this.p2Store     = 0;
+    this.p1Forbidden = new Set();   // holes P1 cannot sow from this turn
+    this.p2Forbidden = new Set();
+    this.p1Owned     = [0,1,2,3,4,5];  // holes P1 may sow from
+    this.p2Owned     = [6,7,8,9,10,11];
+    this.current     = 1;   // 1 = P1, 2 = P2
+    this.phase       = 'sowing';
+    this.round       = 1;
+    this.over        = false;
+    this.winner      = 0;
+  }
+
+  clone() {
+    const c = new GameState();
+    c.holes       = [...this.holes];
+    c.p1Store     = this.p1Store;
+    c.p2Store     = this.p2Store;
+    c.p1Forbidden = new Set(this.p1Forbidden);
+    c.p2Forbidden = new Set(this.p2Forbidden);
+    c.p1Owned     = [...this.p1Owned];
+    c.p2Owned     = [...this.p2Owned];
+    c.current     = this.current;
+    c.phase       = this.phase;
+    c.round       = this.round;
+    c.over        = this.over;
+    c.winner      = this.winner;
+    return c;
+  }
+
+  validMoves(player) {
+    const owned     = player === 1 ? this.p1Owned : this.p2Owned;
+    const forbidden = player === 1 ? this.p1Forbidden : this.p2Forbidden;
+    return owned.filter(h => !forbidden.has(h) && this.holes[h] > 0);
+  }
+
+  /* Simulate sow: returns last position & modified holes (non-mutating) */
+  _simulateSow(h) {
+    const seeds = this.holes[h];
+    const tmp   = [...this.holes];
+    tmp[h] = 0;
+    let pos = h;
+    for (let i = 0; i < seeds; i++) {
+      pos = (pos + 1) % 12;
+      tmp[pos]++;
+    }
+    return { lastPos: pos, tmp };
+  }
+
+  /* Would sowing from h (by player) capture anything? */
+  _wouldCapture(h, player) {
+    const { lastPos, tmp } = this._simulateSow(h);
+    const opRange = player === 1 ? (x => x >= 6) : (x => x < 6);
+    return opRange(lastPos) && tmp[lastPos] === 3;
+  }
+
+  canAnyPlayerMove() {
+    return this.validMoves(1).length > 0 || this.validMoves(2).length > 0;
+  }
+
+  /* Make a move. Returns { captured, sowPath, roundEnded, gameOver } */
+  makeMove(h) {
+    const player   = this.current;
+    const opponent = player === 1 ? 2 : 1;
+    const seeds    = this.holes[h];
+    const opRange  = player === 1 ? (x => x >= 6) : (x => x < 6);
+
+    // Sow
+    this.holes[h] = 0;
+    let pos = h;
+    const sowPath = [];
+    for (let i = 0; i < seeds; i++) {
+      pos = (pos + 1) % 12;
+      this.holes[pos]++;
+      sowPath.push(pos);
+    }
+    const lastPos = pos;
+
+    // Captures
+    let captured   = 0;
+    const captured_holes = [];
+    if (opRange(lastPos) && this.holes[lastPos] === 3) {
+      let check = lastPos;
+      while (opRange(check) && this.holes[check] === 3) {
+        captured += 3;
+        captured_holes.push(check);
+        if (player === 1) this.p1Store += 3; else this.p2Store += 3;
+        this.holes[check] = 0;
+        check = (check - 1 + 12) % 12;
+      }
+    }
+
+    // Update forbidden sets:
+    // seeds sowed into unlock the opponent's forbidden holes
+    const otherForbidden = player === 1 ? this.p2Forbidden : this.p1Forbidden;
+    const myForbidden    = player === 1 ? this.p1Forbidden : this.p2Forbidden;
+    for (const s of sowPath) otherForbidden.delete(s);
+    myForbidden.add(h);
+
+    // Check round end: round ends when neither player has a valid move
+    if (!this.canAnyPlayerMove()) {
+      this._endRound();
+      return { captured, sowPath, captured_holes, roundEnded: true, gameOver: this.over };
+    }
+
+    this.current = opponent;
+    return { captured, sowPath, captured_holes, roundEnded: false, gameOver: false };
+  }
+
+  _endRound() {
+    // Sweep remaining seeds to stores
+    for (let i = 0;  i < 6;  i++) { this.p1Store += this.holes[i]; this.holes[i] = 0; }
+    for (let i = 6; i < 12; i++) { this.p2Store += this.holes[i]; this.holes[i] = 0; }
+    this.p1Forbidden.clear();
+    this.p2Forbidden.clear();
+    this._setupNextRound();
+  }
+
+  _setupNextRound() {
+    // Who has fewer seeds goes first (fills right-to-left)
+    const first  = this.p1Store <= this.p2Store ? 1 : 2;
+    const second = first === 1 ? 2 : 1;
+    const getStore  = p => p === 1 ? this.p1Store : this.p2Store;
+    const takeStore = (p, n) => { if (p===1) this.p1Store -= n; else this.p2Store -= n; };
+
+    if (getStore(first) < 4) {
+      this.over = true; this.winner = second;
+      this.phase = 'game_over'; return;
+    }
+
+    // First player fills right-to-left
+    const firstHoles  = first === 1 ? [5,4,3,2,1,0] : [11,10,9,8,7,6];
+    const firstOwned  = [];
+    for (const h of firstHoles) {
+      if (getStore(first) >= 4) {
+        this.holes[h] = 4; takeStore(first, 4);
+        firstOwned.push(h);
+      } else break;
+    }
+
+    if (firstOwned.length === 0) {
+      this.over = true; this.winner = second;
+      this.phase = 'game_over'; return;
+    }
+
+    // Second player fills corresponding holes (hole X ↔ hole 11-X)
+    const corrHoles  = firstOwned.map(h => 11 - h);
+    const secondOwned = [];
+    for (const h of corrHoles) {
+      if (getStore(second) >= 4) {
+        this.holes[h] = 4; takeStore(second, 4);
+        secondOwned.push(h);
+      } else break;
+    }
+
+    if (secondOwned.length === 0) {
+      this.over = true; this.winner = first;
+      this.phase = 'game_over'; return;
+    }
+
+    if (first === 1) { this.p1Owned = firstOwned;  this.p2Owned = secondOwned; }
+    else             { this.p2Owned = firstOwned;  this.p1Owned = secondOwned; }
+
+    this.current = first;
+    this.phase   = 'sowing';
+    this.round++;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   AI
+═══════════════════════════════════════════════════════════════════════════ */
+
+const AI_PLAYER = 2;
+
+function easyMove(state) {
+  const moves = state.validMoves(AI_PLAYER);
+  if (!moves.length) return null;
+  // 60% of the time: pick a capturing move if available; else random
+  const capturing = moves.filter(h => state._wouldCapture(h, AI_PLAYER));
+  if (capturing.length && Math.random() < 0.6) {
+    return capturing[Math.floor(Math.random() * capturing.length)];
+  }
+  return moves[Math.floor(Math.random() * moves.length)];
+}
+
+function evaluate(state, forPlayer) {
+  if (state.over) return state.winner === forPlayer ? 100000 : -100000;
+  const opp   = forPlayer === 1 ? 2 : 1;
+  const myS   = forPlayer === 1 ? state.p1Store : state.p2Store;
+  const oppS  = forPlayer === 1 ? state.p2Store : state.p1Store;
+  const myH   = forPlayer === 1 ? [0,1,2,3,4,5] : [6,7,8,9,10,11];
+  const oppH  = forPlayer === 1 ? [6,7,8,9,10,11] : [0,1,2,3,4,5];
+  let mySeeds = 0, oppSeeds = 0;
+  for (const h of myH)  mySeeds  += state.holes[h];
+  for (const h of oppH) oppSeeds += state.holes[h];
+  const mobility = state.validMoves(forPlayer).length - state.validMoves(opp).length;
+  return (myS - oppS) * 10 + (mySeeds - oppSeeds) * 1.5 + mobility * 0.8;
+}
+
+function minimax(state, depth, alpha, beta, forPlayer) {
+  if (state.over || depth === 0) return evaluate(state, forPlayer);
+  const moves = state.validMoves(state.current);
+  if (moves.length === 0) {
+    // Current player has no valid moves: pass to opponent
+    const opp = state.current === 1 ? 2 : 1;
+    if (state.validMoves(opp).length === 0) return evaluate(state, forPlayer);
+    const c = state.clone(); c.current = opp;
+    return minimax(c, depth - 1, alpha, beta, forPlayer);
+  }
+
+  const maxing = state.current === forPlayer;
+  if (maxing) {
+    let best = -Infinity;
+    for (const m of moves) {
+      const c = state.clone(); c.makeMove(m);
+      best  = Math.max(best, minimax(c, depth-1, alpha, beta, forPlayer));
+      alpha = Math.max(alpha, best);
+      if (beta <= alpha) break;
+    }
+    return best;
+  } else {
+    let best = Infinity;
+    for (const m of moves) {
+      const c = state.clone(); c.makeMove(m);
+      best = Math.min(best, minimax(c, depth-1, alpha, beta, forPlayer));
+      beta = Math.min(beta, best);
+      if (beta <= alpha) break;
+    }
+    return best;
+  }
+}
+
+function hardMove(state) {
+  if (Math.random() < 0.10) return { move: easyMove(state), slip: true, scores: null };
+  const moves = state.validMoves(AI_PLAYER);
+  if (!moves.length) return { move: null, slip: false, scores: null };
+  let best = -Infinity, bestMove = moves[0];
+  const scores = {};
+  for (const m of moves) {
+    const c = state.clone(); c.makeMove(m);
+    const val = minimax(c, 4, -Infinity, Infinity, AI_PLAYER);
+    scores[m] = val;
+    if (val > best) { best = val; bestMove = m; }
+  }
+  return { move: bestMove, slip: false, scores };
+}
+
+/* Build the computer-reasoning explanation HTML */
+function explainAIMove(stateBefore, chosenMove, difficulty, wasSlip, minimaxScores) {
+  const moves = stateBefore.validMoves(2);
+  if (!moves.length) return t('noMovesAI');
+
+  const sims = moves.map(h => {
+    const c = stateBefore.clone();
+    const res = c.makeMove(h);
+    const p1Threat = c.validMoves(1).some(ph => c._wouldCapture(ph, 1));
+    const score = evaluate(c, 2);
+    return { h, captured: res.captured, capturedHoles: res.captured_holes, p1Threat, score };
+  });
+
+  const chosen   = sims.find(s => s.h === chosenMove);
+  if (!chosen) return t('moveDataUnavail');
+
+  const capturers  = sims.filter(s => s.captured > 0);
+  const dangerous  = sims.filter(s => s.p1Threat);
+  const sorted     = [...sims].sort((a, b) => {
+    const sa = minimaxScores ? (minimaxScores[a.h] ?? a.score) : a.score;
+    const sb = minimaxScores ? (minimaxScores[b.h] ?? b.score) : b.score;
+    return sb - sa;
+  });
+  const rank       = sorted.findIndex(s => s.h === chosenMove) + 1;
+  const chosenMM   = minimaxScores ? (minimaxScores[chosenMove] ?? chosen.score) : chosen.score;
+  const secondMM   = sorted[1] ? (minimaxScores ? (minimaxScores[sorted[1].h] ?? sorted[1].score) : sorted[1].score) : chosenMM;
+  const margin     = chosenMM - secondMM;
+  const hn         = t('holeLabel', chosenMove + 1);
+
+  const factors = [];
+  let modeLabel = difficulty === 'easy' ? t('modeEasy') : difficulty === 'medium' ? t('modeMedium') : t('modeHard');
+
+  /* ── Easy mode ── */
+  if (difficulty === 'easy' || (difficulty === 'medium' && wasSlip)) {
+    if (chosen.captured > 0) {
+      factors.push({ icon: '⚔️', text: t('factCaptureEasy', cap(hn), chosen.captured) });
+      if (capturers.length > 1) factors.push({ icon: '📋', text: t('factMultiCap', capturers.length) });
+    } else if (capturers.length > 0) {
+      factors.push({ icon: '🎲', text: t('factIgnoredCap', hn) });
+    } else {
+      factors.push({ icon: '🎲', text: t('factRandom', hn, moves.length) });
+    }
+    return buildExplainHTML(modeLabel, factors);
+  }
+
+  /* ── Hard mode: slip ── */
+  if (wasSlip) {
+    modeLabel = t('modeSlip');
+    factors.push({ icon: '🎲', text: t('factSlip', hn) });
+    return buildExplainHTML(modeLabel, factors);
+  }
+
+  /* ── Hard / medium minimax ── */
+
+  if (chosen.captured > 0) {
+    if (chosen.capturedHoles.length > 1)
+      factors.push({ icon: '⚔️', text: t('factChainCapture', cap(hn), chosen.capturedHoles.length, chosen.captured) });
+    else
+      factors.push({ icon: '⚔️', text: t('factCapture', cap(hn), chosen.captured) });
+  }
+
+  if (!chosen.p1Threat && dangerous.length > 0) {
+    const names = dangerous.map(d => t('holeLabel', d.h + 1)).join(', ');
+    if (dangerous.length >= moves.length - 1)
+      factors.push({ icon: '🛡️', text: t('factSafePlay', names, cap(hn)) });
+    else
+      factors.push({ icon: '🛡️', text: t('factAvoidCap', names, cap(hn)) });
+  } else if (chosen.p1Threat && dangerous.length === moves.length) {
+    factors.push({ icon: '⚠️', text: t('factNoSafe', cap(hn)) });
+  }
+
+  if (moves.length > 1) {
+    if (Math.abs(margin) < 0.6)
+      factors.push({ icon: '🔢', text: t('factTight', moves.length, cap(hn)) });
+    else if (rank === 1)
+      factors.push({ icon: '🔢', text: t('factMinimax', moves.length, hn, margin.toFixed(1)) });
+    else
+      factors.push({ icon: '🔢', text: t('factRank', cap(hn), rank, moves.length) });
+  }
+
+  const adv = stateBefore.p2Store - stateBefore.p1Store;
+  if (adv >= 8)
+    factors.push({ icon: '📦', text: t('factLeading', adv) });
+  else if (adv <= -8)
+    factors.push({ icon: '📦', text: t('factTrailing', -adv) });
+
+  if (!chosen.captured && capturers.length === 0) {
+    const c2 = stateBefore.clone(); c2.makeMove(chosenMove);
+    const mySd = [6,7,8,9,10,11].reduce((s,h) => s + c2.holes[h], 0);
+    const yrSd = [0,1,2,3,4,5].reduce((s,h) => s + c2.holes[h], 0);
+    if (mySd > yrSd + 3)
+      factors.push({ icon: '🌱', text: t('factDensity', mySd, yrSd) });
+  }
+
+  if (factors.length === 0)
+    factors.push({ icon: '🔢', text: t('factBestPos', moves.length, hn) });
+
+  return buildExplainHTML(modeLabel, factors);
+}
+
+function cap(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
+
+function buildExplainHTML(modeLabel, factors) {
+  let html = `<div class="explain-mode-label">${modeLabel}</div>`;
+  for (const f of factors)
+    html += `<div class="explain-factor"><span class="factor-icon">${f.icon}</span><span>${f.text}</span></div>`;
+  return html;
+}
+
+function setExplanation(html) {
+  const el = document.getElementById('explain-content');
+  if (el) el.innerHTML = html;
+}
+
+function mediumMove(state) {
+  if (Math.random() < 0.30) return easyMove(state);
+  const moves = state.validMoves(AI_PLAYER);
+  if (!moves.length) return null;
+  let best = -Infinity, bestMove = moves[0];
+  for (const m of moves) {
+    const c = state.clone(); c.makeMove(m);
+    const val = minimax(c, 2, -Infinity, Infinity, AI_PLAYER);
+    if (val > best) { best = val; bestMove = m; }
+  }
+  return bestMove;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   CHARACTERS — SVG sprites + expression system
+═══════════════════════════════════════════════════════════════════════════ */
+
+let currentCharId = 'kofi';
+
+const QUOTES = {
+  kofi: {
+    en: { idle:"Let's play! 🎮", thinking:"Hmm… let me think…", happy:"Got you! 😄", excited:"CHAIN CAPTURE! 🎉", sad:"Nice move! 😅", taunting:"You can't stop me! 😏" },
+    af: { idle:"Kom ons speel! 🎮", thinking:"Hmm… laat my dink…", happy:"Het jou! 😄", excited:"KETTINGVANGS! 🎉", sad:"Goeie beweging! 😅", taunting:"Jy kan my nie stop nie! 😏" }
+  },
+  nefertari: {
+    en: { idle:"Your move, mortal.", thinking:"Calculating…", happy:"As predicted. ✨", excited:"Magnificent! 🌟", sad:"Cleverly done.", taunting:"Bow before my wisdom." },
+    af: { idle:"Jou skuif, o mens.", thinking:"Bereken…", happy:"Soos voorspel. ✨", excited:"Pragtig! 🌟", sad:"Knap gedoen.", taunting:"Buig voor my wysheid." }
+  },
+  melissa: {
+    en: { idle:"Your move! 😊", thinking:"Let me see…", happy:"Yes! Got you! 😄", excited:"DOUBLE CAPTURE! ✨", sad:"Oh, well played! 🙂", taunting:"Too easy! 😏" },
+    af: { idle:"Jou beurt! 😊", thinking:"Kom ons kyk…", happy:"Ja! Gekry! 😄", excited:"DUBBELE VANGS! ✨", sad:"Ag, goed gespeel! 🙂", taunting:"Te maklik! 😏" }
+  },
+  professor: {
+    en: { idle:"Observe carefully.", thinking:"Fascinating…", happy:"Textbook play. ✓", excited:"Exceptional! 📚", sad:"Well played, student.", taunting:"I've seen better from my students." },
+    af: { idle:"Kyk mooi.", thinking:"Fassineerend…", happy:"Handboekspel! ✓", excited:"Uitstekend! 📚", sad:"Goed gespeel, student.", taunting:"My studente kan beter doen." }
+  }
+};
+
+/* ── Kofi: African boy, easy ── */
+function kofiSVG(e) {
+  const sk='#9B6B3A', hc='#1A0A00';
+  const EYES={
+    idle:`<circle cx="46" cy="70" r="5.5" fill="white"/><circle cx="47.5" cy="70" r="3.5" fill="${hc}"/><circle cx="48.8" cy="68.8" r="1.3" fill="white"/>
+          <circle cx="74" cy="70" r="5.5" fill="white"/><circle cx="75.5" cy="70" r="3.5" fill="${hc}"/><circle cx="76.8" cy="68.8" r="1.3" fill="white"/>`,
+    thinking:`<circle cx="46" cy="70" r="5.5" fill="white"/><circle cx="46" cy="67" r="3.5" fill="${hc}"/><circle cx="47" cy="66" r="1.3" fill="white"/>
+              <circle cx="74" cy="70" r="5.5" fill="white"/><circle cx="74" cy="67" r="3.5" fill="${hc}"/><circle cx="75" cy="66" r="1.3" fill="white"/>`,
+    happy:`<path d="M40 67 Q46 74 52 67" stroke="${hc}" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+           <path d="M68 67 Q74 74 80 67" stroke="${hc}" stroke-width="2.5" fill="none" stroke-linecap="round"/>`,
+    excited:`<circle cx="46" cy="70" r="7" fill="white"/><circle cx="46" cy="70" r="5" fill="${hc}"/><circle cx="48" cy="68" r="1.8" fill="white"/>
+             <circle cx="74" cy="70" r="7" fill="white"/><circle cx="74" cy="70" r="5" fill="${hc}"/><circle cx="76" cy="68" r="1.8" fill="white"/>
+             <text x="28" y="62" font-size="11" fill="#FFD700">★</text><text x="81" y="62" font-size="11" fill="#FFD700">★</text>`,
+    sad:`<ellipse cx="46" cy="71" rx="5.5" ry="4" fill="white"/><circle cx="46" cy="72.5" r="3" fill="${hc}"/>
+         <ellipse cx="74" cy="71" rx="5.5" ry="4" fill="white"/><circle cx="74" cy="72.5" r="3" fill="${hc}"/>`,
+    taunting:`<circle cx="46" cy="70" r="5.5" fill="white"/><circle cx="47.5" cy="70" r="3.5" fill="${hc}"/><circle cx="48.8" cy="68.8" r="1.3" fill="white"/>
+              <ellipse cx="74" cy="70" rx="5.5" ry="3.5" fill="white"/><circle cx="75" cy="70" r="2.5" fill="${hc}"/>
+              <line x1="68" y1="67.5" x2="80" y2="67.5" stroke="${sk}" stroke-width="2.5"/>`
+  };
+  const BROWS={
+    idle:`<path d="M39 61 Q46 58 52 60" stroke="${hc}" stroke-width="2" fill="none" stroke-linecap="round"/>
+          <path d="M68 60 Q74 58 81 61" stroke="${hc}" stroke-width="2" fill="none" stroke-linecap="round"/>`,
+    thinking:`<path d="M39 60 Q46 55 52 58" stroke="${hc}" stroke-width="2" fill="none" stroke-linecap="round"/>
+              <path d="M68 56 Q74 53 81 59" stroke="${hc}" stroke-width="2.5" fill="none" stroke-linecap="round"/>`,
+    happy:`<path d="M39 58 Q46 54 52 57" stroke="${hc}" stroke-width="2" fill="none" stroke-linecap="round"/>
+           <path d="M68 57 Q74 54 81 58" stroke="${hc}" stroke-width="2" fill="none" stroke-linecap="round"/>`,
+    excited:`<path d="M38 55 Q46 50 53 54" stroke="${hc}" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+             <path d="M67 54 Q74 50 82 55" stroke="${hc}" stroke-width="2.5" fill="none" stroke-linecap="round"/>`,
+    sad:`<path d="M39 63 Q46 61 52 64" stroke="${hc}" stroke-width="2" fill="none" stroke-linecap="round"/>
+         <path d="M68 64 Q74 61 81 63" stroke="${hc}" stroke-width="2" fill="none" stroke-linecap="round"/>`,
+    taunting:`<path d="M39 61 Q46 58 52 61" stroke="${hc}" stroke-width="2" fill="none" stroke-linecap="round"/>
+              <path d="M68 57 Q74 54 81 59" stroke="${hc}" stroke-width="2.5" fill="none" stroke-linecap="round"/>`
+  };
+  const MOUTHS={
+    idle:`<path d="M50 87 Q60 93 70 87" stroke="#5A2E10" stroke-width="2" fill="none" stroke-linecap="round"/>`,
+    thinking:`<path d="M51 88 Q60 86 69 88" stroke="#5A2E10" stroke-width="2.5" fill="none" stroke-linecap="round"/>`,
+    happy:`<path d="M45 84 Q60 98 75 84" stroke="#5A2E10" stroke-width="2" fill="none"/>
+           <path d="M45 84 Q60 99 75 84 Q60 88 45 84" fill="#C07050" stroke="none"/>
+           <path d="M47 84 Q60 89 73 84 Q60 86 47 84" fill="white" stroke="none"/>`,
+    excited:`<ellipse cx="60" cy="91" rx="13" ry="9" fill="#C07050"/>
+             <ellipse cx="60" cy="88" rx="11" ry="5" fill="white"/>
+             <path d="M53 83 Q60 81 67 83" stroke="#5A2E10" stroke-width="2" fill="none"/>`,
+    sad:`<path d="M50 92 Q60 85 70 92" stroke="#5A2E10" stroke-width="2" fill="none" stroke-linecap="round"/>`,
+    taunting:`<path d="M52 87 Q59 93 70 85" stroke="#5A2E10" stroke-width="2" fill="none" stroke-linecap="round"/>`
+  };
+  return `<svg viewBox="0 0 120 150" xmlns="http://www.w3.org/2000/svg">
+    <rect x="16" y="118" width="88" height="32" fill="#E67E22"/>
+    <ellipse cx="60" cy="148" rx="44" ry="20" fill="#E67E22"/>
+    <path d="M16 118 Q60 110 104 118" fill="#D4691A"/>
+    <rect x="52" y="106" width="16" height="16" rx="4" fill="${sk}"/>
+    <ellipse cx="25" cy="78" rx="7" ry="9" fill="${sk}"/><ellipse cx="95" cy="78" rx="7" ry="9" fill="${sk}"/>
+    <ellipse cx="60" cy="76" rx="34" ry="38" fill="${sk}"/>
+    <circle cx="36" cy="52" r="13" fill="${hc}"/><circle cx="49" cy="43" r="14" fill="${hc}"/>
+    <circle cx="60" cy="40" r="14" fill="${hc}"/><circle cx="71" cy="43" r="14" fill="${hc}"/>
+    <circle cx="84" cy="52" r="13" fill="${hc}"/>
+    <ellipse cx="60" cy="56" rx="32" ry="12" fill="${sk}"/>
+    ${BROWS[e]||BROWS.idle}${EYES[e]||EYES.idle}
+    <path d="M56 80 Q60 84 64 80" stroke="#7A4520" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+    ${MOUTHS[e]||MOUTHS.idle}
+  </svg>`;
+}
+
+/* ── Nefertari: Egyptian princess, medium ── */
+function nefertariSVG(e) {
+  const sk='#C4956A', hc='#1A0A00', gold='#D4A820';
+  const EYES={
+    idle:`<line x1="35" y1="73" x2="42" y2="73" stroke="${hc}" stroke-width="1.5"/>
+          <line x1="78" y1="73" x2="85" y2="73" stroke="${hc}" stroke-width="1.5"/>
+          <ellipse cx="48" cy="73" rx="6" ry="4" fill="white"/><ellipse cx="49" cy="73" rx="3.5" ry="3" fill="#1A1040"/><circle cx="50" cy="72" r="1.1" fill="white"/>
+          <ellipse cx="72" cy="73" rx="6" ry="4" fill="white"/><ellipse cx="73" cy="73" rx="3.5" ry="3" fill="#1A1040"/><circle cx="74" cy="72" r="1.1" fill="white"/>`,
+    thinking:`<line x1="35" y1="75" x2="42" y2="74" stroke="${hc}" stroke-width="1.5"/>
+              <line x1="78" y1="74" x2="85" y2="75" stroke="${hc}" stroke-width="1.5"/>
+              <ellipse cx="48" cy="74" rx="6" ry="3" fill="white"/><ellipse cx="48" cy="75" rx="3.5" ry="2.5" fill="#1A1040"/>
+              <ellipse cx="72" cy="74" rx="6" ry="3" fill="white"/><ellipse cx="72" cy="75" rx="3.5" ry="2.5" fill="#1A1040"/>`,
+    happy:`<line x1="35" y1="72" x2="42" y2="73" stroke="${hc}" stroke-width="1.5"/>
+           <line x1="78" y1="73" x2="85" y2="72" stroke="${hc}" stroke-width="1.5"/>
+           <path d="M42 71 Q48 77 54 71" stroke="${hc}" stroke-width="2" fill="none" stroke-linecap="round"/>
+           <path d="M66 71 Q72 77 78 71" stroke="${hc}" stroke-width="2" fill="none" stroke-linecap="round"/>`,
+    excited:`<line x1="34" y1="71" x2="41" y2="72" stroke="${hc}" stroke-width="1.5"/>
+             <line x1="79" y1="72" x2="86" y2="71" stroke="${hc}" stroke-width="1.5"/>
+             <ellipse cx="48" cy="72" rx="7" ry="5.5" fill="white"/><circle cx="48" cy="72" r="4" fill="#1A1040"/><circle cx="49.5" cy="70.5" r="1.4" fill="white"/>
+             <ellipse cx="72" cy="72" rx="7" ry="5.5" fill="white"/><circle cx="72" cy="72" r="4" fill="#1A1040"/><circle cx="73.5" cy="70.5" r="1.4" fill="white"/>
+             <text x="84" y="64" font-size="9" fill="${gold}">✦</text>`,
+    sad:`<line x1="35" y1="75" x2="42" y2="74" stroke="${hc}" stroke-width="1.5"/>
+         <line x1="78" y1="74" x2="85" y2="75" stroke="${hc}" stroke-width="1.5"/>
+         <ellipse cx="48" cy="74" rx="6" ry="3.5" fill="white"/><ellipse cx="48" cy="75" rx="3.5" ry="2.5" fill="#1A1040"/>
+         <ellipse cx="72" cy="74" rx="6" ry="3.5" fill="white"/><ellipse cx="72" cy="75" rx="3.5" ry="2.5" fill="#1A1040"/>`,
+    taunting:`<line x1="35" y1="73" x2="42" y2="73" stroke="${hc}" stroke-width="1.5"/>
+              <line x1="78" y1="73" x2="85" y2="73" stroke="${hc}" stroke-width="1.5"/>
+              <ellipse cx="48" cy="73" rx="6" ry="4" fill="white"/><ellipse cx="49" cy="73" rx="3.5" ry="3" fill="#1A1040"/>
+              <line x1="42" y1="71" x2="54" y2="71" stroke="${sk}" stroke-width="2.5"/>
+              <ellipse cx="72" cy="73" rx="6" ry="4" fill="white"/><ellipse cx="73" cy="73" rx="3.5" ry="3" fill="#1A1040"/>`
+  };
+  const BROWS={
+    idle:`<path d="M41 64 Q48 62 55 64" stroke="${hc}" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+          <path d="M65 64 Q72 62 79 64" stroke="${hc}" stroke-width="1.8" fill="none" stroke-linecap="round"/>`,
+    thinking:`<path d="M41 64 Q48 60 55 63" stroke="${hc}" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+              <path d="M65 63 Q72 60 79 64" stroke="${hc}" stroke-width="2" fill="none" stroke-linecap="round"/>`,
+    happy:`<path d="M41 62 Q48 59 55 62" stroke="${hc}" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+           <path d="M65 62 Q72 59 79 62" stroke="${hc}" stroke-width="1.8" fill="none" stroke-linecap="round"/>`,
+    excited:`<path d="M40 60 Q48 56 55 60" stroke="${hc}" stroke-width="2" fill="none" stroke-linecap="round"/>
+             <path d="M65 60 Q72 56 80 60" stroke="${hc}" stroke-width="2" fill="none" stroke-linecap="round"/>`,
+    sad:`<path d="M41 65 Q48 63 55 66" stroke="${hc}" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+         <path d="M65 66 Q72 63 79 65" stroke="${hc}" stroke-width="1.8" fill="none" stroke-linecap="round"/>`,
+    taunting:`<path d="M41 64 Q48 62 55 64" stroke="${hc}" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+              <path d="M65 61 Q72 58 79 63" stroke="${hc}" stroke-width="2" fill="none" stroke-linecap="round"/>`
+  };
+  const MOUTHS={
+    idle:`<path d="M51 93 Q60 97 69 93" stroke="#8B5030" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+          <path d="M51 93 Q60 95 69 93" fill="#C0714A" stroke="none"/>`,
+    thinking:`<path d="M53 93 Q60 91 67 93" stroke="#8B5030" stroke-width="2" fill="none" stroke-linecap="round"/>`,
+    happy:`<path d="M49 90 Q60 100 71 90" stroke="#8B5030" stroke-width="1.8" fill="none"/>
+           <path d="M49 90 Q60 101 71 90 Q60 94 49 90" fill="#C0714A" stroke="none"/>
+           <path d="M51 90 Q60 94 69 90 Q60 92 51 90" fill="white" stroke="none"/>`,
+    excited:`<path d="M50 89 Q60 101 70 89" stroke="#8B5030" stroke-width="1.8" fill="none"/>
+             <ellipse cx="60" cy="94" rx="9" ry="6" fill="#C0714A"/>
+             <ellipse cx="60" cy="92" rx="7" ry="3.5" fill="white"/>`,
+    sad:`<path d="M52 96 Q60 90 68 96" stroke="#8B5030" stroke-width="1.8" fill="none" stroke-linecap="round"/>`,
+    taunting:`<path d="M52 92 Q60 97 70 90" stroke="#8B5030" stroke-width="1.8" fill="none" stroke-linecap="round"/>`
+  };
+  return `<svg viewBox="0 0 120 150" xmlns="http://www.w3.org/2000/svg">
+    <rect x="16" y="126" width="88" height="24" fill="white"/>
+    <ellipse cx="60" cy="148" rx="44" ry="20" fill="white"/>
+    <ellipse cx="60" cy="128" rx="30" ry="8" fill="${gold}"/>
+    <rect x="52" y="110" width="16" height="18" rx="4" fill="${sk}"/>
+    <rect x="22" y="55" width="15" height="68" rx="5" fill="${hc}"/>
+    <rect x="83" y="55" width="15" height="68" rx="5" fill="${hc}"/>
+    <ellipse cx="27" cy="80" rx="5" ry="7" fill="${sk}"/>
+    <ellipse cx="93" cy="80" rx="5" ry="7" fill="${sk}"/>
+    <ellipse cx="60" cy="80" rx="32" ry="37" fill="${sk}"/>
+    <ellipse cx="60" cy="47" rx="30" ry="12" fill="${hc}"/>
+    <rect x="28" y="43" width="64" height="10" rx="4" fill="${gold}"/>
+    <rect x="55" y="25" width="10" height="21" rx="4" fill="${gold}"/>
+    <ellipse cx="60" cy="25" rx="7" ry="5" fill="${gold}"/>
+    <ellipse cx="60" cy="22" rx="4" ry="3" fill="#e8c040"/>
+    ${BROWS[e]||BROWS.idle}${EYES[e]||EYES.idle}
+    <path d="M56 83 Q60 87 64 83" stroke="#9B6B40" stroke-width="1.3" fill="none" stroke-linecap="round"/>
+    ${MOUTHS[e]||MOUTHS.idle}
+    <circle cx="27" cy="89" r="4" fill="${gold}"/><circle cx="93" cy="89" r="4" fill="${gold}"/>
+  </svg>`;
+}
+
+/* ── Professor Addo: African scholar, hard ── */
+function professorSVG(e) {
+  const sk='#6B3D1E', hc='#9EA8A0', gc='#1A1A2E';
+  const GLASSPATH=`<circle cx="46" cy="73" r="9" fill="none" stroke="#8a8a8a" stroke-width="2"/>
+    <circle cx="74" cy="73" r="9" fill="none" stroke="#8a8a8a" stroke-width="2"/>
+    <line x1="55" y1="73" x2="65" y2="73" stroke="#8a8a8a" stroke-width="2"/>
+    <line x1="25" y1="73" x2="37" y2="73" stroke="#8a8a8a" stroke-width="1.5"/>
+    <line x1="83" y1="73" x2="95" y2="73" stroke="#8a8a8a" stroke-width="1.5"/>`;
+  const EYES={
+    idle:`${GLASSPATH}<circle cx="46" cy="73" r="5.5" fill="white"/><circle cx="47" cy="73" r="3.5" fill="#1A0A00"/><circle cx="48" cy="72" r="1.2" fill="white"/>
+          <circle cx="74" cy="73" r="5.5" fill="white"/><circle cx="75" cy="73" r="3.5" fill="#1A0A00"/><circle cx="76" cy="72" r="1.2" fill="white"/>`,
+    thinking:`${GLASSPATH}<circle cx="46" cy="73" r="5.5" fill="white"/><circle cx="45" cy="71" r="3.5" fill="#1A0A00"/><circle cx="46" cy="70" r="1.2" fill="white"/>
+              <circle cx="74" cy="73" r="5.5" fill="white"/><circle cx="73" cy="71" r="3.5" fill="#1A0A00"/><circle cx="74" cy="70" r="1.2" fill="white"/>`,
+    happy:`${GLASSPATH}<path d="M40 72 Q46 79 52 72" stroke="#1A0A00" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+           <path d="M68 72 Q74 79 80 72" stroke="#1A0A00" stroke-width="2.5" fill="none" stroke-linecap="round"/>`,
+    excited:`${GLASSPATH}<circle cx="46" cy="73" r="6" fill="white"/><circle cx="46" cy="73" r="4.5" fill="#1A0A00"/><circle cx="47.5" cy="71.5" r="1.5" fill="white"/>
+             <circle cx="74" cy="73" r="6" fill="white"/><circle cx="74" cy="73" r="4.5" fill="#1A0A00"/><circle cx="75.5" cy="71.5" r="1.5" fill="white"/>`,
+    sad:`${GLASSPATH}<ellipse cx="46" cy="74" rx="5.5" ry="4" fill="white"/><circle cx="46" cy="75" r="3" fill="#1A0A00"/>
+         <ellipse cx="74" cy="74" rx="5.5" ry="4" fill="white"/><circle cx="74" cy="75" r="3" fill="#1A0A00"/>`,
+    taunting:`<circle cx="46" cy="75" r="9" fill="none" stroke="#8a8a8a" stroke-width="2"/>
+              <circle cx="74" cy="73" r="9" fill="none" stroke="#8a8a8a" stroke-width="2"/>
+              <line x1="55" y1="74" x2="65" y2="73" stroke="#8a8a8a" stroke-width="2"/>
+              <line x1="25" y1="75" x2="37" y2="75" stroke="#8a8a8a" stroke-width="1.5"/>
+              <line x1="83" y1="73" x2="95" y2="73" stroke="#8a8a8a" stroke-width="1.5"/>
+              <circle cx="46" cy="75" r="5.5" fill="white"/><circle cx="47" cy="75" r="3.5" fill="#1A0A00"/><circle cx="48" cy="74" r="1.2" fill="white"/>
+              <ellipse cx="74" cy="73" rx="5.5" ry="3.5" fill="white"/><circle cx="75" cy="73" r="2.5" fill="#1A0A00"/>`
+  };
+  const BROWS={
+    idle:`<path d="M38 63 Q46 60 53 62" stroke="#5C4030" stroke-width="2" fill="none" stroke-linecap="round"/>
+          <path d="M67 62 Q74 60 82 63" stroke="#5C4030" stroke-width="2" fill="none" stroke-linecap="round"/>`,
+    thinking:`<path d="M38 62 Q46 57 53 61" stroke="#5C4030" stroke-width="2.2" fill="none" stroke-linecap="round"/>
+              <path d="M67 60 Q74 56 82 62" stroke="#5C4030" stroke-width="2.2" fill="none" stroke-linecap="round"/>`,
+    happy:`<path d="M38 61 Q46 58 53 60" stroke="#5C4030" stroke-width="2" fill="none" stroke-linecap="round"/>
+           <path d="M67 60 Q74 58 82 61" stroke="#5C4030" stroke-width="2" fill="none" stroke-linecap="round"/>`,
+    excited:`<path d="M37 58 Q46 54 54 58" stroke="#5C4030" stroke-width="2.2" fill="none" stroke-linecap="round"/>
+             <path d="M66 58 Q74 54 83 58" stroke="#5C4030" stroke-width="2.2" fill="none" stroke-linecap="round"/>`,
+    sad:`<path d="M38 65 Q46 62 53 66" stroke="#5C4030" stroke-width="2" fill="none" stroke-linecap="round"/>
+         <path d="M67 66 Q74 62 82 65" stroke="#5C4030" stroke-width="2" fill="none" stroke-linecap="round"/>`,
+    taunting:`<path d="M38 64 Q46 61 53 63" stroke="#5C4030" stroke-width="2" fill="none" stroke-linecap="round"/>
+              <path d="M67 60 Q74 57 82 62" stroke="#5C4030" stroke-width="2.2" fill="none" stroke-linecap="round"/>`
+  };
+  const BEARD=`<ellipse cx="60" cy="107" rx="14" ry="7" fill="${hc}" opacity="0.65"/>`;
+  const MOUTHS={
+    idle:`<path d="M50 96 Q60 101 70 96" stroke="#3A1808" stroke-width="2" fill="none" stroke-linecap="round"/>${BEARD}`,
+    thinking:`<path d="M52 97 Q60 95 68 97" stroke="#3A1808" stroke-width="2" fill="none" stroke-linecap="round"/>${BEARD}`,
+    happy:`<path d="M48 94 Q60 105 72 94" stroke="#3A1808" stroke-width="2" fill="none"/>
+           <path d="M48 94 Q60 106 72 94 Q60 98 48 94" fill="#C07050" stroke="none"/>
+           <path d="M50 94 Q60 98 70 94 Q60 96 50 94" fill="white" stroke="none"/>${BEARD}`,
+    excited:`<ellipse cx="60" cy="97" rx="12" ry="8" fill="#C07050"/>
+             <ellipse cx="60" cy="94" rx="9" ry="4" fill="white"/>
+             <path d="M52 89 Q60 87 68 89" stroke="#3A1808" stroke-width="2" fill="none"/>${BEARD}`,
+    sad:`<path d="M50 101 Q60 94 70 101" stroke="#3A1808" stroke-width="2" fill="none" stroke-linecap="round"/>${BEARD}`,
+    taunting:`<path d="M51 96 Q59 102 71 93" stroke="#3A1808" stroke-width="2" fill="none" stroke-linecap="round"/>${BEARD}`
+  };
+  return `<svg viewBox="0 0 120 150" xmlns="http://www.w3.org/2000/svg">
+    <rect x="16" y="124" width="88" height="26" fill="${gc}"/>
+    <ellipse cx="60" cy="148" rx="44" ry="20" fill="${gc}"/>
+    <path d="M44 124 L60 116 L76 124 L60 120 Z" fill="white"/>
+    <rect x="52" y="110" width="16" height="18" rx="4" fill="${sk}"/>
+    <ellipse cx="26" cy="79" rx="6" ry="8" fill="${sk}"/>
+    <ellipse cx="94" cy="79" rx="6" ry="8" fill="${sk}"/>
+    <ellipse cx="60" cy="77" rx="33" ry="37" fill="${sk}"/>
+    <ellipse cx="60" cy="43" rx="29" ry="11" fill="${hc}"/>
+    <rect x="28" y="43" width="11" height="22" rx="4" fill="${hc}"/>
+    <rect x="81" y="43" width="11" height="22" rx="4" fill="${hc}"/>
+    ${BROWS[e]||BROWS.idle}${EYES[e]||EYES.idle}
+    <path d="M56 84 Q60 89 64 84" stroke="#3A1808" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+    ${MOUTHS[e]||MOUTHS.idle}
+  </svg>`;
+}
+
+/* ── Melissa: blonde Caucasian woman, medium ── */
+function melissaSVG(e) {
+  const sk='#F5C5A0', hc='#DEB030', hs='#C09820', ec='#4A90D9', lip='#D08080', body='#3BACC8';
+  const EYES={
+    idle:`<circle cx="46" cy="71" r="5.5" fill="white"/><circle cx="46" cy="71" r="3.5" fill="${ec}"/><circle cx="47.5" cy="69.8" r="1.3" fill="white"/>
+          <circle cx="74" cy="71" r="5.5" fill="white"/><circle cx="74" cy="71" r="3.5" fill="${ec}"/><circle cx="75.5" cy="69.8" r="1.3" fill="white"/>`,
+    thinking:`<circle cx="46" cy="71" r="5.5" fill="white"/><circle cx="45" cy="68.5" r="3.5" fill="${ec}"/><circle cx="46" cy="67.8" r="1.3" fill="white"/>
+              <circle cx="74" cy="71" r="5.5" fill="white"/><circle cx="73" cy="68.5" r="3.5" fill="${ec}"/><circle cx="74" cy="67.8" r="1.3" fill="white"/>`,
+    happy:`<path d="M40 69 Q46 76 52 69" stroke="${ec}" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+           <path d="M68 69 Q74 76 80 69" stroke="${ec}" stroke-width="2.5" fill="none" stroke-linecap="round"/>`,
+    excited:`<circle cx="46" cy="71" r="7" fill="white"/><circle cx="46" cy="71" r="5" fill="${ec}"/><circle cx="48" cy="69" r="1.8" fill="white"/>
+             <circle cx="74" cy="71" r="7" fill="white"/><circle cx="74" cy="71" r="5" fill="${ec}"/><circle cx="76" cy="69" r="1.8" fill="white"/>
+             <text x="28" y="62" font-size="11" fill="#FF80A0">★</text><text x="81" y="62" font-size="11" fill="#FF80A0">★</text>`,
+    sad:`<ellipse cx="46" cy="72" rx="5.5" ry="4" fill="white"/><circle cx="46" cy="73.5" r="3" fill="${ec}"/>
+         <ellipse cx="74" cy="72" rx="5.5" ry="4" fill="white"/><circle cx="74" cy="73.5" r="3" fill="${ec}"/>`,
+    taunting:`<circle cx="46" cy="71" r="5.5" fill="white"/><circle cx="47.5" cy="71" r="3.5" fill="${ec}"/><circle cx="48.8" cy="69.8" r="1.3" fill="white"/>
+              <ellipse cx="74" cy="71" rx="5.5" ry="3.5" fill="white"/><circle cx="75" cy="71" r="2.5" fill="${ec}"/>
+              <line x1="68" y1="68.5" x2="80" y2="68.5" stroke="${hs}" stroke-width="2"/>`
+  };
+  const BROWS={
+    idle:`<path d="M39 62 Q46 59 52 61" stroke="${hs}" stroke-width="2" fill="none" stroke-linecap="round"/>
+          <path d="M68 61 Q74 59 81 62" stroke="${hs}" stroke-width="2" fill="none" stroke-linecap="round"/>`,
+    thinking:`<path d="M39 61 Q46 56 52 59" stroke="${hs}" stroke-width="2" fill="none" stroke-linecap="round"/>
+              <path d="M68 57 Q74 55 81 60" stroke="${hs}" stroke-width="2.2" fill="none" stroke-linecap="round"/>`,
+    happy:`<path d="M39 60 Q46 57 52 59" stroke="${hs}" stroke-width="2" fill="none" stroke-linecap="round"/>
+           <path d="M68 59 Q74 57 81 60" stroke="${hs}" stroke-width="2" fill="none" stroke-linecap="round"/>`,
+    excited:`<path d="M38 57 Q46 53 53 56" stroke="${hs}" stroke-width="2.2" fill="none" stroke-linecap="round"/>
+             <path d="M67 56 Q74 53 82 57" stroke="${hs}" stroke-width="2.2" fill="none" stroke-linecap="round"/>`,
+    sad:`<path d="M39 64 Q46 62 52 65" stroke="${hs}" stroke-width="2" fill="none" stroke-linecap="round"/>
+         <path d="M68 65 Q74 62 81 64" stroke="${hs}" stroke-width="2" fill="none" stroke-linecap="round"/>`,
+    taunting:`<path d="M39 62 Q46 60 52 62" stroke="${hs}" stroke-width="2" fill="none" stroke-linecap="round"/>
+              <path d="M68 58 Q74 56 81 61" stroke="${hs}" stroke-width="2.2" fill="none" stroke-linecap="round"/>`
+  };
+  const MOUTHS={
+    idle:`<path d="M50 87 Q60 92 70 87" stroke="${lip}" stroke-width="2" fill="none" stroke-linecap="round"/>`,
+    thinking:`<path d="M52 87 Q60 85 68 87" stroke="${lip}" stroke-width="2.5" fill="none" stroke-linecap="round"/>`,
+    happy:`<path d="M45 84 Q60 97 75 84" stroke="${lip}" stroke-width="2" fill="none"/>
+           <path d="M45 84 Q60 98 75 84 Q60 88 45 84" fill="#E09090" stroke="none"/>
+           <path d="M47 84 Q60 88 73 84 Q60 86 47 84" fill="white" stroke="none"/>`,
+    excited:`<ellipse cx="60" cy="91" rx="13" ry="9" fill="#E09090"/>
+             <ellipse cx="60" cy="88" rx="11" ry="5" fill="white"/>
+             <path d="M53 83 Q60 81 67 83" stroke="${lip}" stroke-width="2" fill="none"/>`,
+    sad:`<path d="M50 92 Q60 85 70 92" stroke="${lip}" stroke-width="2" fill="none" stroke-linecap="round"/>`,
+    taunting:`<path d="M51 87 Q59 93 71 85" stroke="${lip}" stroke-width="2" fill="none" stroke-linecap="round"/>`
+  };
+  return `<svg viewBox="0 0 120 150" xmlns="http://www.w3.org/2000/svg">
+    <rect x="18" y="118" width="84" height="32" fill="${body}"/>
+    <ellipse cx="60" cy="148" rx="42" ry="20" fill="${body}"/>
+    <path d="M48 118 Q60 110 72 118" fill="#2E99B5"/>
+    <rect x="53" y="105" width="14" height="16" rx="4" fill="${sk}"/>
+    <ellipse cx="28" cy="79" rx="5.5" ry="7" fill="${sk}"/>
+    <ellipse cx="92" cy="79" rx="5.5" ry="7" fill="${sk}"/>
+    <path d="M30 64 Q14 96 18 132 Q29 105 31 82" fill="${hc}"/>
+    <path d="M90 64 Q106 96 102 132 Q91 105 89 82" fill="${hc}"/>
+    <ellipse cx="60" cy="77" rx="30" ry="35" fill="${sk}"/>
+    <path d="M30 64 Q33 28 60 24 Q87 28 90 64 Q82 38 60 35 Q38 38 30 64" fill="${hc}"/>
+    <path d="M52 26 Q55 40 53 56" stroke="#F0E080" stroke-width="2" fill="none" opacity="0.7"/>
+    <path d="M62 24 Q64 38 62 54" stroke="#F0E080" stroke-width="2" fill="none" opacity="0.7"/>
+    <circle cx="28" cy="85" r="2" fill="#FFD700"/>
+    <circle cx="92" cy="85" r="2" fill="#FFD700"/>
+    <ellipse cx="41" cy="84" rx="7" ry="4" fill="#E8A0A0" opacity="0.35"/>
+    <ellipse cx="79" cy="84" rx="7" ry="4" fill="#E8A0A0" opacity="0.35"/>
+    ${BROWS[e]||BROWS.idle}${EYES[e]||EYES.idle}
+    <path d="M57 81 Q60 85 63 81" stroke="${hs}" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+    ${MOUTHS[e]||MOUTHS.idle}
+  </svg>`;
+}
+
+const CHARACTERS = {
+  kofi:      { name:'Kofi',       title:'Village Champion',     afTitle:'Dorpskampioen',       difficulty:'easy',   render:kofiSVG },
+  nefertari: { name:'Nefertari',  title:'Princess of the Nile', afTitle:'Prinses van die Nyl',  difficulty:'medium', render:nefertariSVG },
+  melissa:   { name:'Melissa',    title:'Star Player',           afTitle:'Sterspeler',           difficulty:'medium', render:melissaSVG },
+  professor: { name:'Prof. Addo', title:'Grand Scholar',         afTitle:'Groot Geleerde',       difficulty:'hard',   render:professorSVG }
+};
+
+function selectCharacter(charId) {
+  currentCharId = charId;
+  difficulty = CHARACTERS[charId].difficulty;
+  document.querySelectorAll('.char-card').forEach(el =>
+    el.classList.toggle('selected', el.dataset.char === charId)
+  );
+  setExpression('idle');
+}
+
+function setExpression(expr) {
+  currentExpr = expr;
+  const char = CHARACTERS[currentCharId];
+  const svgEl = document.getElementById('char-portrait-svg');
+  if (svgEl) svgEl.innerHTML = char.render(expr);
+  const nameEl = document.getElementById('char-display-name');
+  if (nameEl) nameEl.textContent = char.name;
+  const titleEl = document.getElementById('char-display-title');
+  if (titleEl) titleEl.textContent = lang === 'af' ? char.afTitle : char.title;
+  const quoteEl = document.getElementById('char-quote');
+  if (quoteEl) quoteEl.textContent = '"' + (QUOTES[currentCharId][lang][expr] || '') + '"';
+}
+
+function initCharacterSystem() {
+  for (const [id, char] of Object.entries(CHARACTERS)) {
+    const thumb = document.getElementById(`thumb-${id}`);
+    if (thumb) thumb.innerHTML = char.render('idle');
+  }
+  setExpression('idle');
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   LANGUAGE / i18n
+═══════════════════════════════════════════════════════════════════════════ */
+
+let lang = 'en';
+
+const STRINGS = {
+  en: {
+    headerSubtitle: 'A two-row mancala game of the Ewe people of Togo &amp; Ghana',
+    btnNewGame: '▶ New Game',
+    btnPlayAgain: 'Play Again',
+    labelYourStore: 'Your Store',
+    labelRound: 'Round',
+    labelComputerStore: 'Computer Store',
+    labelComputer: 'Computer',
+    labelYou: 'You',
+    labelMoveHistory: 'Move History',
+    labelReasoning: "Computer's Reasoning",
+    explainIdle: "The computer's explanation will appear here after it chooses a move.",
+    statusStart: 'Press New Game to start',
+    easy: 'Easy', medium: 'Medium', hard: 'Hard',
+    youWin: 'You Win!', computerWins: 'Computer Wins!',
+    finalScore: (p1, p2, r) => `Final score — <strong>You: ${p1}</strong> | <strong>Computer: ${p2}</strong><br><span style="color:#888;font-size:0.85rem">Round ${r}</span>`,
+    yourTurn: "Your turn — click a hole to sow",
+    sowing: 'Sowing…',
+    computerThinking: 'Computer is thinking…',
+    computerThinkingDots: 'Computer is thinking',
+    roundBegins: (r, n1, n2) => `Round ${r} begins — ${n1} vs ${n2} holes`,
+    youCaptured: (n) => `You captured ${n} seed${n===1?'':'s'}! Computer's turn…`,
+    capturedBadge: (n) => `+${n} seed${n===1?'':'s'} captured!`,
+    computerSowing: 'Computer is sowing…',
+    computerPasses: 'Computer passes — your turn',
+    noMovesComputer: 'No moves available — computer goes…',
+    yourTurnNewRound: 'Your turn — new round started',
+    computerCaptured: (n) => `Computer captured ${n} seed${n===1?'':'s'} — your turn`,
+    noMovesYou: 'No moves for you — computer goes again…',
+    histP1: (h, c) => `P1: sow hole ${h}${c ? ` (+${c})` : ''}`,
+    histCPU: (h, c) => `CPU: sow hole ${h}${c ? ` (+${c})` : ''}`,
+    tipYourSide: 'your', tipComputerSide: "the computer's",
+    tipInactiveTitle: (v, s) => `Hole ${v} (${s} side) — not in play`,
+    tipInactiveBody: (r, c) => `In round ${r}, only <strong>${c} hole${c!==1?'s':''}</strong> per side are active. When a round ends, the player with fewer seeds in store refills fewer holes, so the board shrinks. Seeds here were swept to the store at the start of the round.`,
+    tipForbidTitle: (v, s) => `Hole ${v} (${s} side) — locked this turn`,
+    tipForbidP1: "You just sowed from here. Adi's same-hole rule prevents players from cycling the same hole repeatedly. It unlocks the moment the computer drops a seed into it.",
+    tipForbidP2: "The computer just sowed from here. The same-hole rule applies to both sides — it unlocks the moment you drop a seed into it.",
+    holeLabel: (n) => `hole ${n}`,
+    noMovesAI: '<p class="explain-idle">No moves available — the computer passes.</p>',
+    moveDataUnavail: '<p class="explain-idle">Move data unavailable.</p>',
+    modeEasy: 'Easy Mode', modeMedium: 'Medium Mode',
+    modeHard: 'Hard Mode — Minimax', modeSlip: 'Hard Mode — Random Slip',
+    factCaptureEasy: (hn, n) => `${hn} sows the last seed onto your side, hitting exactly 3 — a capture of ${n} seed${n===1?'':'s'}. Easy mode grabs captures when it sees them.`,
+    factMultiCap: (n) => `${n} captures were available; one was picked at random.`,
+    factIgnoredCap: (hn) => `A capture was within reach, but easy mode ignores it 40% of the time — ${hn} was chosen randomly instead.`,
+    factRandom: (hn, n) => `No capture was available, so easy mode picked ${hn} at random from ${n} option${n>1?'s':''}.`,
+    factSlip: (hn) => `Hard mode has a 10% chance of playing randomly to keep the game fair. This was one of those turns — ${hn} was chosen by chance, not by minimax.`,
+    factChainCapture: (hn, holes, n) => `Chain capture! ${hn} triggers a cascade across ${holes} holes — netting ${n} seed${n===1?'':'s'} in one move.`,
+    factCapture: (hn, n) => `${hn} drops its last seed onto a hole with 2 on your side — 2 + 1 = 3, capturing ${n} seed${n===1?'':'s'}.`,
+    factSafePlay: (names, hn) => `Almost every other option (${names}) hands you a counter-capture. ${hn} was the key safe play.`,
+    factAvoidCap: (names, hn) => `Moves like ${names} would let you counter-capture next turn. ${hn} keeps your holes out of range.`,
+    factNoSafe: (hn) => `Every available move leaves you with a capture threat — no safe option exists. ${hn} scores best despite the risk.`,
+    factTight: (n, hn) => `Very tight decision — all ${n} moves scored within 0.6 pts at 4-move depth. ${hn} edged ahead by the narrowest margin.`,
+    factMinimax: (n, hn, margin) => `Minimax searched 4 moves deep across ${n} options and ranked ${hn} first — scoring ${margin} pts ahead of the next best move.`,
+    factRank: (hn, rank, n) => `${hn} ranked #${rank} of ${n} by raw score, but combined with other factors it was the top choice at depth 4.`,
+    factLeading: (adv) => `Leading by ${adv} seed${adv===1?'':'s'} in store — playing to hold that advantage rather than take unnecessary risks.`,
+    factTrailing: (adv) => `Trailing by ${adv} seed${adv===1?'':'s'} in store — this was the most aggressive move available to close the gap.`,
+    factDensity: (mine, yours) => `No captures possible — this leaves the computer with ${mine} seed${mine===1?'':'s'} in its row (you: ${yours}), building up for future captures.`,
+    factBestPos: (n, hn) => `Minimax evaluated all ${n} moves 4 levels deep and found ${hn} gives the best long-term position.`,
+    guideAbout: `<h3>About Adi</h3>
+      <p>Adi is played on an elaborately carved wooden board. Capture seeds from your opponent to grow your store across multiple rounds — until one player can no longer fill a row.</p>`,
+    guideHowToPlay: `<h3>How to Play</h3>
+      <ul>
+        <li>You are <span class="highlight">Player 1 (bottom)</span>. The computer plays the top row.</li>
+        <li>Click any hole in your row with seeds to <span class="highlight">sow anti-clockwise</span> — seeds spread right along your row, then left along the top row.</li>
+        <li>You <strong>cannot</strong> sow from the same hole twice in a row until the opponent sows into it.</li>
+        <li>Holes you cannot use show <span style="color:#ef4444">✕</span>.</li>
+      </ul>`,
+    guideCaptures: `<h3>Captures</h3>
+      <div class="rule-block">If your last seed lands in an <strong>opponent's hole</strong> and makes the count exactly <span class="highlight">3</span> → capture all 3!</div>
+      <div class="rule-block"><strong>Chain capture:</strong> If the hole just before the captured hole <em>also</em> has exactly 3, capture that too — keep going backwards!</div>`,
+    guideEndOfRound: `<h3>End of Round</h3>
+      <p>When <strong>no more captures are possible</strong> by either player, the round ends:</p>
+      <ul style="margin-top:6px">
+        <li>Remaining seeds on each side go to that player's store.</li>
+        <li>The player with <em>fewer</em> seeds refills holes right-to-left with 4 each.</li>
+        <li>The opponent fills the <em>same number</em> of opposite holes.</li>
+      </ul>`,
+    guideWinning: `<h3>Winning</h3>
+      <p>The game ends when a player <strong>cannot fill even one hole</strong> (fewer than 4 seeds left). Their opponent wins!</p>`,
+    guideChooseOpponent: 'Choose Opponent',
+  },
+  af: {
+    headerSubtitle: "'n Tweery mancalaspel van die Ewe-volk van Togo &amp; Ghana",
+    btnNewGame: '▶ Nuwe Spel',
+    btnPlayAgain: 'Speel Weer',
+    labelYourStore: 'Jou Stoorplek',
+    labelRound: 'Rondte',
+    labelComputerStore: 'Speelmaat se Stoorplek',
+    labelComputer: 'Speelmaat',
+    labelYou: 'Jy',
+    labelMoveHistory: 'Bewegingslys',
+    labelReasoning: 'Jou speelmaat se redenasie',
+    explainIdle: "Die verduideliking verskyn hier nadat dit 'n beweeg gekies het.",
+    statusStart: 'Druk Nuwe Spel om te begin',
+    easy: 'Maklik', medium: 'Gemiddeld', hard: 'Moeilik',
+    youWin: 'Jy Wen!', computerWins: 'Jou speelmaat wen!',
+    finalScore: (p1, p2, r) => `Finale telling — <strong>Jy: ${p1}</strong> | <strong>Speelmaat: ${p2}</strong><br><span style="color:#888;font-size:0.85rem">Rondte ${r}</span>`,
+    yourTurn: "Jou beurt — klik 'n holte om te saai",
+    sowing: 'Besig om te saai…',
+    computerThinking: 'Jou speelmaat dink…',
+    computerThinkingDots: 'Speelmaat dink',
+    roundBegins: (r, n1, n2) => `Rondte ${r} begin — ${n1} teen ${n2} holtes`,
+    youCaptured: (n) => `Jy het ${n} klipp${n===1?'ie':'ies'} gevang! My beurt…`,
+    capturedBadge: (n) => `+${n} klipp${n===1?'ie':'ies'} gevang!`,
+    computerSowing: 'Speelmaat saai tans…',
+    computerPasses: 'Speelmaat sê "ek kan nie speel nie" — so dit is jou beurt',
+    noMovesComputer: 'Geen bewegings beskikbaar — jou speelmaat moet speel…',
+    yourTurnNewRound: 'Jou beurt — nuwe rondte begin',
+    computerCaptured: (n) => `Speelmaat het ${n} klipp${n===1?'ie':'ies'} gevang — jou beurt`,
+    noMovesYou: 'Geen bewegings vir jou — jou speelmaat gaan weer…',
+    histP1: (h, c) => `Jy: saai holte ${h}${c ? ` (+${c})` : ''}`,
+    histCPU: (h, c) => `Maat: saai holte ${h}${c ? ` (+${c})` : ''}`,
+    tipYourSide: 'jou', tipComputerSide: 'die rekenaar se',
+    tipInactiveTitle: (v, s) => `Holte ${v} (${s} kant) — nie in spel nie`,
+    tipInactiveBody: (r, c) => `In rondte ${r} is slegs <strong>${c} holte${c!==1?'s':''}</strong> per kant aktief. Wanneer 'n rondte eindig, vul die speler met minder klippies minder holtes, sodat die bord kleiner word. Klippies hier is aan die begin van die rondte na die skatkis gevee.`,
+    tipForbidTitle: (v, s) => `Holte ${v} (${s} kant) — gesluit hierdie beurt`,
+    tipForbidP1: "Jy het sopas hieruit gesaai. Adi se dieselfdeholte-reël verhoed spelers om dieselfde holte herhaaldelik te gebruik. Dit ontsluit sodra die rekenaar 'n klippie daarin saai.",
+    tipForbidP2: "Die rekenaar het sopas hieruit gesaai. Die dieselfde holte-reël geld vir beide kante — dit ontsluit sodra jy 'n klippie daarin saai.",
+    holeLabel: (n) => `holte ${n}`,
+    noMovesAI: '<p class="explain-idle">Geen bewegings beskikbaar — jou speelmaat moet oorgeslaan word.</p>',
+    moveDataUnavail: '<p class="explain-idle">Bewegingsdata nie beskikbaar nie.</p>',
+    modeEasy: 'Maklike Modus', modeMedium: 'Gemiddelde Modus',
+    modeHard: 'Moeilike Modus — Minimax', modeSlip: 'Moeilike Modus — Toevallige Glip',
+    factCaptureEasy: (hn, n) => `${hn} saai die laaste klippie op jou kant — 'n vangs van ${n} klipp${n===1?'ie':'ies'}. Maklike modus gryp vangs wanneer dit dit sien.`,
+    factMultiCap: (n) => `${n} vangsgeleenthede was beskikbaar; een is lukraak gekies.`,
+    factIgnoredCap: (hn) => `'n Vangs was binne bereik, maar maklike modus ignoreer dit 40% van die tyd — ${hn} is eerder lukraak gekies.`,
+    factRandom: (hn, n) => `Geen vangs was beskikbaar nie, so maklike modus het ${hn} lukraak uit ${n} opsie${n>1?'s':''} gekies.`,
+    factSlip: (hn) => `Moeilike modus het 'n 10% kans om lukraak te speel om die spel billik te hou. Dit was een van dié beurte — ${hn} is per toeval gekies, nie deur minimax nie.`,
+    factChainCapture: (hn, holes, n) => `Kettingvangs! ${hn} ontlok 'n kaskade oor ${holes} holtes — wat ${n} klipp${n===1?'ie':'ies'} in een beweeg oplewer.`,
+    factCapture: (hn, n) => `${hn} plaas sy laaste klippie in 'n holte met 2 op jou kant — 2 + 1 = 3, en vang ${n} klipp${n===1?'ie':'ies'}.`,
+    factSafePlay: (names, hn) => `Byna elke ander opsie (${names}) gee jou 'n teenvangs. ${hn} was die belangrikste veilige beweeg.`,
+    factAvoidCap: (names, hn) => `Bewegings soos ${names} sou jou in staat stel om die volgende beurt terug te vang. ${hn} hou jou holtes buite bereik.`,
+    factNoSafe: (hn) => `Elke beskikbare beweeg laat jou met 'n vangsbedreiging — geen veilige opsie bestaan nie. ${hn} behaal die beste telling ten spyte van die risiko.`,
+    factTight: (n, hn) => `Baie krap besluit — al ${n} bewegings het binne 0,6 punte geskor op diepte 4. ${hn} het oor die smalste marge vooruit gegaan.`,
+    factMinimax: (n, hn, margin) => `Minimax het 4 bewegings diep oor ${n} opsies gesoek en ${hn} eerste gerangskik — ${margin} punte voor die volgende beste beweeg.`,
+    factRank: (hn, rank, n) => `${hn} het #${rank} van ${n} in rou telling geskor, maar tesame met ander faktore was dit die beste keuse op diepte 4.`,
+    factLeading: (adv) => `Die rekenaar lei met ${adv} klipp${adv===1?'ie':'ies'} in die skatkis — speel om dié voordeel te behou eerder as om onnodige risiko's te loop.`,
+    factTrailing: (adv) => `Agter met ${adv} klipp${adv===1?'ie':'ies'} in die skatkis — dit was die mees aggressiewe beweeg beskikbaar om die gaping te verklein.`,
+    factDensity: (mine, yours) => `Geen vangs moontlik — dit laat die rekenaar met ${mine} klipp${mine===1?'ie':'ies'} in sy ry (jy: ${yours}), wat opbou vir toekomstige vangste.`,
+    factBestPos: (n, hn) => `Minimax het al ${n} bewegings 4 vlakke diep geëvalueer en gevind dat ${hn} die beste langtermynposisie bied.`,
+    guideAbout: `<h3>Oor Adi</h3>
+      <p>Adi word op 'n mooi gesnyde houtbord gespeel. Die doel is om klippies van jou teenstander te vang, en jou stoorplek oor die verloop van rondtes te vergroot. Die spel eindig as een speler nie meer 'n ry kan vul nie.</p>`,
+    guideHowToPlay: `<h3>Hoe om te Speel</h3>
+      <ul>
+        <li>Jy is <span class="highlight">Speler 1 (onder)</span>. Die speelmaat speel in die boonste ry.</li>
+        <li>Kliek enige holte in jou ry met klippies om <span class="highlight">anti-kloksgewys te saai</span>. Jy saai in beide jou en jou speelmaat se holtes.</li>
+        <li>As jy by een holte opgetel het om te speel, mag jy <strong>nie</strong> weer vanuit daardie holte saai, totdat die teenstander daarin saai, nie.</li>
+        <li>Holtes wat jy nie kan gebruik nie, toon <span style="color:#ef4444">✕</span>.</li>
+      </ul>`,
+    guideCaptures: `<h3>Vangs</h3>
+      <div class="rule-block">As jou laaste klippie in 'n holte van die teenstander land en die telling op presies <span class="highlight">3</span> bring → dan kry jy daardie klippies!</div>
+      <div class="rule-block"><strong>Kettingvangs:</strong> As die holte net voor die gevangde holte <em>ook</em> presies 3 het, vang dié ook.</div>`,
+    guideEndOfRound: `<h3>Einde van Rondte</h3>
+      <p>Wanneer <strong>geen vangste meer moontlik</strong> is vir enige speler nie, eindig die rondte:</p>
+      <ul style="margin-top:6px">
+        <li>Al die oorblywende klippies aan elke kant gaan na dié speler se skatkis.</li>
+        <li>Die speler met <em>minder</em> klippies vul holtes van regs na links met 4 elk.</li>
+        <li>Die teenstander vul <em>dieselfde getal</em> teenoorgestelde holtes.</li>
+      </ul>`,
+    guideWinning: `<h3>Wen</h3>
+      <p>Die spel eindig wanneer 'n speler <strong>nie een enkele holte kan vul nie</strong> (dus, een speler het minder as 4 klippies oor). Die teenstander wen!</p>`,
+    guideChooseOpponent: 'Kies Teenstander',
+  }
+};
+
+function t(key, ...args) {
+  const val = STRINGS[lang]?.[key] ?? STRINGS.en[key];
+  return typeof val === 'function' ? val(...args) : (val ?? key);
+}
+
+function toggleLanguage() {
+  lang = lang === 'en' ? 'af' : 'en';
+  document.getElementById('lang-toggle').textContent = lang === 'en' ? 'AF' : 'EN';
+  document.documentElement.lang = lang;
+  updateStaticStrings();
+}
+
+function updateStaticStrings() {
+  document.getElementById('header-subtitle').innerHTML        = t('headerSubtitle');
+  document.getElementById('btn-new-game').textContent         = t('btnNewGame');
+  document.getElementById('btn-play-again').textContent       = t('btnPlayAgain');
+  document.getElementById('label-p1-store').textContent       = t('labelYourStore');
+  document.getElementById('label-round').textContent          = t('labelRound');
+  document.getElementById('label-p2-store').textContent       = t('labelComputerStore');
+  document.getElementById('label-computer-store').textContent = t('labelComputer');
+  document.getElementById('label-you-store').textContent      = t('labelYou');
+  document.getElementById('move-history-heading').textContent = t('labelMoveHistory');
+  document.getElementById('reasoning-heading').textContent    = t('labelReasoning');
+  document.getElementById('guide-about').innerHTML            = t('guideAbout');
+  document.getElementById('guide-howtoplay').innerHTML        = t('guideHowToPlay');
+  document.getElementById('guide-captures').innerHTML         = t('guideCaptures');
+  document.getElementById('guide-endofround').innerHTML       = t('guideEndOfRound');
+  document.getElementById('guide-winning').innerHTML          = t('guideWinning');
+  document.getElementById('guide-choose-h3').textContent      = t('guideChooseOpponent');
+  document.querySelectorAll('.char-card-diff.easy').forEach(el   => el.textContent = t('easy'));
+  document.querySelectorAll('.char-card-diff.medium').forEach(el => el.textContent = t('medium'));
+  document.querySelectorAll('.char-card-diff.hard').forEach(el   => el.textContent = t('hard'));
+  // Update explain idle text only if no explanation is shown
+  const explainEl = document.getElementById('explain-content');
+  if (explainEl?.querySelector('.explain-idle')) {
+    explainEl.querySelector('.explain-idle').textContent = t('explainIdle');
+  }
+  // Character display title + card subtitle titles
+  if (currentCharId) {
+    const char = CHARACTERS[currentCharId];
+    const titleEl = document.getElementById('char-display-title');
+    if (titleEl) titleEl.textContent = lang === 'af' ? char.afTitle : char.title;
+  }
+  document.querySelectorAll('.char-card').forEach(card => {
+    const char = CHARACTERS[card.dataset.char];
+    if (char) {
+      const sm = card.querySelector('.char-card-title-sm');
+      if (sm) sm.textContent = lang === 'af' ? char.afTitle : char.title;
+    }
+  });
+  // Re-render history with new labels
+  renderHistory();
+  // Update status if game hasn't started or is over
+  if (!game || game.over) setStatus(t('statusStart'));
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   UI
+═══════════════════════════════════════════════════════════════════════════ */
+
+let game       = null;
+let difficulty = 'easy';
+let inputLocked = false;
+let moveHistory = [];
+let currentExpr = 'idle';
+
+// P2 holes are displayed right-to-left: visual positions [0..5] → holes [11,10,9,8,7,6]
+const P2_DISPLAY_ORDER = [11,10,9,8,7,6];
+const P1_DISPLAY_ORDER = [0,1,2,3,4,5];
+
+
+function startNewGame() {
+  game        = new GameState();
+  moveHistory = [];
+  inputLocked = false;
+  buildBoard();
+  renderBoard();
+  renderHistory();
+  setExpression('idle');
+  setStatus(t('yourTurn'));
+  document.getElementById('overlay').classList.remove('show');
+}
+
+/* Build DOM holes once */
+function buildBoard() {
+  const rowP2 = document.getElementById('row-p2');
+  const rowP1 = document.getElementById('row-p1');
+  rowP2.innerHTML = '';
+  rowP1.innerHTML = '';
+
+  P2_DISPLAY_ORDER.forEach((holeIdx, pos) => {
+    rowP2.appendChild(makeHoleEl(holeIdx, 'p2'));
+  });
+  P1_DISPLAY_ORDER.forEach((holeIdx, pos) => {
+    rowP1.appendChild(makeHoleEl(holeIdx, 'p1'));
+  });
+}
+
+function makeHoleEl(holeIdx, player) {
+  const d = document.createElement('div');
+  d.className   = 'hole';
+  d.id          = `hole-${holeIdx}`;
+  d.dataset.idx = holeIdx;
+  if (player === 'p1') d.onclick = () => handleClick(holeIdx);
+  return d;
+}
+
+/* Full board re-render */
+function renderBoard() {
+  if (!game) return;
+  const validMoves = game.over ? [] : game.validMoves(1);
+  const humanTurn  = game.current === 1 && !game.over && !inputLocked;
+
+  for (let i = 0; i < 12; i++) {
+    renderHole(i, game.holes[i], validMoves, humanTurn, game);
+  }
+
+  document.getElementById('p1-store-count').textContent   = game.p1Store;
+  document.getElementById('p2-store-count').textContent   = game.p2Store;
+  document.getElementById('p1-store-display').textContent = game.p1Store;
+  document.getElementById('p2-store-display').textContent = game.p2Store;
+  document.getElementById('round-display').textContent    = game.round;
+}
+
+function renderHole(i, count, validMoves, humanTurn, state) {
+  const el = document.getElementById(`hole-${i}`);
+  if (!el) return;
+
+  const isP1     = i < 6;
+  const owned    = isP1 ? state.p1Owned : state.p2Owned;
+  const forb     = isP1 ? state.p1Forbidden : state.p2Forbidden;
+  const isOwned  = owned.includes(i);
+  const isForbid = forb.has(i);
+  const isValid  = validMoves.includes(i);
+
+  el.className = 'hole';
+  if (!isOwned && count === 0) el.classList.add('inactive-hole');
+  if (isP1 && humanTurn && isValid) el.classList.add('clickable');
+  if (isForbid && isOwned)          el.classList.add('forbidden');
+
+  // Seeds visual
+  el.innerHTML = '';
+  if (count === 0) {
+    // Empty
+  } else if (count <= 8) {
+    const grid = document.createElement('div');
+    grid.className = 'seeds-grid';
+    const cols = count <= 4 ? 2 : count <= 6 ? 3 : 4;
+    grid.style.gridTemplateColumns = `repeat(${cols}, 11px)`;
+    for (let s = 0; s < count; s++) {
+      const dot = document.createElement('div');
+      dot.className = 'seed';
+      grid.appendChild(dot);
+    }
+    el.appendChild(grid);
+    if (count > 4) {
+      const lbl = document.createElement('div');
+      lbl.className = 'seed-count-label';
+      lbl.textContent = count;
+      el.appendChild(lbl);
+    }
+  } else {
+    const n = document.createElement('div');
+    n.className   = 'count-big';
+    n.textContent = count;
+    el.appendChild(n);
+  }
+
+}
+
+function flashHoles(holes_arr, cls) {
+  for (const h of holes_arr) {
+    const el = document.getElementById(`hole-${h}`);
+    if (el) {
+      el.classList.add(cls);
+      setTimeout(() => el.classList.remove(cls), 600);
+    }
+  }
+}
+
+function setStatus(html, captureAmt) {
+  const bar = document.getElementById('status-bar');
+  bar.innerHTML = `<span class="msg">${html}</span>`;
+  if (captureAmt) {
+    bar.innerHTML += `<span class="capture-badge">${t('capturedBadge', captureAmt)}</span>`;
+  }
+}
+
+function setThinking() {
+  document.getElementById('status-bar').innerHTML =
+    `<span class="msg" style="color:#94a3b8">${t('computerThinkingDots')}</span>
+     <span class="thinking-dots"><span>●</span><span>●</span><span>●</span></span>`;
+}
+
+function renderHistory() {
+  const list = document.getElementById('history-list');
+  list.innerHTML = '';
+  for (const entry of moveHistory.slice(-30)) {
+    const el = document.createElement('span');
+    el.className = 'history-item' + (entry.cap > 0 ? ' capture' : '');
+    el.textContent = entry.isP1
+      ? t('histP1', entry.hole, entry.cap)
+      : t('histCPU', entry.hole, entry.cap);
+    list.appendChild(el);
+  }
+}
+
+function showGameOver() {
+  const overlay = document.getElementById('overlay');
+  const icon    = document.getElementById('winner-icon');
+  const title   = document.getElementById('winner-title');
+  const score   = document.getElementById('final-score');
+
+  if (game.winner === 1) {
+    icon.textContent  = '🏆';
+    title.textContent = t('youWin');
+    title.style.color = '#f39c12';
+    launchConfetti();
+  } else {
+    icon.textContent  = '🤖';
+    title.textContent = t('computerWins');
+    title.style.color = '#94a3b8';
+  }
+  score.innerHTML = t('finalScore', game.p1Store, game.p2Store, game.round);
+  overlay.classList.add('show');
+}
+
+function launchConfetti() {
+  const canvas = document.createElement('canvas');
+  canvas.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:150';
+  document.body.appendChild(canvas);
+  const ctx = canvas.getContext('2d');
+  canvas.width  = window.innerWidth;
+  canvas.height = window.innerHeight;
+
+  const colors = ['#f39c12','#2ecc71','#3498db','#e74c3c','#9b59b6','#1abc9c','#f1c40f','#e91e63','#FFD700'];
+  const pieces = Array.from({length: 140}, () => ({
+    x:     Math.random() * canvas.width,
+    y:     -30 - Math.random() * 100,
+    vx:    (Math.random() - 0.5) * 5,
+    vy:    2 + Math.random() * 3.5,
+    color: colors[Math.floor(Math.random() * colors.length)],
+    w:     7 + Math.random() * 9,
+    h:     4 + Math.random() * 6,
+    angle: Math.random() * Math.PI * 2,
+    spin:  (Math.random() - 0.5) * 0.18,
+    shape: Math.random() < 0.4 ? 'circle' : 'rect',
+    r:     3 + Math.random() * 4,
+  }));
+
+  let frame = 0;
+  (function tick() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    let alive = 0;
+    for (const p of pieces) {
+      if (p.y > canvas.height + 30) continue;
+      alive++;
+      p.x     += p.vx;
+      p.y     += p.vy;
+      p.vy    += 0.07;
+      p.vx    *= 0.993;
+      p.angle += p.spin;
+      ctx.save();
+      ctx.globalAlpha = Math.max(0, 1 - (frame / 220));
+      ctx.translate(p.x, p.y);
+      ctx.rotate(p.angle);
+      ctx.fillStyle = p.color;
+      if (p.shape === 'circle') {
+        ctx.beginPath();
+        ctx.arc(0, 0, p.r, 0, Math.PI * 2);
+        ctx.fill();
+      } else {
+        ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+      }
+      ctx.restore();
+    }
+    frame++;
+    if (alive > 0 && frame < 240) requestAnimationFrame(tick);
+    else canvas.remove();
+  })();
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   ANIMATION HELPERS
+═══════════════════════════════════════════════════════════════════════════ */
+
+function delay(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+/* Update only the seed visuals in a hole without touching its classes */
+function renderHoleSeeds(holeIdx, count) {
+  const el = document.getElementById(`hole-${holeIdx}`);
+  if (!el) return;
+  el.querySelectorAll('.seeds-grid, .count-big, .seed-count-label').forEach(n => n.remove());
+  if (count <= 0) return;
+  if (count <= 8) {
+    const grid = document.createElement('div');
+    grid.className = 'seeds-grid';
+    const cols = count <= 4 ? 2 : count <= 6 ? 3 : 4;
+    grid.style.gridTemplateColumns = `repeat(${cols}, 11px)`;
+    for (let s = 0; s < count; s++) {
+      const dot = document.createElement('div'); dot.className = 'seed'; grid.appendChild(dot);
+    }
+    el.appendChild(grid);
+    if (count > 4) {
+      const lbl = document.createElement('div');
+      lbl.className = 'seed-count-label'; lbl.textContent = count; el.appendChild(lbl);
+    }
+  } else {
+    const n = document.createElement('div');
+    n.className = 'count-big'; n.textContent = count; el.appendChild(n);
+  }
+}
+
+/* Animate the sow one hole at a time, apply move to game state, then animate captures.
+   Returns the move result. */
+async function animateSow(holeIdx) {
+  const seedsToSow = game.holes[holeIdx];
+  const display    = [...game.holes];
+
+  // Disable all clickable holes during animation
+  document.querySelectorAll('.hole.clickable').forEach(el => el.classList.remove('clickable'));
+
+  // Source hole: glow yellow and shrink, then empty
+  const srcEl = document.getElementById(`hole-${holeIdx}`);
+  if (srcEl) srcEl.classList.add('sowing-source');
+  await delay(520);
+  display[holeIdx] = 0;
+  renderHoleSeeds(holeIdx, 0);
+  if (srcEl) srcEl.classList.remove('sowing-source');
+  await delay(200);
+
+  // Sow one seed at a time
+  const SOW_DELAY = 430;
+  let pos = holeIdx;
+  for (let i = 0; i < seedsToSow; i++) {
+    pos = (pos + 1) % 12;
+    display[pos]++;
+    renderHoleSeeds(pos, display[pos]);
+    // Blue flash on receiving hole
+    const el = document.getElementById(`hole-${pos}`);
+    if (el) {
+      el.classList.remove('seed-landing');
+      void el.offsetWidth; // restart animation if already present
+      el.classList.add('seed-landing');
+      setTimeout(() => el.classList.remove('seed-landing'), 600);
+    }
+    await delay(SOW_DELAY);
+  }
+
+  // Apply actual move (captures, forbidden sets, store update)
+  const result = game.makeMove(holeIdx);
+
+  // Capture flash: holes still show seeds visually, ring pulses, then renderBoard clears them
+  if (result.captured_holes.length) {
+    await delay(240);
+    for (const ch of result.captured_holes) {
+      const cel = document.getElementById(`hole-${ch}`);
+      if (cel) {
+        cel.classList.remove('just-captured');
+        void cel.offsetWidth;
+        cel.classList.add('just-captured');
+        setTimeout(() => cel.classList.remove('just-captured'), 1900);
+      }
+    }
+    await delay(1900);
+  }
+
+  return result;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   GAME FLOW
+═══════════════════════════════════════════════════════════════════════════ */
+
+async function handleClick(holeIdx) {
+  if (!game || inputLocked || game.over) return;
+  if (game.current !== 1) return;
+  const valid = game.validMoves(1);
+  if (!valid.includes(holeIdx)) return;
+
+  inputLocked = true;
+  setStatus(t('sowing'));
+
+  const result = await animateSow(holeIdx);
+
+  moveHistory.push({ isP1: true, hole: holeIdx + 1, cap: result.captured });
+
+  renderBoard();
+  renderHistory();
+
+  if (result.gameOver || game.over) {
+    setTimeout(showGameOver, 600);
+    return;
+  }
+
+  if (result.roundEnded) {
+    const n1 = game.p1Owned.length, n2 = game.p2Owned.length;
+    setStatus(t('roundBegins', game.round, n1, n2));
+    setTimeout(continueAfterRound, 900);
+    return;
+  }
+
+  if (result.captured > 0) {
+    setStatus(t('youCaptured', result.captured), result.captured);
+    setExpression('sad');
+  } else {
+    setStatus(t('computerThinking'));
+  }
+
+  setTimeout(triggerAI, 350);
+}
+
+function continueAfterRound() {
+  if (game.over) { showGameOver(); return; }
+  if (game.current === 2) {
+    setStatus(t('computerThinking'));
+    setTimeout(triggerAI, 600);
+  } else {
+    // Check P1 has moves; if not, pass to AI
+    if (game.validMoves(1).length === 0 && !game.over) {
+      setStatus(t('noMovesComputer'));
+      game.current = 2;
+      setTimeout(triggerAI, 700);
+    } else {
+      setStatus(t('yourTurnNewRound'));
+      inputLocked = false;
+      renderBoard();
+    }
+  }
+}
+
+function triggerAI() {
+  if (!game || game.over || game.current !== 2) {
+    inputLocked = false;
+    setStatus(t('yourTurn'));
+    return;
+  }
+
+  setThinking();
+  setExpression('thinking');
+  setTimeout(async () => {
+    const stateBefore = game.clone();
+    let move, wasSlip = false, minimaxScores = null;
+    if (difficulty === 'hard') {
+      const ai = hardMove(game);
+      move = ai.move; wasSlip = ai.slip; minimaxScores = ai.scores;
+    } else if (difficulty === 'medium') {
+      move = mediumMove(game);
+    } else {
+      move = easyMove(game);
+    }
+
+    if (move === null) {
+      setStatus(t('computerPasses'));
+      game.current = 1;
+      inputLocked = false;
+      renderBoard();
+      return;
+    }
+
+    // Show explanation before sowing so player can read it
+    setExplanation(explainAIMove(stateBefore, move, difficulty, wasSlip, minimaxScores));
+
+    setStatus(t('computerSowing'));
+    const result = await animateSow(move);
+
+    moveHistory.push({ isP1: false, hole: move + 1, cap: result.captured });
+
+    renderBoard();
+    renderHistory();
+
+    if (result.gameOver || game.over) {
+      setTimeout(showGameOver, 600);
+      return;
+    }
+
+    if (result.roundEnded) {
+      const n1 = game.p1Owned.length, n2 = game.p2Owned.length;
+      setStatus(t('roundBegins', game.round, n1, n2));
+      setTimeout(continueAfterRound, 900);
+      return;
+    }
+
+    if (result.captured > 0) {
+      setStatus(t('computerCaptured', result.captured));
+      setExpression(result.captured > 3 ? 'excited' : 'happy');
+    } else {
+      setStatus(t('yourTurn'));
+      const adv = game.p2Store - game.p1Store;
+      setExpression(adv >= 10 && Math.random() < 0.45 ? 'taunting' : 'idle');
+    }
+
+    if (game.validMoves(1).length === 0 && !game.over) {
+      setStatus(t('noMovesYou'));
+      game.current = 2;
+      setTimeout(triggerAI, 700);
+    } else {
+      inputLocked = false;
+      renderBoard();
+    }
+  }, difficulty === 'hard' ? 200 : 100);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   HOLE TOOLTIPS
+═══════════════════════════════════════════════════════════════════════════ */
+
+function setupHoleTooltips() {
+  const tip  = document.getElementById('hole-tooltip');
+  const board = document.querySelector('.board');
+
+  board.addEventListener('mouseover', e => {
+    const hole = e.target.closest('.hole');
+    if (!hole || !game) { tip.classList.remove('show'); return; }
+
+    const idx   = parseInt(hole.dataset.idx);
+    const isP1  = idx < 6;
+    const side  = isP1 ? t('tipYourSide') : t('tipComputerSide');
+    const visNum = isP1 ? idx + 1 : 12 - idx;
+    const owned  = isP1 ? game.p1Owned : game.p2Owned;
+    const forb   = isP1 ? game.p1Forbidden : game.p2Forbidden;
+
+    tip.className = 'hole-tooltip';
+    let html = '';
+
+    if (hole.classList.contains('inactive-hole')) {
+      const activeCount = owned.length;
+      html = `<span class="tip-icon">💤</span>
+        <strong>${t('tipInactiveTitle', visNum, side)}</strong><br>
+        ${t('tipInactiveBody', game.round, activeCount)}`;
+      tip.classList.add('tip-inactive');
+
+    } else if (hole.classList.contains('forbidden')) {
+      html = `<span class="tip-icon">🔒</span>
+        <strong>${t('tipForbidTitle', visNum, side)}</strong><br>
+        ${isP1 ? t('tipForbidP1') : t('tipForbidP2')}`;
+      tip.classList.add('tip-forbidden');
+
+    } else {
+      tip.classList.remove('show'); return;
+    }
+
+    tip.innerHTML = html;
+    tip.classList.add('show');
+    positionTip(e);
+  });
+
+  board.addEventListener('mousemove', e => { if (tip.classList.contains('show')) positionTip(e); });
+  board.addEventListener('mouseleave', () => tip.classList.remove('show'));
+}
+
+function positionTip(e) {
+  const tip = document.getElementById('hole-tooltip');
+  const pad = 14;
+  let x = e.clientX + pad, y = e.clientY - 10;
+  // force a reflow so getBoundingClientRect is correct
+  tip.style.left = '0px'; tip.style.top = '0px';
+  const w = tip.offsetWidth, h = tip.offsetHeight;
+  if (x + w > window.innerWidth  - 8) x = e.clientX - w - pad;
+  if (y + h > window.innerHeight - 8) y = e.clientY - h - pad;
+  tip.style.left = Math.max(8, x) + 'px';
+  tip.style.top  = Math.max(8, y) + 'px';
+}
+
+/* ── Boot ── */
+startNewGame();
+initCharacterSystem();
+setupHoleTooltips();
+updateStaticStrings();
+</script>
+</body>
+</html>
