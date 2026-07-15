@@ -10,7 +10,7 @@ const MAX_MOVES = 20;
 const TARGET_SCORE = 100;
 const PLAYERS = ['J', 'L', 'KC', 'CA', 'MB', 'T'];
 const STORAGE_PREFIX = 'ruylopez_trainer_';
-const BADGE_VERSION = 1;
+const BADGE_VERSION = 2;
 
 // Forced opening moves (Ruy Lopez)
 const FORCED_MOVES = {
@@ -21,10 +21,10 @@ const FORCED_MOVES = {
 
 // Badge definitions with extended descriptions
 const BADGES = {
-    // Opening Variation Badges (20)
+    // Opening Variation Badges (22)
     morphy: {
         name: 'Morphy',
-        icon: '🏰',
+        icon: '🎩',
         title: 'Morphy Verdediging',
         description: 'Swart speel 3...a6 - die mees gewilde verdediging in die Ruy Lopez. Dit is vernoem na die Amerikaanse skaakgenie Paul Morphy. Die skuif dwing Wit se loper om te besluit: bly op b5, ruil op c6, of terugtrek na a4. Hierdie buigsaamheid maak dit \'n gunsteling onder spelers van alle vlakke.'
     },
@@ -32,13 +32,13 @@ const BADGES = {
         name: 'Berlin',
         icon: '🐻',
         title: 'Berlin Verdediging',
-        description: 'Swart speel 3...Nf6 - \'n uiters soliede verdediging wat dikwels tot \'n remise-agtige eindspel lei. Dit het beroemd geword toe Vladimir Kramnik dit gebruik het om Garry Kasparov te klop in 2000. Die "Berlin Muur" is berug moeilik om te breek!'
+        description: "Swart speel 3...Nf6 - 'n uiters soliede verdediging wat dikwels tot 'n remise-agtige eindspel lei. Dit het wêreldberoemd geword toe Vladimir Kramnik dit gebruik het om Garry Kasparov se aanvalle af te weer en die wêreldtitel-wedstryd in 2000 te wen. Die Berlin Muur is berug moeilik om te breek!"
     },
     exchange: {
         name: 'Ruil',
         icon: '🤝',
         title: 'Ruil Variasie',
-        description: 'Wit speel Bxc6 en vernietig Swart se pion struktuur deur dubbele pionne te skep. Bobby Fischer het hierdie variasie gereeld gespeel. Die idee is om \'n eenvoudige maar blywende voordeel te kry in die eindspel danksy Swart se swak pionne.'
+        description: "Wit speel dadelik 4.Bxc6 nadat Swart 3...a6 gespeel het - die egte Ruil Variasie! Wit ruil die loper vir die ridder en vernietig Swart se pionstruktuur met dubbele c-pionne. Bobby Fischer het hierdie plan gereeld gebruik. Die idee is om 'n eenvoudige maar blywende voordeel in die eindspel te kry, danksy Swart se swak pionne."
     },
     open: {
         name: 'Oop',
@@ -68,7 +68,7 @@ const BADGES = {
         name: 'Marshall',
         icon: '⚔️',
         title: 'Marshall Aanval',
-        description: 'Swart offer \'n pion met ...d5 vir \'n kragtige aanval op Wit se koning! Frank Marshall het hierdie gambiet 8 jaar lank geheim gehou voordat hy dit in 1918 teen Capablanca gespeel het. Dit is een van die gevaarlikste wapens teen die Ruy Lopez - vol vuur en kombinasies!'
+        description: "Swart offer 'n pion met ...d5 vir 'n kragtige aanval op Wit se koning! Frank Marshall het hierdie gambiet byna 'n dekade lank geheim gehou (so lui die legende!) voordat hy dit in 1918 teen Capablanca gespeel het. Dit is een van die gevaarlikste wapens teen die Ruy Lopez - vol vuur en kombinasies!"
     },
     breyer: {
         name: 'Breyer',
@@ -98,7 +98,7 @@ const BADGES = {
         name: 'Schliemann',
         icon: '🎰',
         title: 'Schliemann Gambiet',
-        description: 'Swart speel 3...f5 - \'n gewaagde gambiet wat onmiddellik Wit se sentrum uitdaag! Dit is vernoem na die Duitse argeoloog Adolf Schliemann (wat ook Troje ontdek het!). Die spel word wild en taktiek-vol. Net vir die dapperes wat van avontuur hou!'
+        description: "Swart speel 3...f5 - 'n gewaagde gambiet wat onmiddellik Wit se sentrum uitdaag! Dit is vernoem na Adolf Schliemann, 'n Duitse prokureur - nie sy bekende naamgenoot Heinrich wat Troje ontdek het nie! Hierdie Schliemann het eerder deur wetsboeke gegrawe as antieke ruïnes. Die spel word wild en taktiek-vol - net vir die dapperes wat van avontuur hou!"
     },
     cozio: {
         name: 'Cozio',
@@ -126,9 +126,9 @@ const BADGES = {
     },
     keres: {
         name: 'Keres',
-        icon: '⭐',
+        icon: '🌊',
         title: 'Keres Lyn',
-        description: 'Swart speel 9...Nd7 of 9...a5 - dinamiese opsies vernoem na Paul Keres van Estland! Keres was een van die sterkste spelers wat nooit Wêreldkampioen geword het nie. Hierdie buigsame stelsels gee Swart verskeie planne afhangende van Wit se reaksie.'
+        description: "Swart speel 9...a5 (die egte Keres-lyn, vernoem na Paul Keres van Estland) of 9...Nd7 (die Karpov-variasie, vernoem na Anatoly Karpov)! Hierdie kenteken vier altwee dinamiese stelsels onder een naam. Keres was een van die sterkste spelers wat nooit Wêreldkampioen geword het nie, terwyl Karpov self wél kampioen was. Buigsame planne, afhangende van Wit se reaksie!"
     },
     averbakh: {
         name: 'Averbakh',
@@ -140,7 +140,7 @@ const BADGES = {
         name: 'Worrall',
         icon: '👸',
         title: 'Worrall Aanval',
-        description: 'Wit speel 6.Qe2 - \'n rustiger benadering waar die dame die e4-pion steun! Dit is vernoem na die Engelse speler Thomas Worrall. Die idee is om vinnig te rokeer en dan \'n langsame aanval te bou. \'n Goeie keuse as jy van strategiese spel hou!'
+        description: "Wit speel 5.Qe2 of 6.Qe2 - 'n rustiger benadering waar die dame die e4-pion steun sonder om eers Re1 te speel! Dit is vernoem na die Engelse speler Thomas Worrall. Die idee is om vinnig te rokeer en dan 'n stadige, geduldige aanval op te bou. 'n Goeie keuse as jy van strategiese spel hou!"
     },
     anti_marshall: {
         name: 'Anti-Marshall',
@@ -152,10 +152,10 @@ const BADGES = {
         name: 'Uitg. Ruil',
         icon: '⏳',
         title: 'Uitgestelde Ruil Variasie',
-        description: 'Wit speel Bxc6 eers ná ...a6 is gespeel! Anders as die gewone Ruil Variasie, wag Wit eers vir Swart se ...a6 voordat die loper geruil word. Dit gee Wit \'n effens ander pion-struktuur en strategiese moontlikhede. Bobby Fischer het hierdie lyn gereeld gebruik!'
+        description: "Wit wag met Bxc6 tot ná 4.Ba4 (of selfs ná ...Nf6 en O-O) voordat die loper op c6 geruil word - later as die vinnige Ruil Variasie! Wit kry steeds Swart se dubbele c-pionne, maar eers nadat ander stukke ontwikkel is. Dit gee 'n effens ander speelplan met dieselfde strategiese idee. Bobby Fischer het ook hierdie stadiger benadering gebruik!"
     },
 
-    // Achievement Badges (13) - Spanish themed with Afrikaans descriptions
+    // Achievement Badges (14) - Spanish themed with Afrikaans descriptions
     queen_capture: {
         name: 'Paella!',
         icon: '🥘',
@@ -214,7 +214,7 @@ const BADGES = {
         name: 'Noah\'s Ark',
         icon: '🚢',
         title: 'Ark Oorleef - ¡Arca de Noé!',
-        description: 'Jy het die beroemde Noah\'s Ark-val vermy en jou loper gered! ¡Muy inteligente! Hierdie ou val probeer Wit se loper vang met ...a6, ...b5, en ...c4. Dit is een van die oudste en bekendste valle in die Ruy Lopez. Deur dit te vermy, wys jy dat jy die opening se gevare ken!'
+        description: "Jy het die beroemde Noah's Ark-val vermy deur jou loper betyds van b3 af weg te beweeg voordat Swart met ...c4 kon toeslaan! ¡Muy inteligente! Hierdie ou val probeer Wit se loper vaskeer met ...a6, ...b5, en ...c4 - as die loper op b3 vasgekeer word, is dit verlore. Dit is een van die oudste en bekendste valle in die Ruy Lopez. Deur betyds weg te beweeg, wys jy dat jy die opening se gevare ken!"
     },
     gajewski: {
         name: 'Fuego!',
@@ -226,7 +226,7 @@ const BADGES = {
         name: 'Flamenco',
         icon: '💃',
         title: 'Dansende Loper - ¡Flamenco!',
-        description: 'Jou ligte loper dans soos \'n flamenco-danser na a5 of a6 met tempo! ¡Qué elegante! Hierdie maneuver is elegant en effektief - die loper bereik \'n aktiewe vierkant terwyl dit \'n bedreiging maak. Soos die pragtige flamenco-dans van Spanje, is hierdie skuif vol grasie en krag!'
+        description: "Jou ligte loper voltooi die volle Spaanse dans: Bb5 → a4 → b3 → c2! ¡Qué elegante! Na drie skuiwe se retreat beland die loper op c2, reg gemik op Swart se koning by h7. Soos 'n flamenco-danser wat drie passe neem voor die groot finale, is hierdie hergroepering vol grasie en verborge krag - dit is die klassieke plan agter baie Ruy Lopez-meesterstukke!"
     },
     carbon: {
         name: 'Carbón',
@@ -284,7 +284,16 @@ let game;
 let board;
 let stockfishEngine = null;
 let stockfishReady = false;
-let stockfishQueue = [];
+let activeCallback = null;  // The single in-flight request's UCI line handler
+let engineBusy = Promise.resolve();  // Promise-chain mutex serialising engine access
+
+// Runs fn (a zero-arg function returning a Promise) once the engine is free,
+// queuing it behind any request already in flight so UCI commands never interleave.
+function withEngine(fn) {
+    const run = engineBusy.then(fn, fn);
+    engineBusy = run.catch(() => {});  // keep the chain alive on failure
+    return run;
+}
 
 // API response cache to reduce duplicate calls
 const apiCache = {
@@ -296,6 +305,7 @@ const CACHE_TTL = 300000; // 5 minutes
 
 let currentPlayer = 'J';
 let currentMoveNumber = 0;
+let gameGeneration = 0;  // Bumped on every Nuwe Spel; stale async callbacks bail when this changes
 let currentScore = 0;
 let highScore = 0;
 let earnedBadges = [];
@@ -516,12 +526,10 @@ function initStockfish() {
                         $('#loading-overlay').addClass('hidden');
                     }
 
-                    // Pass message to all queued callbacks
-                    stockfishQueue.forEach(item => {
-                        if (item.callback) {
-                            item.callback(line);
-                        }
-                    });
+                    // Pass message to whichever request currently owns the engine
+                    if (activeCallback) {
+                        activeCallback(line);
+                    }
                 };
 
                 stockfishEngine.onerror = function(error) {
@@ -548,13 +556,12 @@ function initStockfish() {
 
 // Get analysis from local Stockfish.js
 function getLocalStockfishEval(fen, depth = 10, multipv = 2) {
-    return new Promise((resolve) => {
-        if (!stockfishEngine || !stockfishReady) {
-            console.log('Stockfish engine not available');
-            resolve(null);
-            return;
-        }
+    if (!stockfishEngine || !stockfishReady) {
+        console.log('Stockfish engine not available');
+        return Promise.resolve(null);
+    }
 
+    return withEngine(() => new Promise((resolve) => {
         let results = [];
         let resolved = false;
 
@@ -596,8 +603,7 @@ function getLocalStockfishEval(fen, depth = 10, multipv = 2) {
             // Bestmove signals end of analysis
             if (line.startsWith && line.startsWith('bestmove')) {
                 resolved = true;
-                const idx = stockfishQueue.findIndex(q => q.callback === callback);
-                if (idx >= 0) stockfishQueue.splice(idx, 1);
+                activeCallback = null;
 
                 if (results.length > 0) {
                     results.sort((a, b) => a.multipv - b.multipv);
@@ -608,8 +614,8 @@ function getLocalStockfishEval(fen, depth = 10, multipv = 2) {
             }
         };
 
-        // Add to queue
-        stockfishQueue.push({ callback });
+        // This request now owns the engine
+        activeCallback = callback;
 
         // Send commands
         stockfishEngine.postMessage('ucinewgame');
@@ -621,8 +627,7 @@ function getLocalStockfishEval(fen, depth = 10, multipv = 2) {
         setTimeout(() => {
             if (!resolved) {
                 resolved = true;
-                const idx = stockfishQueue.findIndex(q => q.callback === callback);
-                if (idx >= 0) stockfishQueue.splice(idx, 1);
+                activeCallback = null;
                 stockfishEngine.postMessage('stop');
 
                 if (results.length > 0) {
@@ -633,7 +638,7 @@ function getLocalStockfishEval(fen, depth = 10, multipv = 2) {
                 }
             }
         }, 6000);
-    });
+    }));
 }
 
 function setupEventListeners() {
@@ -737,6 +742,8 @@ function savePlayerData() {
 // ============================================
 
 function startNewGame() {
+    gameGeneration++;
+
     game = new Chess();
     board.position('start');
 
@@ -775,35 +782,6 @@ function startNewGame() {
     apiCache.lichess.clear();
 
     showEducationalMessage();
-}
-
-function onDragStart(source, piece, position, orientation) {
-    if (!isGameActive) return false;
-    if (isReviewMode) return false;
-    if (game.game_over()) return false;
-    if (piece.search(/^b/) !== -1) return false; // Only white pieces
-
-    return true;
-}
-
-function onDrop(source, target) {
-    selectedSquare = null;
-    removeHighlights();
-
-    const move = attemptMove(source, target);
-    if (move === null) {
-        return 'snapback';
-    }
-
-    // Handle the move asynchronously
-    handlePlayerMove(move);
-
-    // Return undefined to let the board update naturally
-    // The board will be synced in onSnapEnd
-}
-
-function onSnapEnd() {
-    board.position(game.fen(), true);  // Animate
 }
 
 function handleSquareClick(event) {
@@ -848,6 +826,7 @@ function attemptMove(source, target) {
 }
 
 async function handlePlayerMove(move) {
+    const gen = gameGeneration;
     currentMoveNumber++;
     const moveNum = currentMoveNumber;
     const positionBefore = positionHistory[positionHistory.length - 1];
@@ -880,12 +859,14 @@ async function handlePlayerMove(move) {
         // Auto play black's response for moves 1-2
         if (FORCED_MOVES[moveNum].black) {
             setTimeout(() => {
+                if (gen !== gameGeneration) return;
                 makeBlackMove(FORCED_MOVES[moveNum].black);
             }, 800);  // Quick response for forced moves
         } else {
             // Move 3 complete - Ruy Lopez reached!
             showMessage('Ruy Lopez bereik! Nou kies jy jou eie skuiwe.');
             setTimeout(() => {
+                if (gen !== gameGeneration) return;
                 makeAIBlackMove();
             }, 1200);  // Brief pause for message
         }
@@ -901,6 +882,7 @@ async function handlePlayerMove(move) {
 
     // Score the move
     const score = await scoreMove(move, positionBefore);
+    if (gen !== gameGeneration) return;  // Nuwe Spel happened during scoring
     currentScore += score;
 
     if (score === 5) perfectMoves++;
@@ -922,11 +904,25 @@ async function handlePlayerMove(move) {
         return;
     }
 
+    // White's move produced stalemate or another draw - game is over, no Black reply to wait for
+    if (game.game_over()) {
+        endGame(getDrawMessage());
+        return;
+    }
+
     // After move 20, Black still gets to respond - checkGameEnd will handle the ending
     // Get black's move after a brief delay
     setTimeout(() => {
+        if (gen !== gameGeneration) return;
         makeAIBlackMove();
     }, 1000);  // 1 second - responsive but not rushed
+}
+
+function getDrawMessage() {
+    if (game.in_stalemate()) return 'Pat! Niemand kan skuif nie - gelykop.';
+    if (game.in_threefold_repetition()) return 'Gelykop - dieselfde posisie drie keer herhaal.';
+    if (game.insufficient_material()) return 'Gelykop - te min stukke oor om mat te gee.';
+    return 'Gelykop deur die 50-skuif-reël.';
 }
 
 // ============================================
@@ -1084,6 +1080,9 @@ async function scoreMove(move, positionBefore) {
     }
 }
 
+// Returns per-move cp from Lichess Cloud Eval (White-POV, see updatePositionEval) or
+// local Stockfish (side-to-move-POV). Callers (scoreMove, showMoveAnalysis, showHint) only
+// ever pass a White-to-move fen, so no perspective flip is needed on the result here either way.
 async function getStockfishEval(fen, multiPv = 4) {
     // Check cache first
     const cacheKey = fen.split(' ').slice(0, 4).join(' ') + '_' + multiPv;
@@ -1270,9 +1269,15 @@ async function getLichessPopularity(fen) {
     }
 
     try {
+        // Explorer genuinely requires auth (verified: a missing header and an empty
+        // "Bearer " header both 401 identically) - but never send a malformed empty
+        // Bearer header regardless, since window.LICHESS_TOKEN can legitimately be unset.
+        const headers = window.LICHESS_TOKEN
+            ? { 'Authorization': 'Bearer ' + window.LICHESS_TOKEN }
+            : {};
         const response = await fetch(
             `https://explorer.lichess.ovh/lichess?variant=standard&speeds=blitz,rapid,classical&ratings=1600,2000,2500&fen=${encodeURIComponent(fen)}`,
-            { headers: { 'Authorization': 'Bearer ' + (window.LICHESS_TOKEN || '') } }
+            { headers }
         );
         if (response.ok) {
             const data = await response.json();
@@ -1300,6 +1305,12 @@ async function updatePositionEval() {
         if (response.ok) {
             const data = await response.json();
             if (data.pvs && data.pvs[0]) {
+                // Lichess Cloud Eval's cp/mate are already White-POV (verified empirically:
+                // a Black-to-move position after 1.e4 e5 2.Nf3, where White is slightly
+                // better, returns a positive cp). Do NOT flip these for Black to move -
+                // that would double-flip and produce a sign that alternates every half-move.
+                // This is the opposite convention from local Stockfish's raw UCI output below,
+                // which is side-to-move-relative and does need the flip.
                 if (data.pvs[0].cp !== undefined) {
                     evalCp = data.pvs[0].cp;
                 } else if (data.pvs[0].mate !== undefined) {
@@ -1307,11 +1318,7 @@ async function updatePositionEval() {
                     evalCp = mateIn > 0 ? 10000 - (mateIn * 10) : -10000 - (mateIn * 10);
                 }
                 if (evalCp !== null) {
-                    // Lichess returns eval from side-to-move perspective, flip if Black to move
-                    if (fen.includes(' b ')) {
-                        evalCp = -evalCp;
-                    }
-                    console.log('Position eval from cloud (adjusted for White):', evalCp);
+                    console.log('Position eval from cloud (White POV):', evalCp);
                 }
             }
         }
@@ -1347,12 +1354,11 @@ async function updatePositionEval() {
 
 // Lighter version of Stockfish eval just for position display
 function getLocalStockfishEvalForDisplay(fen) {
-    return new Promise((resolve) => {
-        if (!stockfishEngine || !stockfishReady) {
-            resolve(null);
-            return;
-        }
+    if (!stockfishEngine || !stockfishReady) {
+        return Promise.resolve(null);
+    }
 
+    return withEngine(() => new Promise((resolve) => {
         let bestCp = null;
         let resolved = false;
 
@@ -1368,7 +1374,7 @@ function getLocalStockfishEvalForDisplay(fen) {
                     const depth = parseInt(depthMatch[1]);
                     if (depth >= 6) {  // Only use results from decent depth
                         bestCp = parseInt(scoreMatch[1]);
-                        // Flip sign if Black to move
+                        // Flip sign if Black to move - UCI score is side-to-move perspective
                         if (fen.includes(' b ')) {
                             bestCp = -bestCp;
                         }
@@ -1384,6 +1390,8 @@ function getLocalStockfishEvalForDisplay(fen) {
                     // Convert mate to large centipawn value (side-to-move perspective)
                     // mateIn > 0: side to move mates; mateIn < 0: side to move is mated
                     bestCp = mateIn > 0 ? 10000 - (mateIn * 10) : -10000 - (mateIn * 10);
+                    // Flip sign if Black to move - UCI score is side-to-move perspective
+                    // (unlike Lichess Cloud Eval below, which is already White-POV)
                     if (fen.includes(' b ')) {
                         bestCp = -bestCp;
                     }
@@ -1393,14 +1401,13 @@ function getLocalStockfishEvalForDisplay(fen) {
             // Bestmove signals end of analysis
             if (line.startsWith && line.startsWith('bestmove')) {
                 resolved = true;
-                const idx = stockfishQueue.findIndex(q => q.callback === callback);
-                if (idx >= 0) stockfishQueue.splice(idx, 1);
+                activeCallback = null;
                 resolve(bestCp);
             }
         };
 
-        // Add to queue
-        stockfishQueue.push({ callback });
+        // This request now owns the engine
+        activeCallback = callback;
 
         // Quick analysis - depth 8 is fast but reasonable
         stockfishEngine.postMessage('ucinewgame');
@@ -1412,13 +1419,12 @@ function getLocalStockfishEvalForDisplay(fen) {
         setTimeout(() => {
             if (!resolved) {
                 resolved = true;
+                activeCallback = null;
                 stockfishEngine.postMessage('stop');
-                const idx = stockfishQueue.findIndex(q => q.callback === callback);
-                if (idx >= 0) stockfishQueue.splice(idx, 1);
                 resolve(bestCp);
             }
         }, 3000);
-    });
+    }));
 }
 
 // ============================================
@@ -1438,17 +1444,22 @@ function makeBlackMove(san) {
 
         // Update eval after Black's move
         updatePositionEval();
+
+        // Re-enable hint button now that it's White's turn again
+        updateUI();
     }
 }
 
 async function makeAIBlackMove() {
     if (!isGameActive || game.game_over()) return;
 
+    const gen = gameGeneration;
     const fen = game.fen();
 
     // Try Lichess explorer first
     try {
         const lichessData = await getLichessPopularity(fen);
+        if (gen !== gameGeneration) return;  // Nuwe Spel happened during the fetch
 
         if (lichessData && lichessData.moves && lichessData.moves.length > 0) {
             // Get top 5 moves by popularity
@@ -1474,6 +1485,7 @@ async function makeAIBlackMove() {
 
                         checkBadges(move, true);
                         updatePositionEval();  // Update eval after Black's move
+                        updateUI();  // Re-enable hint button now that it's White's turn again
                         checkGameEnd();
                         return;
                     }
@@ -1484,8 +1496,11 @@ async function makeAIBlackMove() {
         console.log('Lichess explorer failed for black move:', e);
     }
 
+    if (gen !== gameGeneration) return;  // Nuwe Spel happened during the fetch or its handling
+
     // Fall back to Stockfish
     const stockfishResult = await getStockfishEval(fen, 1);
+    if (gen !== gameGeneration) return;  // Nuwe Spel happened during the fetch
     if (stockfishResult && stockfishResult.moves && stockfishResult.moves.length > 0) {
         const bestMove = stockfishResult.moves[0].move;
 
@@ -1504,6 +1519,7 @@ async function makeAIBlackMove() {
 
             checkBadges(move, true);
             updatePositionEval();  // Update eval after Black's move
+            updateUI();  // Re-enable hint button now that it's White's turn again
             checkGameEnd();
             return;
         }
@@ -1523,6 +1539,7 @@ async function makeAIBlackMove() {
 
             checkBadges(move, true);
             updatePositionEval();  // Update eval after Black's move
+            updateUI();  // Re-enable hint button now that it's White's turn again
             checkGameEnd();
         }
     }
@@ -1530,6 +1547,8 @@ async function makeAIBlackMove() {
 
 function checkGameEnd() {
     if (game.game_over() || currentMoveNumber >= MAX_MOVES) {
+        const gen = gameGeneration;
+
         // Check for checkmate - capture turn synchronously before any async/setTimeout
         let checkmateMessage = null;
         if (game.in_checkmate()) {
@@ -1542,10 +1561,14 @@ function checkGameEnd() {
                 // White is checkmated - Black wins
                 checkmateMessage = 'Skaakmat! Swart het gewen.';
             }
+        } else if (game.game_over()) {
+            // Stalemate or another draw, as opposed to just hitting the move limit
+            checkmateMessage = getDrawMessage();
         }
 
         // Wait 2 seconds after Black's last move before showing modal
         setTimeout(() => {
+            if (gen !== gameGeneration) return;
             endGame(checkmateMessage);
         }, 2000);
     }
@@ -1561,6 +1584,7 @@ function checkBadges(move, isBlackMove = false) {
     const history = game.history();
     const moveNum = Math.ceil(history.length / 2);
     const fen = game.fen();
+    const has = (s) => history.indexOf(s) >= 0;
 
     // Achievement badges (White's moves)
     if (!isBlackMove) {
@@ -1580,13 +1604,13 @@ function checkBadges(move, isBlackMove = false) {
             awardBadge('castled');
         }
 
-        // Exchange Variation (White plays Bxc6 before ...a6 / Morphy) — opening only
-        if (san === 'Bxc6' && !variationState.morphyPlayed && moveNum <= 8) {
+        // Exchange Variation - the textbook 3...a6 4.Bxc6, exactly move 4
+        if (san === 'Bxc6' && variationState.morphyPlayed && moveNum === 4) {
             awardBadge('exchange');
         }
 
-        // Worrall Attack (6.Qe2)
-        if (moveNum === 6 && san === 'Qe2') {
+        // Worrall Attack (5.Qe2 or 6.Qe2 - Qe2 in place of Re1, either move order)
+        if ((moveNum === 5 || moveNum === 6) && san === 'Qe2') {
             awardBadge('worrall');
         }
 
@@ -1595,8 +1619,8 @@ function checkBadges(move, isBlackMove = false) {
             awardBadge('anti_marshall');
         }
 
-        // Delayed Exchange (Bxc6 after ...a6 has been played - Morphy variation) — opening only
-        if (san === 'Bxc6' && variationState.morphyPlayed && moveNum <= 10) {
+        // Delayed Exchange (Bxc6 on moves 5-10, after ...a6 - e.g. 4.Ba4 Nf6 5.Bxc6, or 6.Bxc6 after O-O Be7)
+        if (san === 'Bxc6' && variationState.morphyPlayed && moveNum >= 5 && moveNum <= 10) {
             awardBadge('delayed_exchange');
         }
 
@@ -1608,9 +1632,13 @@ function checkBadges(move, isBlackMove = false) {
             awardBadge('center_control');
         }
 
-        // Cinderella Bishop (Ba4 retreat after ...a6 Morphy — bishop dances away with tempo) — opening only
-        if (san === 'Ba4' && variationState.morphyPlayed && moveNum <= 8) {
-            awardBadge('cinderella');
+        // The Spanish bishop's full retreat dance: Bb5-a4-b3-c2, completed on reaching c2
+        if (san === 'Bc2' && moveNum <= 14) {
+            const ba4Idx = history.indexOf('Ba4');
+            const bb3Idx = history.indexOf('Bb3');
+            if (ba4Idx >= 0 && bb3Idx > ba4Idx) {
+                awardBadge('cinderella');
+            }
         }
     }
 
@@ -1651,49 +1679,58 @@ function checkBadges(move, isBlackMove = false) {
             if (san === 'Na5') awardBadge('chigorin');
             if (san === 'h6') awardBadge('smyslov');
             if (san === 'Be6') awardBadge('kholmov');
+            // Nd7 is the Karpov Variation, a5 is the true Keres - both share this badge slot (see CLAUDE.md)
             if (san === 'Nd7' || san === 'a5') awardBadge('keres');
         }
 
-        // Marshall Attack detection (simplified - after 8...d5) — opening only
+        // Marshall Attack (8...d5 - requires BOTH sides castled kingside and White's c3, exact tokens only)
         if (san === 'd5' && moveNum >= 8 && moveNum <= 10) {
-            // Check for Marshall structure — White must have castled (even index = White's move)
-            const histStr = history.join(' ');
             const castlingIndices = history
                 .map((m, i) => m === 'O-O' ? i : -1)
                 .filter(i => i >= 0);
             const whiteCastled = castlingIndices.some(i => i % 2 === 0);
-            if (whiteCastled && histStr.includes('c3')) {
+            const blackCastled = castlingIndices.some(i => i % 2 === 1);
+            if (whiteCastled && blackCastled && has('c3')) {
                 awardBadge('marshall');
             }
         }
 
-        // Archangel Variation (4...Nf6 5.O-O b5 6.Bb3 Bb7 pattern)
-        // Verify correct move order: Nf6 must come before b5, b5 before Bb7
-        const histArr = history;
-        const nf6Idx = histArr.indexOf('Nf6');
-        const b5Idx = histArr.indexOf('b5');
-        const bb7Idx = histArr.indexOf('Bb7');
-        if (nf6Idx >= 0 && b5Idx > nf6Idx && bb7Idx > b5Idx && moveNum <= 10) {
+        // Archangel Variation (4...Nf6 5.O-O b5 6.Bb3 Bb7 pattern - all three must be Black's moves, in order)
+        const nf6Idx = history.indexOf('Nf6');
+        const b5Idx = history.indexOf('b5');
+        const bb7Idx = history.indexOf('Bb7');
+        if (nf6Idx >= 0 && nf6Idx % 2 === 1 &&
+            b5Idx > nf6Idx && b5Idx % 2 === 1 &&
+            bb7Idx > b5Idx && bb7Idx % 2 === 1 &&
+            moveNum <= 10) {
             awardBadge('archangel');
         }
-    }
 
-    // Noah's Ark Survivor - White retreated to Bb3 before Black's c4 trap closed — opening only
-    if (!isBlackMove && moveNum >= 8 && moveNum <= 12) {
-        const hist = game.history();
-        const b5Idx  = hist.indexOf('b5');
-        const c4Idx  = hist.indexOf('c4');
-        const bb3Idx = hist.indexOf('Bb3');
-        // Award only if: b5 was played, then c4 (trap sprung), but Bb3 had already been played
-        if (b5Idx >= 0 && c4Idx > b5Idx && bb3Idx >= 0 && bb3Idx < c4Idx) {
-            awardBadge('noahs_ark');
+        // Noah's Ark Survivor - White's light-squared bishop escaped b3 before Black's ...c4 trap closes.
+        // Awarded on the move that WOULD spring the trap, only if it doesn't (bishop already stepped aside).
+        if (san === 'c4' && moveNum >= 8 && moveNum <= 12) {
+            const b3Piece = game.get('b3');
+            const bishopOnB3 = b3Piece && b3Piece.type === 'b' && b3Piece.color === 'w';
+            const board = game.board();
+            let whiteLightBishopRemains = false;
+            for (let r = 0; r < 8; r++) {
+                for (let c = 0; c < 8; c++) {
+                    const sq = board[r][c];
+                    if (sq && sq.type === 'b' && sq.color === 'w' && (r + c) % 2 === 0) {
+                        whiteLightBishopRemains = true;
+                    }
+                }
+            }
+            if (!bishopOnB3 && whiteLightBishopRemains) {
+                awardBadge('noahs_ark');
+            }
         }
     }
 
-    // Gajewski Gambit detection — middlegame, capped at move 15
+    // Gajewski Gambit detection — middlegame, capped at move 15, exact tokens, d5 must be Black's
     if (!isBlackMove && moveNum <= 15) {
-        const histStr = history.join(' ');
-        if (histStr.includes('d5') && histStr.includes('exd5') && histStr.includes('Bg4')) {
+        const d5Idx = history.indexOf('d5');
+        if (d5Idx >= 0 && d5Idx % 2 === 1 && has('exd5') && has('Bg4')) {
             awardBadge('gajewski');
         }
     }
@@ -1751,17 +1788,15 @@ function updateUI() {
     $('#progress-bar').css('width', `${progress}%`);
     $('#progress-text').text(`${Math.round(progress)}%`);
 
-    // Check for high score
+    // Pulse the high-score display when the running score is on pace to beat it, but don't
+    // commit or persist it mid-game - a high score is only earned by finishing (see endGame)
     if (currentScore > highScore) {
-        highScore = currentScore;
-        $('#high-score').text(highScore);
         $('#high-score').addClass('high-score-pulse');
         setTimeout(() => $('#high-score').removeClass('high-score-pulse'), 500);
-        savePlayerData();
     }
 
-    // Enable hint button after forced moves
-    $('#hint-btn').prop('disabled', !canUseHint());
+    // Enable hint button after forced moves - only on White's turn, never during Black's reply window
+    $('#hint-btn').prop('disabled', !(canUseHint() && game.turn() === 'w'));
 }
 
 function addMoveToHistory(moveNum, san, score, isForced) {
@@ -1799,7 +1834,7 @@ function showMessage(text) {
     $('#move-suggestions').html(`<p class="waiting-message">${text}</p>`);
 }
 
-function showScorePopup(score, isForced = false) {
+function showScorePopup(score) {
     const popup = $('#score-popup');
     const textEl = $('#score-popup-text');
 
@@ -1812,16 +1847,8 @@ function showScorePopup(score, isForced = false) {
         1: "Jy is rof! (+1)"
     };
 
-    const forcedMessage = "Ruy Lopez! (+5)";
-
-    // Set text and class
-    if (isForced) {
-        textEl.text(forcedMessage);
-        popup.removeClass('score-1 score-2 score-3 score-4 score-5').addClass('score-forced');
-    } else {
-        textEl.text(scoreMessages[score] || `+${score}`);
-        popup.removeClass('score-1 score-2 score-3 score-4 score-5 score-forced').addClass(`score-${score}`);
-    }
+    textEl.text(scoreMessages[score] || `+${score}`);
+    popup.removeClass('score-1 score-2 score-3 score-4 score-5 score-forced').addClass(`score-${score}`);
 
     // Show popup using requestAnimationFrame for smoother rendering
     requestAnimationFrame(() => {
@@ -1854,13 +1881,13 @@ function getHintLimit() {
 
 function canUseHint() {
     const hintLimit = getHintLimit();
-    return isGameActive && currentMoveNumber >= 3 && currentMoveNumber <= hintLimit;
+    return isGameActive && currentMoveNumber >= 3 && currentMoveNumber < hintLimit;
 }
 
 async function showHint() {
-    if (!canUseHint()) {
+    if (!canUseHint() || game.turn() !== 'w') {
         const hintLimit = getHintLimit();
-        if (currentMoveNumber > hintLimit) {
+        if (currentMoveNumber >= hintLimit) {
             showMessage(`Wenke is nie beskikbaar na skuif ${hintLimit} nie. Jy moet self dink!`);
         }
         return;
@@ -1942,13 +1969,13 @@ async function showHint() {
         setTimeout(() => {
             removeBestMoveHighlights();
             hideHintMessage();
-            $('#hint-btn').prop('disabled', !canUseHint());
+            $('#hint-btn').prop('disabled', !(canUseHint() && game.turn() === 'w'));
         }, 3000);
 
     } catch (e) {
         console.error('Hint error:', e);
         showMessage('Kon nie wenke kry nie');
-        $('#hint-btn').prop('disabled', !canUseHint());
+        $('#hint-btn').prop('disabled', !(canUseHint() && game.turn() === 'w'));
     }
 }
 
@@ -1998,6 +2025,13 @@ function hideHintMessage() {
 function endGame(checkmateMessage = null) {
     isGameActive = false;
 
+    // A high score is only earned by finishing the game - commit it here, not mid-game
+    const previousHigh = highScore;
+    if (currentScore > previousHigh) {
+        highScore = currentScore;
+        $('#high-score').text(highScore);
+    }
+
     // Check for perfect game badge
     if (currentScore >= 100) {
         awardBadge('perfect_game');
@@ -2027,10 +2061,10 @@ function endGame(checkmateMessage = null) {
     incrementGamesPlayed();
 
     savePlayerData();
-    showGameOverModal(checkmateMessage);
+    showGameOverModal(checkmateMessage, previousHigh);
 }
 
-function showGameOverModal(checkmateMessage = null) {
+function showGameOverModal(checkmateMessage = null, previousHigh = highScore) {
     // Update modal title based on checkmate
     if (checkmateMessage) {
         $('#modal-title').text(checkmateMessage);
@@ -2041,8 +2075,9 @@ function showGameOverModal(checkmateMessage = null) {
     // Show score prominently
     $('#final-score').text(currentScore);
 
-    // High score message
-    if (currentScore >= highScore && currentScore > 0) {
+    // High score message - strictly greater than the score that stood before this game,
+    // so tying your existing high score doesn't falsely claim a new record
+    if (currentScore > previousHigh) {
         $('#high-score-message').removeClass('hidden');
     } else {
         $('#high-score-message').addClass('hidden');
