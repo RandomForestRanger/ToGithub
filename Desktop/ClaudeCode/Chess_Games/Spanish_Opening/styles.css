@@ -7,8 +7,8 @@
 }
 
 :root {
-    --spanish-red: #c60b1e;
-    --spanish-yellow: #ffc400;
+    --spanish-red: #a02224;
+    --spanish-yellow: #e9b23a;
     --spanish-dark-red: #8b0000;
     --spanish-gold: #daa520;
     --spanish-orange: #ff6b35;
@@ -19,7 +19,7 @@
 body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     font-size: 18px;  /* Larger base font for young readers */
-    background: linear-gradient(135deg, var(--spanish-dark-red) 0%, #4a0d0d 50%, #2d0a0a 100%);
+    background: linear-gradient(135deg, var(--spanish-dark-red) 0%, #6b2d24 50%, #4a241c 100%);
     min-height: 100vh;
     color: var(--cream);
 }
@@ -40,13 +40,13 @@ body {
     border-radius: 15px;
     padding: 20px;
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
-    border: 1px solid rgba(255, 196, 0, 0.15);
+    border: 1px solid rgba(233, 178, 58, 0.15);
 }
 
 /* Center panel keeps Spanish colors */
 .center-panel {
-    background: linear-gradient(135deg, rgba(198, 11, 30, 0.2) 0%, rgba(255, 196, 0, 0.12) 100%);
-    border: 1px solid rgba(255, 196, 0, 0.25);
+    background: linear-gradient(135deg, rgba(160, 34, 36, 0.2) 0%, rgba(233, 178, 58, 0.12) 100%);
+    border: 1px solid rgba(233, 178, 58, 0.25);
 }
 
 /* Left Panel - Badges */
@@ -85,7 +85,7 @@ body {
 
 .badge:hover {
     transform: scale(1.05);
-    background: rgba(255, 196, 0, 0.2);
+    background: rgba(233, 178, 58, 0.2);
     border-color: var(--spanish-yellow);
 }
 
@@ -98,9 +98,9 @@ body {
     opacity: 1;
     filter: none;
     border-color: var(--spanish-yellow);
-    background: linear-gradient(135deg, rgba(198, 11, 30, 0.3), rgba(255, 196, 0, 0.3));
+    background: linear-gradient(135deg, rgba(160, 34, 36, 0.3), rgba(233, 178, 58, 0.3));
     animation: badgeUnlock 0.6s ease;
-    box-shadow: 0 0 10px rgba(255, 196, 0, 0.4);
+    box-shadow: 0 0 10px rgba(233, 178, 58, 0.4);
 }
 
 @keyframes badgeUnlock {
@@ -132,7 +132,7 @@ body {
     min-height: 220px;
     max-height: 280px;
     overflow-y: auto;
-    border: 1px solid rgba(255, 196, 0, 0.3);
+    border: 1px solid rgba(233, 178, 58, 0.3);
 }
 
 .badge-tooltip::-webkit-scrollbar {
@@ -187,7 +187,7 @@ body {
     padding: 8px 15px;
     border-radius: 8px;
     border: 2px solid var(--spanish-yellow);
-    background: rgba(198, 11, 30, 0.3);
+    background: rgba(160, 34, 36, 0.3);
     color: var(--cream);
     font-size: 1rem;
     cursor: pointer;
@@ -213,10 +213,10 @@ body {
     flex-direction: column;
     align-items: center;
     padding: 10px 15px;
-    background: linear-gradient(135deg, rgba(198, 11, 30, 0.2), rgba(255, 196, 0, 0.15));
+    background: linear-gradient(135deg, rgba(160, 34, 36, 0.2), rgba(233, 178, 58, 0.15));
     border-radius: 10px;
     min-width: 80px;
-    border: 1px solid rgba(255, 196, 0, 0.3);
+    border: 1px solid rgba(233, 178, 58, 0.3);
 }
 
 .stat-label {
@@ -258,7 +258,7 @@ body {
     border-radius: 10px;
     transition: width 0.5s ease;
     width: 0%;
-    box-shadow: 0 0 10px rgba(255, 196, 0, 0.5);
+    box-shadow: 0 0 10px rgba(233, 178, 58, 0.5);
 }
 
 .progress-text {
@@ -379,19 +379,19 @@ body {
 
 .btn-primary:hover {
     transform: translateY(-2px);
-    box-shadow: 0 5px 20px rgba(198, 11, 30, 0.6);
+    box-shadow: 0 5px 20px rgba(160, 34, 36, 0.6);
     background: linear-gradient(135deg, var(--spanish-yellow), var(--spanish-gold));
     color: var(--spanish-dark-red);
 }
 
 .btn-secondary {
-    background: rgba(255, 196, 0, 0.2);
+    background: rgba(233, 178, 58, 0.2);
     color: var(--spanish-yellow);
-    border: 2px solid rgba(255, 196, 0, 0.5);
+    border: 2px solid rgba(233, 178, 58, 0.5);
 }
 
 .btn-secondary:hover:not(:disabled) {
-    background: rgba(255, 196, 0, 0.4);
+    background: rgba(233, 178, 58, 0.4);
     border-color: var(--spanish-yellow);
 }
 
@@ -407,7 +407,7 @@ body {
 
 /* Educational Message */
 .educational-message {
-    background: linear-gradient(90deg, rgba(198, 11, 30, 0.3), rgba(255, 196, 0, 0.2));
+    background: linear-gradient(90deg, rgba(160, 34, 36, 0.3), rgba(233, 178, 58, 0.2));
     border-left: 4px solid var(--spanish-yellow);
     padding: 12px 15px;
     border-radius: 0 8px 8px 0;
@@ -444,7 +444,7 @@ body {
     background: linear-gradient(135deg, rgba(40, 40, 45, 0.8), rgba(25, 25, 30, 0.9));
     border-radius: 10px;
     padding: 15px;
-    border: 1px solid rgba(255, 196, 0, 0.15);
+    border: 1px solid rgba(233, 178, 58, 0.15);
 }
 
 .move-suggestions {
@@ -544,10 +544,10 @@ body {
 }
 
 .your-move-analysis-section {
-    background: rgba(198, 11, 30, 0.2);
+    background: rgba(160, 34, 36, 0.2);
     padding: 10px;
     border-radius: 8px;
-    border: 1px solid rgba(255, 196, 0, 0.3);
+    border: 1px solid rgba(233, 178, 58, 0.3);
     margin-top: 10px;
 }
 
@@ -667,7 +667,7 @@ body {
     background: linear-gradient(135deg, rgba(40, 40, 45, 0.8), rgba(25, 25, 30, 0.9));
     border-radius: 10px;
     padding: 15px;
-    border: 1px solid rgba(255, 196, 0, 0.2);
+    border: 1px solid rgba(233, 178, 58, 0.2);
 }
 
 .review-controls {
@@ -743,7 +743,7 @@ body {
     color: var(--spanish-yellow);
     font-weight: bold;
     animation: pulse 0.5s ease infinite alternate;
-    text-shadow: 0 0 10px rgba(255, 196, 0, 0.8);
+    text-shadow: 0 0 10px rgba(233, 178, 58, 0.8);
 }
 
 @keyframes pulse {
@@ -769,11 +769,11 @@ body {
     flex-direction: column;
     align-items: center;
     padding: 10px;
-    background: linear-gradient(135deg, rgba(198, 11, 30, 0.4), rgba(255, 196, 0, 0.3));
+    background: linear-gradient(135deg, rgba(160, 34, 36, 0.4), rgba(233, 178, 58, 0.3));
     border: 2px solid var(--spanish-yellow);
     border-radius: 10px;
     min-width: 70px;
-    box-shadow: 0 0 15px rgba(255, 196, 0, 0.3);
+    box-shadow: 0 0 15px rgba(233, 178, 58, 0.3);
 }
 
 .earned-badge .badge-icon {
@@ -824,7 +824,7 @@ body {
     padding: 15px 25px;
     background: linear-gradient(135deg, var(--spanish-red), var(--spanish-yellow), var(--spanish-red));
     border-radius: 50px;
-    box-shadow: 0 10px 30px rgba(198, 11, 30, 0.5);
+    box-shadow: 0 10px 30px rgba(160, 34, 36, 0.5);
     border: 2px solid var(--spanish-yellow);
 }
 
@@ -860,7 +860,7 @@ body {
 .spinner {
     width: 60px;
     height: 60px;
-    border: 5px solid rgba(255, 196, 0, 0.2);
+    border: 5px solid rgba(233, 178, 58, 0.2);
     border-top-color: var(--spanish-yellow);
     border-right-color: var(--spanish-red);
     border-radius: 50%;
