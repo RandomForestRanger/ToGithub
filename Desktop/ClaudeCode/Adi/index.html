@@ -410,14 +410,14 @@ header p {
 }
 /* Forbidden marker */
 .hole.forbidden::after {
-  content: '✕';
+  content: '🍁';
   position: absolute;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  font-size: 0.8rem;
-  color: rgba(239,68,68,0.5);
+  font-size: 1.4rem;
   pointer-events: none;
+  opacity: 0.75;
 }
 
 /* ── Store (Kalah) ─────────────────────────────────────────────────────────── */
@@ -1212,11 +1212,11 @@ let currentCharId = 'kofi';
 const QUOTES = {
   kofi: {
     en: { idle:"Let's play! 🎮", thinking:"Hmm… let me think…", happy:"Got you! 😄", excited:"CHAIN CAPTURE! 🎉", sad:"Nice move! 😅", taunting:"You can't stop me! 😏" },
-    af: { idle:"Kom ons speel! 🎮", thinking:"Hmm… laat my dink…", happy:"Het jou! 😄", excited:"KETTINGVANGS! 🎉", sad:"Goeie beweeg! 😅", taunting:"Jy kan my nie stop nie! 😏" }
+    af: { idle:"Kom ons speel! 🎮", thinking:"Hmm… laat my dink…", happy:"Het jou! 😄", excited:"KETTINGVANGS! 🎉", sad:"Goeie beweging! 😅", taunting:"Jy kan my nie stop nie! 😏" }
   },
   nefertari: {
     en: { idle:"Your move, mortal.", thinking:"Calculating…", happy:"As predicted. ✨", excited:"Magnificent! 🌟", sad:"Cleverly done.", taunting:"Bow before my wisdom." },
-    af: { idle:"Jou beweeg, sterfling.", thinking:"Bereken…", happy:"Soos voorspel. ✨", excited:"Pragtig! 🌟", sad:"Knap gedoen.", taunting:"Buig voor my wysheid." }
+    af: { idle:"Jou skuif, o mens.", thinking:"Bereken…", happy:"Soos voorspel. ✨", excited:"Pragtig! 🌟", sad:"Knap gedoen.", taunting:"Buig voor my wysheid." }
   },
   melissa: {
     en: { idle:"Your move! 😊", thinking:"Let me see…", happy:"Yes! Got you! 😄", excited:"DOUBLE CAPTURE! ✨", sad:"Oh, well played! 🙂", taunting:"Too easy! 😏" },
@@ -1224,7 +1224,7 @@ const QUOTES = {
   },
   professor: {
     en: { idle:"Observe carefully.", thinking:"Fascinating…", happy:"Textbook play. ✓", excited:"Exceptional! 📚", sad:"Well played, student.", taunting:"I've seen better from my students." },
-    af: { idle:"Kyk mooi.", thinking:"Fassineerend…", happy:"Handboekspel. ✓", excited:"Uitstekend! 📚", sad:"Goed gespeel, student.", taunting:"Ek het al beter van my studente gesien." }
+    af: { idle:"Kyk mooi.", thinking:"Fassineerend…", happy:"Handboekspel! ✓", excited:"Uitstekend! 📚", sad:"Goed gespeel, student.", taunting:"My studente kan beter doen." }
   }
 };
 
@@ -1639,41 +1639,41 @@ const STRINGS = {
     headerSubtitle: "'n Tweery mancalaspel van die Ewe-volk van Togo &amp; Ghana",
     btnNewGame: '▶ Nuwe Spel',
     btnPlayAgain: 'Speel Weer',
-    labelYourStore: 'Jou Skatkis',
+    labelYourStore: 'Jou Stoorplek',
     labelRound: 'Rondte',
-    labelComputerStore: 'Rekenaar Skatkis',
-    labelComputer: 'Rekenaar',
+    labelComputerStore: 'Speelmaat se Stoorplek',
+    labelComputer: 'Speelmaat',
     labelYou: 'Jy',
     labelMoveHistory: 'Bewegingslys',
-    labelReasoning: 'Rekenaar se Redenasie',
-    explainIdle: "Die rekenaar se verduideliking verskyn hier nadat dit 'n beweeg gekies het.",
+    labelReasoning: 'Jou speelmaat se redenasie',
+    explainIdle: "Die verduideliking verskyn hier nadat dit 'n beweeg gekies het.",
     statusStart: 'Druk Nuwe Spel om te begin',
     easy: 'Maklik', medium: 'Gemiddeld', hard: 'Moeilik',
-    youWin: 'Jy Wen!', computerWins: 'Rekenaar Wen!',
-    finalScore: (p1, p2, r) => `Finale telling — <strong>Jy: ${p1}</strong> | <strong>Rekenaar: ${p2}</strong><br><span style="color:#888;font-size:0.85rem">Rondte ${r}</span>`,
+    youWin: 'Jy Wen!', computerWins: 'Jou speelmaat wen!',
+    finalScore: (p1, p2, r) => `Finale telling — <strong>Jy: ${p1}</strong> | <strong>Speelmaat: ${p2}</strong><br><span style="color:#888;font-size:0.85rem">Rondte ${r}</span>`,
     yourTurn: "Jou beurt — klik 'n holte om te saai",
     sowing: 'Besig om te saai…',
-    computerThinking: 'Die rekenaar dink…',
-    computerThinkingDots: 'Rekenaar dink',
+    computerThinking: 'Jou speelmaat dink…',
+    computerThinkingDots: 'Speelmaat dink',
     roundBegins: (r, n1, n2) => `Rondte ${r} begin — ${n1} teen ${n2} holtes`,
-    youCaptured: (n) => `Jy het ${n} klipp${n===1?'ie':'ies'} gevang! Rekenaar se beurt…`,
+    youCaptured: (n) => `Jy het ${n} klipp${n===1?'ie':'ies'} gevang! My beurt…`,
     capturedBadge: (n) => `+${n} klipp${n===1?'ie':'ies'} gevang!`,
-    computerSowing: 'Rekenaar saai tans…',
-    computerPasses: 'Rekenaar sê pas — jou beurt',
-    noMovesComputer: 'Geen bewegings beskikbaar — rekenaar gaan…',
+    computerSowing: 'Speelmaat saai tans…',
+    computerPasses: 'Speelmaat sê "ek kan nie speel nie" — so dit is jou beurt',
+    noMovesComputer: 'Geen bewegings beskikbaar — jou speelmaat moet speel…',
     yourTurnNewRound: 'Jou beurt — nuwe rondte begin',
-    computerCaptured: (n) => `Rekenaar het ${n} klipp${n===1?'ie':'ies'} gevang — jou beurt`,
-    noMovesYou: 'Geen bewegings vir jou — rekenaar gaan weer…',
-    histP1: (h, c) => `S1: saai holte ${h}${c ? ` (+${c})` : ''}`,
-    histCPU: (h, c) => `REK: saai holte ${h}${c ? ` (+${c})` : ''}`,
+    computerCaptured: (n) => `Speelmaat het ${n} klipp${n===1?'ie':'ies'} gevang — jou beurt`,
+    noMovesYou: 'Geen bewegings vir jou — jou speelmaat gaan weer…',
+    histP1: (h, c) => `Jy: saai holte ${h}${c ? ` (+${c})` : ''}`,
+    histCPU: (h, c) => `Maat: saai holte ${h}${c ? ` (+${c})` : ''}`,
     tipYourSide: 'jou', tipComputerSide: 'die rekenaar se',
     tipInactiveTitle: (v, s) => `Holte ${v} (${s} kant) — nie in spel nie`,
     tipInactiveBody: (r, c) => `In rondte ${r} is slegs <strong>${c} holte${c!==1?'s':''}</strong> per kant aktief. Wanneer 'n rondte eindig, vul die speler met minder klippies minder holtes, sodat die bord kleiner word. Klippies hier is aan die begin van die rondte na die skatkis gevee.`,
     tipForbidTitle: (v, s) => `Holte ${v} (${s} kant) — gesluit hierdie beurt`,
     tipForbidP1: "Jy het sopas hieruit gesaai. Adi se dieselfdeholte-reël verhoed spelers om dieselfde holte herhaaldelik te gebruik. Dit ontsluit sodra die rekenaar 'n klippie daarin saai.",
-    tipForbidP2: "Die rekenaar het sopas hieruit gesaai. Die dieselfdeholte-reël geld vir beide kante — dit ontsluit sodra jy 'n klippie daarin saai.",
+    tipForbidP2: "Die rekenaar het sopas hieruit gesaai. Die dieselfde holte-reël geld vir beide kante — dit ontsluit sodra jy 'n klippie daarin saai.",
     holeLabel: (n) => `holte ${n}`,
-    noMovesAI: '<p class="explain-idle">Geen bewegings beskikbaar — die rekenaar sê pas.</p>',
+    noMovesAI: '<p class="explain-idle">Geen bewegings beskikbaar — jou speelmaat moet oorgeslaan word.</p>',
     moveDataUnavail: '<p class="explain-idle">Bewegingsdata nie beskikbaar nie.</p>',
     modeEasy: 'Maklike Modus', modeMedium: 'Gemiddelde Modus',
     modeHard: 'Moeilike Modus — Minimax', modeSlip: 'Moeilike Modus — Toevallige Glip',
@@ -1695,26 +1695,26 @@ const STRINGS = {
     factDensity: (mine, yours) => `Geen vangs moontlik — dit laat die rekenaar met ${mine} klipp${mine===1?'ie':'ies'} in sy ry (jy: ${yours}), wat opbou vir toekomstige vangste.`,
     factBestPos: (n, hn) => `Minimax het al ${n} bewegings 4 vlakke diep geëvalueer en gevind dat ${hn} die beste langtermynposisie bied.`,
     guideAbout: `<h3>Oor Adi</h3>
-      <p>Adi word op 'n fyn gesnyde houtbord gespeel. Vang klippies van jou teenstander om jou skatkis oor meerdere rondtes te vergroot — totdat een speler nie meer 'n ry kan vul nie.</p>`,
+      <p>Adi word op 'n mooi gesnyde houtbord gespeel. Die doel is om klippies van jou teenstander te vang, en jou stoorplek oor die verloop van rondtes te vergroot. Die spel eindig as een speler nie meer 'n ry kan vul nie.</p>`,
     guideHowToPlay: `<h3>Hoe om te Speel</h3>
       <ul>
-        <li>Jy is <span class="highlight">Speler 1 (onder)</span>. Die rekenaar speel die bo-ry.</li>
-        <li>Klik enige holte in jou ry met klippies om <span class="highlight">teen die kloksgewys te saai</span> — klippies versprei regs langs jou ry, dan links langs die bo-ry.</li>
-        <li>Jy mag <strong>nie</strong> twee keer agtereenvolgens vanuit dieselfde holte saai nie — totdat die teenstander daarin saai.</li>
+        <li>Jy is <span class="highlight">Speler 1 (onder)</span>. Die speelmaat speel in die boonste ry.</li>
+        <li>Kliek enige holte in jou ry met klippies om <span class="highlight">anti-kloksgewys te saai</span>. Jy saai in beide jou en jou speelmaat se holtes.</li>
+        <li>As jy by een holte opgetel het om te speel, mag jy <strong>nie</strong> weer vanuit daardie holte saai, totdat die teenstander daarin saai, nie.</li>
         <li>Holtes wat jy nie kan gebruik nie, toon <span style="color:#ef4444">✕</span>.</li>
       </ul>`,
     guideCaptures: `<h3>Vangs</h3>
-      <div class="rule-block">As jou laaste klippie in 'n holte van die teenstander land en die telling op presies <span class="highlight">3</span> bring → vang al 3!</div>
-      <div class="rule-block"><strong>Kettingvangs:</strong> As die holte net voor die gevangde holte <em>ook</em> presies 3 het, vang dié ook — hou aan agterwaarts!</div>`,
+      <div class="rule-block">As jou laaste klippie in 'n holte van die teenstander land en die telling op presies <span class="highlight">3</span> bring → dan kry jy daardie klippies!</div>
+      <div class="rule-block"><strong>Kettingvangs:</strong> As die holte net voor die gevangde holte <em>ook</em> presies 3 het, vang dié ook.</div>`,
     guideEndOfRound: `<h3>Einde van Rondte</h3>
       <p>Wanneer <strong>geen vangste meer moontlik</strong> is vir enige speler nie, eindig die rondte:</p>
       <ul style="margin-top:6px">
-        <li>Oorblywende klippies aan elke kant gaan na dié speler se skatkis.</li>
+        <li>Al die oorblywende klippies aan elke kant gaan na dié speler se skatkis.</li>
         <li>Die speler met <em>minder</em> klippies vul holtes van regs na links met 4 elk.</li>
         <li>Die teenstander vul <em>dieselfde getal</em> teenoorgestelde holtes.</li>
       </ul>`,
     guideWinning: `<h3>Wen</h3>
-      <p>Die spel eindig wanneer 'n speler <strong>nie eens een holte kan vul nie</strong> (minder as 4 klippies oor). Die teenstander wen!</p>`,
+      <p>Die spel eindig wanneer 'n speler <strong>nie een enkele holte kan vul nie</strong> (dus, een speler het minder as 4 klippies oor). Die teenstander wen!</p>`,
     guideChooseOpponent: 'Kies Teenstander',
   }
 };

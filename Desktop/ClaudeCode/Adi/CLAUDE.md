@@ -92,6 +92,20 @@ Factors explained:
 
 ---
 
+## Language / i18n
+
+The game is fully bilingual (English / Afrikaans). Language is toggled with the **AF / EN** button in the header.
+
+- `lang` — module-level variable, `'en'` or `'af'`
+- `STRINGS` — object with `en:` and `af:` sub-objects. All user-visible text lives here. Use `t('key', ...args)` to look up a string; it falls back to `en` if an `af` key is missing.
+- `toggleLanguage()` — flips `lang`, updates the button label, calls `updateStaticStrings()`.
+- `updateStaticStrings()` — re-renders all static DOM text and guide-section HTML. Also re-renders move history (labels differ per language) and character titles.
+- `QUOTES` — character speech bubbles, keyed `{ en: {...}, af: {...} }` per character and expression.
+- **Terminology**: seeds = *klippies*, holes = *holtes*, store = *stoorplek*, computer/AI = *speelmaat*, sow = *saai*, capture = *vangs*, round = *rondte*.
+- A `translations_review.md` file in the project root lists every string for proofreading.
+
+---
+
 ## Hole Tooltips
 
 `setupHoleTooltips()` uses event delegation on `.board` — call once at startup, not per game.
@@ -107,7 +121,7 @@ Tooltip text is generated dynamically from `game` state:
 | Class | Meaning | Visual |
 |-------|---------|--------|
 | `.clickable` | Valid P1 move (human's turn) | Pointer cursor, orange glow on hover |
-| `.forbidden` | Just sowed from here | 45% opacity + ✕ marker |
+| `.forbidden` | Just sowed from here | 45% opacity + 🍁 autumn leaf marker |
 | `.inactive-hole` | Not in play this round | 25% opacity, no pointer events |
 | `.sowing-source` | Seeds being picked up | Yellow ring, scale 0.93 |
 | `.seed-landing` | Seed just landed | Blue ring flash, 0.6 s animation |
