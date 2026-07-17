@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="af">
+<head>
+<meta charset="UTF-8">
+<title>Orakel-selftoets — Sneeuluiperd se Kruin (Kaart 1)</title>
+<!--
+  Kaart 1-verslag (2026-07-17): 10/10 selftoetse geslaag in Chromium (Playwright),
+  bedien via python3 -m http.server. Bou-tyd ~7.1s (rigsnoer ≤5s, harde plafon 15s,
+  BEIDE gehaal); kas-laaityd ~89ms (harde hek <1s, gehaal). Maks-DTM = 66 plies =
+  presies 33 skuiwe (globale invariant). Lokale konsekwentheid: 0 mislukkings oor
+  22 009 888 wenposisies (uitputtend). chess.js-skeidsregter: 0 wanverskille oor
+  25 000 posisies (20k in Node + 5k in-blaaier). Volledige verslag: sien
+  gespreksgeskiedenis / oorgawe-nota vir Kaart 2.
+-->
+<style>
+  body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-size: 16px;
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+    color: #e8e8e8;
+    margin: 0;
+    padding: 24px;
+  }
+  h1 { color: #f39c12; font-size: 22px; }
+  h2 { color: #f39c12; font-size: 17px; margin-top: 28px; }
+  #status, #results {
+    background: rgba(255,255,255,0.08);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 12px;
+    padding: 16px 20px;
+    margin-bottom: 16px;
+  }
+  progress { width: 100%; height: 18px; }
+  .reël { font-family: 'Consolas','Monaco',monospace; font-size: 14px; padding: 3px 0; }
+  .geslaag { color: #2ecc71; }
+  .faal { color: #e74c3c; font-weight: bold; }
+  .metrieke { color: #aaa; font-size: 13px; }
+  #opsomming { font-size: 18px; margin-top: 20px; }
+</style>
+</head>
+<body>
+  <h1>Orakel-selftoets — KLR v K (Kaart 1)</h1>
+  <p class="metrieke">Bedien via HTTP vereis (nie file://) — CORS/Web Worker/IndexedDB werk nie andersins nie.</p>
+
+  <div id="status">
+    <div id="statusText">Begin...</div>
+    <progress id="progressBar" value="0" max="1"></progress>
+  </div>
+
+  <div id="results" style="display:none">
+    <h2>Selftoets-battery</h2>
+    <div id="toetsUitslae"></div>
+    <div id="opsomming"></div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js"></script>
+  <script src="orakel-core.js"></script>
+  <script src="orakel.js"></script>
+  <script src="toets.js"></script>
+</body>
+</html>
