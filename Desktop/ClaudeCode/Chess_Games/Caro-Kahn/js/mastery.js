@@ -77,28 +77,45 @@ const KKMastery = (function () {
   // Evaluate end-of-game mastery per CLAUDE.md §7.
   // result: { pathId, reachedEndOrWon, won, allTheoryCorrect, hintEscalations,
   //           emeraldsTotal, hadBlunder, finalEvalForBlack, diamondsTotal, theoryMovesFound }
+  //
+  // Tiers are gates, not a single best-of-game score: no matter how well a
+  // game goes, it can award at most ONE rung above whatever's already been
+  // reached for this path. A flawless first game on a fresh biome earns
+  // Redstone, not Goud — Koper only becomes reachable on the next game, and
+  // so on up the ladder. A game that doesn't even clear the next rung's own
+  // bar still earns nothing (or repeats the current tier, which upgradeTier
+  // then no-ops on, same as before).
   function evaluateGameResult(state, result) {
     if (!result.reachedEndOrWon) return null;
-    let achieved = TIER.GEEN;
+    let naturalTier = TIER.GEEN;
 
     if (result.emeraldsTotal >= 10) {
-      achieved = TIER.REDSTONE;
+      naturalTier = TIER.REDSTONE;
     }
     if (result.theoryMovesFound >= 5) {
-      achieved = TIER.KOPER;
+      naturalTier = TIER.KOPER;
     }
     if (result.allTheoryCorrect && result.hintEscalations <= 2) {
-      achieved = TIER.BRONS;
+      naturalTier = TIER.BRONS;
     }
     const silwerEmeralds = result.emeraldsTotal + result.diamondsTotal * SCORE.ENGINE_BEST;
     if (silwerEmeralds >= 12 && !result.hadBlunder) {
-      if (TIER_ORDER.indexOf(TIER.SILWER) > TIER_ORDER.indexOf(achieved)) achieved = TIER.SILWER;
+      if (TIER_ORDER.indexOf(TIER.SILWER) > TIER_ORDER.indexOf(naturalTier)) naturalTier = TIER.SILWER;
     }
     if (result.won || (result.finalEvalForBlack >= 150 && result.diamondsTotal >= 2)) {
-      achieved = TIER.GOUD;
+      naturalTier = TIER.GOUD;
     }
 
-    if (achieved !== TIER.GEEN) upgradeTier(state, result.pathId, achieved);
+    const currentIdx = TIER_ORDER.indexOf(state.tiers[result.pathId] || TIER.GEEN);
+    const nextRungIdx = Math.min(currentIdx + 1, TIER_ORDER.length - 1);
+    const achieved = TIER_ORDER[Math.min(TIER_ORDER.indexOf(naturalTier), nextRungIdx)];
+
+    // Only a genuine upgrade over the persisted tier counts as "achieved this
+    // game" — under gating, most games will land at or below the current
+    // tier (repeat stats, or stats that would've qualified for a tier the
+    // gate hasn't unlocked yet), and those shouldn't announce a new level.
+    if (TIER_ORDER.indexOf(achieved) <= currentIdx) return null;
+    upgradeTier(state, result.pathId, achieved);
     return achieved;
   }
 

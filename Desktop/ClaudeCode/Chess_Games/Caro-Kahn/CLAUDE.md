@@ -243,9 +243,15 @@ on a mini-board.
 Tracked in `localStorage`. Displayed as ore badges on the home screen's progress map (§2) —
 achievements, not choices. Mastery also feeds the variation-selection weights (§4). Stated
 outright to the player in a table on `how-to-play.html` (added when the ladder grew from 3
-tiers to 5 — see build log). Each game's result is evaluated once, from the top down; the
-student is awarded the **highest** tier they qualify for that game (never cumulative across
-games — `upgradeTier` persists only the best tier reached so far, per world/path).
+tiers to 5 — see build log).
+
+**Tiers are gates, climbed one rung per game — not a single best-of-game score (corrected in
+the build log; the ladder originally worked the other way).** Each game's raw stats are checked
+against every tier's bar as before, but the tier actually **awarded** that game is capped at one
+rung above whatever's already persisted for that world/path: a flawless, Goud-caliber game on a
+brand-new biome still only earns Redstone; the next game there is "played for Koper," and so on
+up to Goud. A game whose stats don't even clear the very next rung's bar earns nothing that game
+(no regression either way — `upgradeTier` never downgrades a persisted tier).
 
 * **Redstone:** finish a game (reach The End or win) with ≥ 10 emeralds (raw `emeraldsTotal`,
   not the diamond-boosted Silwer figure below).
@@ -1092,3 +1098,52 @@ possible.
 **Cache-buster:** bumped `ASSET_V` and every HTML `?v=` reference 12 → 17 across this session's
 edits (`js/engine.js`, `js/game.js`, `js/data.js`, `js/home.js`, `css/style.css`, `game.html`,
 `index.html`).
+
+---
+
+## 25. Mastery tiers changed from best-of-game to one-rung-per-game gates
+
+User correction to §7/§23's original design (clarified after the fact — the ladder had always
+been meant to work this way, this wasn't a new request): a single game should never be able to
+jump straight to Goud regardless of how well it's played. Tiers are gates, climbed one rung at
+a time — a flawless first game on a fresh biome earns Redstone only; the *next* game there is
+"played for Koper," then Brons, then Silwer, then Goud. §7 above was rewritten in place to
+describe this (a genuine spec correction, not just a build-log note — the old wording literally
+said "awarded the highest tier they qualify for that game," which is exactly the behavior being
+reversed).
+
+**Implementation (`js/mastery.js`, `evaluateGameResult`):** the existing five threshold checks
+are unchanged and still compute a `naturalTier` — the highest tier this game's raw stats alone
+would satisfy, exactly as before (renamed from `achieved` for clarity). What's new: the tier
+actually awarded is capped to at most one rung above the path's currently-persisted tier —
+`achieved = TIER_ORDER[min(index(naturalTier), index(currentTier) + 1)]`. A game whose natural
+stats don't even clear that next rung's bar still earns whatever lower tier (if any) it does
+clear, same as always; it just can never overshoot by more than one step regardless of how good
+`naturalTier` is.
+
+**Adjacent fix, surfaced by the same change:** `evaluateGameResult` previously returned
+`achieved` any time it was non-`GEEN`, even if that tier was *already* the persisted one (or
+even lower than it) — harmless before, since a repeat/lower natural tier was rare, but under
+gating it becomes the common case (most games won't naturally clear the next rung), so the
+`js/game.js` end screen's "Nuwe vlak behaal" (new level reached) message would have fired
+constantly and incorrectly. Fixed by only returning (and only calling `upgradeTier` for) a tier
+that's a genuine improvement over the currently-persisted one; otherwise returns `null`, which
+`js/game.js`'s existing `achievedTier && achievedTier !== TIER.GEEN` check already treats as
+"nothing to announce" — no caller change needed.
+
+**`how-to-play.html`:** the closing paragraph under the tier table stated the old model
+outright ("Elke vlak is onafhanklik — jy kry altyd die hoogste vlak..."); rewritten to describe
+the gate in the same plain terms as this section.
+
+**Verification:** extended the existing Node harness pattern (bridging `TIER`/`TIER_ORDER`/
+`TIER_WEIGHT`/`SCORE`/`GAME_PREFIX` as globals, requiring the real, unmocked `js/mastery.js`)
+with a full six-game run of Goud-caliber stats replayed on the same fresh path, confirming it
+lands on Redstone, then Koper, Brons, Silwer, Goud, then `null` (no further rung) in that exact
+order across six consecutive calls — plus a weak-stats-on-a-fresh-path case (nothing earned), a
+case where a player already at Brons plays a game whose natural stats only reach Redstone
+(confirmed no downgrade and no false "new level" announcement), and the `reachedEndOrWon: false`
+case regardless of gate state. All passed. No live/Puppeteer run (unavailable in this project,
+per every prior card).
+
+**Cache-buster:** bumped `ASSET_V` and every HTML `?v=` reference 17 → 18, since this touched
+`js/mastery.js` and `how-to-play.html`.

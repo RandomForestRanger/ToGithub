@@ -13,7 +13,7 @@ const PLAYERS = ['J', 'L', 'KC', 'CA', 'MB', 'T'];
 
 // Cache-buster suffix for JS-constructed asset URLs (CLAUDE.md §12). Bump alongside
 // the literal ?v= on every HTML file whenever css/js/images change.
-const ASSET_V = 17;
+const ASSET_V = 18;
 
 // ---------------------------------------------------------------------------
 // Biome metadata
