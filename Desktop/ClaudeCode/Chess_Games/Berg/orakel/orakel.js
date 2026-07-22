@@ -236,9 +236,9 @@
       });
     }
 
-    function buildViaWorker(onProgress) {
+    function buildViaWorker(onProgress, workerUrl) {
       return new Promise((resolve, reject) => {
-        const worker = new Worker('orakel-worker.js');
+        const worker = new Worker(workerUrl || 'orakel-worker.js');
         worker.onmessage = (ev) => {
           const msg = ev.data;
           if (msg.tipe === 'vordering') { if (onProgress) onProgress(msg.persent); return; }
@@ -266,7 +266,7 @@
           return self_;
         }
         cacheHit = false;
-        return buildViaWorker(opts.onProgress).then((msg) => {
+        return buildViaWorker(opts.onProgress, opts.workerUrl).then((msg) => {
           dtmArr = new Uint8Array(msg.dtmBuffer);
           maxD = msg.maxD;
           tellings = msg.tellings;

@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="af">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sneeuluiperd se Kruin — Kaart 2 (Spel-enjin)</title>
+<!--
+  Kaart 2-verslag (2026-07-22): aanvaardingstoetse geverifieer in Chromium
+  (Playwright), bedien via python3 -m http.server. Posisiebank (30 sporte, 16
+  met 'n gemerkte slinkse lyn) geverifieer teen die orakel by laai: 0 foute.
+  Genadevenster-wiskunde: sport 30 slaag by skuif 40, misluk presies by skuif
+  41. Konseptuele mislukking vuur binne een skuif vir DTM-sprong>=8 EN vir
+  remise (pat/stukverlies). Agt gedaantes van sport 10: almal DTM=10, almal
+  >=1 wettige skuif. Volle klik-gedrewe deurspeel van sport 1 (mat gelewer,
+  sport klim, toestand oorleef herlaai) bevestig. Volledige verslag: sien
+  gespreksgeskiedenis / oorgawe-nota vir Kaart 3.
+-->
+<link rel="stylesheet" href="https://unpkg.com/@chrisoakman/chessboardjs@1.0.0/dist/chessboard-1.0.0.min.css">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <h1>Sneeuluiperd se Kruin</h1>
+  <p class="subtiel">Kaart 2 — kaal spel-enjin (geen berg, Kapok, of Oom Jorka nog nie — dis Kaart 4/5).
+    Bedien via HTTP vereis.</p>
+
+  <div id="layout">
+    <div id="statusPaneel" class="paneel">
+      <div class="veld"><div class="etiket">Sport</div><div class="waarde" id="sportWaarde">-</div></div>
+      <div class="veld"><div class="etiket">Sone</div><div class="waarde" id="soneWaarde">-</div></div>
+      <div class="veld"><div class="etiket">Begroting (skuiwe oor)</div><div class="waarde" id="begrotingWaarde">-</div></div>
+      <div class="veld"><div class="etiket">Gedaante (simmetrie)</div><div class="waarde" id="gedaanteWaarde">-</div></div>
+      <div id="boodskap"></div>
+      <button id="weerBeginKnop">Begin oor</button>
+    </div>
+    <div class="paneel">
+      <div id="board"></div>
+    </div>
+  </div>
+
+  <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+  <script src="https://unpkg.com/@chrisoakman/chessboardjs@1.0.0/dist/chessboard-1.0.0.min.js"></script>
+  <script src="../orakel/orakel-core.js"></script>
+  <script src="../orakel/orakel.js"></script>
+  <script src="posisiebank.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

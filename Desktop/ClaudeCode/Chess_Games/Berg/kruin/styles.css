@@ -1,0 +1,80 @@
+/* Sneeuluiperd se Kruin — Kaart 2: kaal funksionele bord + gedeelde donker-tema.
+   Geen berg-SVG, kamera, of Kapok/Jorka-teks nie -- dis Kaart 4/5 se werk. */
+
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  font-size: 18px;
+  color: #e8e8e8;
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+  margin: 0;
+  padding: 24px;
+  min-height: 100vh;
+}
+
+h1 { color: #f39c12; font-size: 22px; margin-bottom: 4px; }
+.subtiel { color: #aaa; font-size: 14px; margin-bottom: 20px; }
+
+#layout {
+  display: flex;
+  gap: 24px;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: flex-start;
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.paneel {
+  background: rgba(255,255,255,0.08);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 12px;
+  padding: 16px 20px;
+}
+
+#statusPaneel { min-width: 220px; }
+#statusPaneel .veld { margin-bottom: 10px; }
+#statusPaneel .etiket { color: #aaa; font-size: 13px; }
+#statusPaneel .waarde { font-family: 'Consolas','Monaco',monospace; font-size: 20px; }
+#statusPaneel .waarde.goed { color: #2ecc71; }
+#statusPaneel .waarde.ok { color: #f39c12; }
+#statusPaneel .waarde.sleg { color: #e74c3c; }
+
+#board { max-width: 480px; width: min(480px, calc(100vw - 60px)); margin: 0 auto; }
+
+#boodskap {
+  margin-top: 14px;
+  font-size: 16px;
+  min-height: 24px;
+}
+
+button {
+  font-family: inherit;
+  font-size: 15px;
+  background: #f39c12;
+  color: #1a1a2e;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 16px;
+  cursor: pointer;
+  margin-top: 10px;
+}
+button:hover { filter: brightness(1.1); }
+button:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.highlight-selected { box-shadow: inset 0 0 0 4px #f1c40f !important; }
+.highlight-legal-move { position: relative !important; }
+.highlight-legal-move::after {
+  content: '';
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  width: 25%; height: 25%;
+  background: rgba(0,0,0,0.4);
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+@media (max-width: 700px) {
+  #layout { flex-direction: column; align-items: stretch; }
+}
