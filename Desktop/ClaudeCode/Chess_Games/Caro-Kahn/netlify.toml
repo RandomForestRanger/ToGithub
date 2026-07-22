@@ -1,0 +1,23 @@
+[build]
+  publish = "."
+
+# No build command — pure HTML/CSS/JS, no build step.
+# Serve locally with: python3 -m http.server 8000
+# (CORS/Web Workers require HTTP; opening index.html as a file:// URL will not work)
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+
+[[headers]]
+  for = "/*.js"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000"
+
+[[headers]]
+  for = "/*.css"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000"

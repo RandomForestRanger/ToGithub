@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="af">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Die Caro-Kann in Blokkie-wêreld — Speel</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>%E2%99%9E%EF%B8%8F</text></svg>">
+<link rel="stylesheet" href="css/style.css?v=17">
+<link rel="stylesheet" href="https://unpkg.com/@chrisoakman/chessboardjs@1.0.0/dist/chessboard-1.0.0.min.css">
+<style>
+  .center-screen { min-height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:16px; padding:24px; text-align:center; position:relative; z-index:1; }
+  .mini-board-wrap { width: 220px; margin: 0 auto; }
+  #move-list { font-size:14px; line-height:1.7; min-height: 160px; }
+  .pager-row { display:flex; align-items:center; justify-content:space-between; margin-top:8px; }
+  .pager-btn { font-family:'Press Start 2P',monospace; font-size:11px; padding:6px 10px; background:rgba(255,255,255,0.1); color:#fff; border:2px solid var(--panel-border); cursor:pointer; }
+  .pager-btn:disabled { opacity:0.3; cursor:not-allowed; }
+  .pager-label { font-size:12px; color:var(--text-muted); }
+  .modal-btn-row { display:flex; gap:10px; justify-content:center; margin-top:16px; flex-wrap:wrap; }
+</style>
+</head>
+<body>
+
+<div id="dissolve-overlay"></div>
+
+<div id="victory-overlay">
+  <div class="vine-field" id="vine-field"></div>
+  <div class="pgn-artifact" id="pgn-artifact">
+    <div class="pgn-artifact-title mono">jy_wen.pgn</div>
+    <div class="pgn-artifact-body mono" id="pgn-artifact-body"></div>
+  </div>
+</div>
+
+<div id="reveal-popup-backdrop">
+  <div class="panel reveal-popup-card" id="modal-card"></div>
+</div>
+
+<div id="screen-loading" class="screen center-screen active">
+  <img class="body-pose" src="images/reisiger/body-idle.png?v=17" alt="Die Wyse ou Reisiger">
+  <p class="pixel-font" style="font-size:14px; color:var(--accent);">Blokkie-wêreld laai...</p>
+  <p id="loading-quote" style="max-width:420px; color:var(--text-muted);"></p>
+</div>
+
+<div id="screen-tutorial" class="screen center-screen">
+  <div class="panel" style="max-width: 480px;">
+    <h2 class="pixel-font" style="font-size:15px; color:var(--danger);">Pasop — die creeper-slagyster!</h2>
+    <p>Die Wyse ou Reisiger: <em>"Voor jy Karpov se Pad kan volg, moet jy hierdie slagyster ken."</em></p>
+    <p>Na <strong>1.e4 c6 2.d4 d5 3.Nc3 dxe4 4.Nxe4 Nd7 5.Qe2</strong> lyk <strong>5...Ngf6??</strong> natuurlik — maar dit verloor onmiddellik aan <strong>6.Nd6#</strong>, 'n gesmoorde mat!</p>
+    <div class="mini-board-wrap"><div id="tutorial-board"></div></div>
+    <p>Kies die regte antwoord op die bord: speel <strong>Ndf6</strong> of <strong>e6</strong> in plaas daarvan.</p>
+    <p id="tutorial-feedback" style="min-height:24px; color:var(--accent-2); font-weight:700;"></p>
+  </div>
+</div>
+
+<div id="screen-play" class="screen game-wrap">
+  <div class="board-col">
+    <div id="board"></div>
+    <div class="panel inventory-bar" id="inventory-bar">
+      <div class="inv-item"><span class="inv-icon emerald">🟢</span><span id="emerald-count">0</span></div>
+      <div class="inv-item"><span class="inv-icon diamond">💎</span><span id="diamond-count">0</span></div>
+      <div class="daglig-meter"><div class="sun" id="daglig-sun" style="left:0%;"></div></div>
+      <div class="inv-item" id="move-counter">Skuif 0/30</div>
+    </div>
+    <button class="pixel-btn secondary" id="home-link-btn">Terug na spawn</button>
+  </div>
+
+  <div class="side-col">
+    <div class="panel reisiger-wrap" id="reisiger-panel">
+      <img class="face-avatar" id="reisiger-face" src="images/reisiger/face-happy.png?v=17" alt="Die Reisiger">
+      <div class="speech-bubble" id="game-bubble">Welkom terug! Wit begin...</div>
+    </div>
+    <div class="panel">
+      <h3 class="pixel-font" style="font-size:13px; margin-top:0;">Notasie</h3>
+      <div id="move-list" class="mono"></div>
+      <div class="pager-row">
+        <button class="pager-btn" id="notation-prev" type="button">&#9664;</button>
+        <span class="pager-label" id="notation-page-label"></span>
+        <button class="pager-btn" id="notation-next" type="button">&#9654;</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="screen-end" class="screen center-screen">
+  <div class="panel" style="max-width: 480px;">
+    <img class="face-avatar" id="end-face" style="width:96px; height:96px; margin:0 auto 8px;" src="images/reisiger/face-happy.png?v=17" alt="Die Reisiger">
+    <h2 class="pixel-font" id="end-title" style="font-size:16px; color:var(--accent);"></h2>
+    <p id="end-message"></p>
+    <div class="mini-board-wrap" id="end-mini-board-wrap" style="display:none;">
+      <p style="font-size:13px; color:var(--text-muted); margin-bottom:6px;" id="end-lesson-caption"></p>
+      <div id="end-mini-board"></div>
+    </div>
+    <p id="end-tally" class="mono"></p>
+    <p id="end-mastery"></p>
+    <div class="modal-btn-row">
+      <button class="pixel-btn" id="end-replay-btn">Speel weer</button>
+      <button class="pixel-btn secondary" id="end-home-btn">Terug na spawn</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js"></script>
+<script src="https://unpkg.com/@chrisoakman/chessboardjs@1.0.0/dist/chessboard-1.0.0.min.js"></script>
+<script src="config.local.js" onerror="this.remove()"></script>
+<script src="js/data.js?v=17"></script>
+<script src="js/audio.js?v=17"></script>
+<script src="js/mastery.js?v=17"></script>
+<script src="js/engine.js?v=17"></script>
+<script src="js/reisiger.js?v=17"></script>
+<script src="js/game.js?v=17"></script>
+</body>
+</html>

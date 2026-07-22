@@ -1,0 +1,587 @@
+/* Die Caro-Kann in Blokkie-wêreld
+   Minecraft-inspired but legally original: procedural CSS block textures,
+   no Mojang assets/fonts. Shared dark aesthetic + per-biome theme classes. */
+
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Rubik:wght@400;500;700&display=swap');
+
+:root {
+  /* Spawn (pre-reveal) defaults */
+  --sky-top: #7ec8e3;
+  --sky-bottom: #cfe8c9;
+  --ground-a: #6b9b4f;
+  --ground-b: #5c8a42;
+  --accent: #f39c12;
+  --accent-2: #2ecc71;
+  --panel-bg: rgba(20, 24, 18, 0.55);
+  --panel-border: rgba(255, 255, 255, 0.18);
+  --text-primary: #f2f2e8;
+  --text-muted: #b8c2ae;
+  --danger: #e74c3c;
+  --redstone: #e0342f;
+  --copper: #c77b46;
+  --bronze: #cd7f32;
+  --silver: #a8a8a8;
+  --gold: #ffd700;
+  --board-light: #ebecd0;
+  --board-dark: #779556;
+}
+
+/* ── Biome themes ────────────────────────────────────────────────────── */
+
+body.theme-vlakte {
+  --sky-top: #6ec6ff;
+  --sky-bottom: #dff2c8;
+  --ground-a: #7ab648;
+  --ground-b: #67a03b;
+  --accent: #f39c12;
+  --panel-bg: rgba(24, 40, 18, 0.55);
+  --board-light: #f0e6c9;
+  --board-dark: #6fa050;
+}
+
+body.theme-muur {
+  --sky-top: #9fb4c7;
+  --sky-bottom: #d8d3c4;
+  --ground-a: #8a8272;
+  --ground-b: #726b5d;
+  --accent: #95a5a6;
+  --panel-bg: rgba(30, 30, 34, 0.6);
+  --board-light: #dcd6c4;
+  --board-dark: #8c8272;
+}
+
+body.theme-woud {
+  --sky-top: #2f4a3c;
+  --sky-bottom: #4d6b4a;
+  --ground-a: #33502f;
+  --ground-b: #294226;
+  --accent: #6bcB57;
+  --panel-bg: rgba(10, 22, 12, 0.62);
+  --board-light: #cdd9a8;
+  --board-dark: #4c6b3a;
+}
+
+body.theme-nether {
+  --sky-top: #2b0a0a;
+  --sky-bottom: #5c1414;
+  --ground-a: #3d0f0f;
+  --ground-b: #260a0a;
+  --accent: #9b59b6;
+  --panel-bg: rgba(30, 6, 6, 0.65);
+  --board-light: #d9a5a5;
+  --board-dark: #6b1f1f;
+}
+
+/* Biome background art (AI-generated, Minecraft-inspired — not game assets).
+   A dark gradient sits between the sky-gradient fallback and the photo so
+   panel text stays readable regardless of image brightness. */
+body.theme-vlakte { background-image: linear-gradient(180deg, rgba(10,20,10,0.15), rgba(10,20,10,0.55)), url('../images/bg-vlakte.png'); }
+body.theme-muur { background-image: linear-gradient(180deg, rgba(10,15,20,0.15), rgba(10,15,20,0.55)), url('../images/bg-muur.png'); }
+body.theme-woud { background-image: linear-gradient(180deg, rgba(5,15,5,0.25), rgba(5,15,5,0.6)), url('../images/bg-woud-bospad.png'); }
+body.theme-woud.path-karpov { background-image: linear-gradient(180deg, rgba(5,10,5,0.35), rgba(5,10,5,0.65)), url('../images/bg-woud-karpov.png'); }
+body.theme-nether { background-image: linear-gradient(180deg, rgba(20,5,5,0.2), rgba(20,5,5,0.55)), url('../images/bg-nether.png'); }
+body[class*="theme-"] {
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed;
+}
+body[class*="theme-"]::before { display: none; }
+
+/* Home/spawn screen landing art — flat 10% dark wash to fade the photo slightly
+   so panel text on top stays readable, without the top-heavy gradient the
+   in-game biome reveals use (this screen has no busy board UI to protect). */
+body.home-landing {
+  background-image: linear-gradient(rgba(0,0,0,0.10), rgba(0,0,0,0.10)), url('../images/Landing_Page.png');
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed;
+}
+body.home-landing::before { display: none; }
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  min-height: 100vh;
+  font-family: 'Rubik', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  font-size: 18px;
+  color: var(--text-primary);
+  background: linear-gradient(180deg, var(--sky-top) 0%, var(--sky-bottom) 55%, var(--ground-a) 55%, var(--ground-b) 100%);
+  background-attachment: fixed;
+  transition: background 0.6s ease;
+  overflow-x: hidden;
+}
+
+/* Procedural "block" texture strip along the ground */
+body::before {
+  content: '';
+  position: fixed;
+  left: 0; right: 0; bottom: 0;
+  height: 45vh;
+  pointer-events: none;
+  z-index: 0;
+  background-image:
+    repeating-linear-gradient(90deg, rgba(0,0,0,0.06) 0 32px, transparent 32px 64px),
+    repeating-linear-gradient(0deg, rgba(0,0,0,0.05) 0 32px, transparent 32px 64px);
+  opacity: 0.5;
+}
+
+h1, h2, h3, .pixel-font {
+  font-family: 'Press Start 2P', 'Rubik', monospace;
+  letter-spacing: 0.5px;
+  line-height: 1.6;
+}
+
+.mono, .eval, .move-notation {
+  font-family: 'Consolas', 'Monaco', monospace;
+}
+
+/* ── Glass panels ────────────────────────────────────────────────────── */
+
+.panel {
+  background: var(--panel-bg);
+  backdrop-filter: blur(10px);
+  border: 3px solid var(--panel-border);
+  border-radius: 4px;
+  box-shadow: 0 6px 0 rgba(0,0,0,0.25), inset 0 0 0 2px rgba(255,255,255,0.05);
+  padding: 20px;
+  position: relative;
+  z-index: 1;
+}
+
+/* Blocky pixel-corner effect */
+.panel, .pixel-btn, .badge-slot {
+  clip-path: polygon(
+    0 6px, 6px 6px, 6px 0, calc(100% - 6px) 0, calc(100% - 6px) 6px, 100% 6px,
+    100% calc(100% - 6px), calc(100% - 6px) calc(100% - 6px), calc(100% - 6px) 100%,
+    6px 100%, 6px calc(100% - 6px), 0 calc(100% - 6px)
+  );
+}
+
+/* ── Buttons ─────────────────────────────────────────────────────────── */
+
+.pixel-btn {
+  display: inline-block;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 14px;
+  color: #fff;
+  text-decoration: none;
+  background: linear-gradient(180deg, var(--accent-2, #2ecc71) 0%, #219150 100%);
+  border: none;
+  padding: 16px 28px;
+  cursor: pointer;
+  box-shadow: 0 5px 0 #1b7a41, 0 8px 12px rgba(0,0,0,0.35);
+  transition: transform 0.08s ease, box-shadow 0.08s ease;
+}
+.pixel-btn:active {
+  transform: translateY(4px);
+  box-shadow: 0 1px 0 #1b7a41, 0 2px 6px rgba(0,0,0,0.3);
+}
+.pixel-btn:hover { filter: brightness(1.08); }
+.pixel-btn.secondary {
+  background: linear-gradient(180deg, #f39c12 0%, #c9790a 100%);
+  box-shadow: 0 5px 0 #9c6108, 0 8px 12px rgba(0,0,0,0.35);
+}
+.pixel-btn.secondary:active { box-shadow: 0 1px 0 #9c6108, 0 2px 6px rgba(0,0,0,0.3); }
+.pixel-btn:disabled { filter: grayscale(1); opacity: 0.5; cursor: not-allowed; }
+
+/* ── Block-dissolve transition overlay ──────────────────────────────── */
+
+#dissolve-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 500;
+  pointer-events: none;
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  grid-template-rows: repeat(8, 1fr);
+}
+#dissolve-overlay .tile {
+  background: #0f0f0f;
+  opacity: 0;
+}
+#dissolve-overlay.active .tile {
+  animation: dissolveIn 1s ease forwards;
+}
+#dissolve-overlay.clearing .tile {
+  animation: dissolveOut 1s ease forwards;
+}
+@keyframes dissolveIn { 0% { opacity: 0; } 100% { opacity: 1; } }
+@keyframes dissolveOut { 0% { opacity: 1; } 100% { opacity: 0; } }
+
+/* ── Reisiger avatar + speech bubble ────────────────────────────────── */
+
+.reisiger-wrap {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+/* Die Reisiger — pixel-art sprite (cropped from the generated sprite sheets
+   in images/reisiger/). face-avatar = small expression portrait, swapped at
+   runtime by js/reisiger.js; body-pose = larger full-body illustration used
+   on the home/hero screen and the story/theory pages. */
+.face-avatar {
+  width: 72px;
+  height: 72px;
+  flex-shrink: 0;
+  object-fit: cover;
+  object-position: center 20%;
+  border-radius: 6px;
+  image-rendering: pixelated;
+  filter: drop-shadow(2px 3px 0 rgba(0,0,0,0.35));
+}
+.body-pose {
+  display: block;
+  width: auto;
+  height: 180px;
+  margin: 0 auto;
+  image-rendering: pixelated;
+  filter: drop-shadow(3px 5px 0 rgba(0,0,0,0.3));
+}
+.body-pose.small { height: 120px; }
+.speech-bubble {
+  background: #fffef8;
+  color: #2a2318;
+  border-radius: 10px;
+  padding: 12px 16px;
+  position: relative;
+  font-size: 16px;
+  max-width: 260px;
+  box-shadow: 0 4px 0 rgba(0,0,0,0.2);
+  animation: slideUp 0.3s ease;
+}
+.speech-bubble::before {
+  content: '';
+  position: absolute;
+  left: -10px; top: 18px;
+  border: 8px solid transparent;
+  border-right-color: #fffef8;
+}
+.speech-bubble .dismiss-btn {
+  display: block;
+  margin-top: 10px;
+  font-size: 12px;
+  color: #219150;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-weight: 700;
+  padding: 4px 0;
+}
+
+/* ── Reveal popup ────────────────────────────────────────────────────── */
+
+#reveal-popup-backdrop {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.55);
+  display: none;
+  align-items: center; justify-content: center;
+  z-index: 600;
+}
+#reveal-popup-backdrop.visible { display: flex; }
+.reveal-popup-card {
+  max-width: 420px;
+  text-align: center;
+}
+.reveal-popup-card .biome-ore {
+  font-size: 48px;
+  display: block;
+  margin-bottom: 8px;
+}
+
+/* ── Victory sequence (checkmate delivered by Black) ───────────────────
+   Green vines drop over the board like a jungle temple giving up its
+   treasure, then a parchment "jy_wen.pgn" artifact fades in with the
+   game's own move list. Pure CSS/JS — no external image or audio assets,
+   consistent with this app's existing no-external-asset convention. */
+#victory-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 550;
+  pointer-events: none;
+  display: none;
+  overflow: hidden;
+}
+#victory-overlay.active { display: block; }
+
+.vine-field { position: absolute; inset: 0; }
+.vine {
+  position: absolute;
+  top: -160px;
+  left: 0;
+  width: 34px;
+  height: 140px;
+  background-image:
+    radial-gradient(circle at 25% 6%,  #4caf50 0 8px, transparent 9px),
+    radial-gradient(circle at 72% 16%, #388e3c 0 8px, transparent 9px),
+    radial-gradient(circle at 22% 28%, #2e7d32 0 8px, transparent 9px),
+    radial-gradient(circle at 75% 40%, #4caf50 0 8px, transparent 9px),
+    radial-gradient(circle at 24% 52%, #388e3c 0 8px, transparent 9px),
+    radial-gradient(circle at 74% 64%, #2e7d32 0 8px, transparent 9px),
+    radial-gradient(circle at 26% 76%, #4caf50 0 8px, transparent 9px),
+    radial-gradient(circle at 70% 88%, #388e3c 0 8px, transparent 9px),
+    radial-gradient(circle at 30% 98%, #2e7d32 0 8px, transparent 9px),
+    linear-gradient(180deg, transparent 0, #1b5e20 4px, transparent 5px);
+  background-repeat: no-repeat;
+  opacity: 0;
+  animation-name: vineDrop;
+  animation-timing-function: cubic-bezier(.4, 0, .6, 1);
+  animation-fill-mode: forwards;
+}
+@keyframes vineDrop {
+  0%   { transform: translateY(0) rotate(-4deg); opacity: 0; }
+  8%   { opacity: 1; }
+  100% { transform: translateY(112vh) rotate(4deg); opacity: 1; }
+}
+
+.pgn-artifact {
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -46%) scale(0.85);
+  width: min(420px, calc(100vw - 60px));
+  max-height: 60vh;
+  overflow-y: auto;
+  background: linear-gradient(180deg, #ecdcb0, #d9c193);
+  color: #3a2e1a;
+  border: 3px solid #7a5f3a;
+  border-radius: 4px;
+  padding: 18px 20px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+  opacity: 0;
+}
+.pgn-artifact.reveal {
+  animation-name: pgnFadeIn;
+  animation-duration: 1.1s;
+  animation-timing-function: ease;
+  animation-fill-mode: forwards;
+}
+@keyframes pgnFadeIn {
+  0%   { opacity: 0; transform: translate(-50%, -46%) scale(0.85); }
+  100% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+}
+.pgn-artifact-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: #5a3f1f;
+  border-bottom: 2px dashed #a5824f;
+  padding-bottom: 8px;
+  margin-bottom: 10px;
+  letter-spacing: 0.5px;
+}
+.pgn-artifact-body {
+  font-size: 13px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* ── Inventory bar ───────────────────────────────────────────────────── */
+
+.inventory-bar {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  flex-wrap: wrap;
+}
+.inv-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 13px;
+}
+.inv-icon.emerald { color: var(--accent-2); }
+.inv-icon.diamond { color: #5dd6e8; }
+
+.daglig-meter {
+  flex: 1 1 160px;
+  min-width: 140px;
+  height: 14px;
+  background: rgba(0,0,0,0.3);
+  border: 2px solid rgba(255,255,255,0.2);
+  position: relative;
+  overflow: hidden;
+}
+.daglig-meter .sun {
+  position: absolute;
+  top: -3px;
+  width: 18px; height: 18px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #ffe066, #f39c12);
+  box-shadow: 0 0 10px 3px rgba(243,156,18,0.6);
+  transition: left 0.4s ease;
+}
+
+/* ── Badges / ore progress map ──────────────────────────────────────── */
+
+.badge-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+.badge-grid.home {
+  grid-template-columns: repeat(4, 1fr);
+}
+.badge-slot {
+  background: rgba(255,255,255,0.06);
+  border: 2px solid var(--panel-border);
+  padding: 12px 8px;
+  text-align: center;
+  position: relative;
+  cursor: default;
+}
+.badge-slot.locked {
+  opacity: 0.4;
+  filter: grayscale(100%);
+  cursor: not-allowed;
+}
+.badge-slot.unlocked {
+  border: 2px solid #2ecc71;
+  box-shadow: 0 0 8px rgba(46,204,113,0.4);
+}
+.badge-slot .ore-icon { font-size: 30px; display: block; }
+.badge-slot img.ore-icon {
+  width: 100%;
+  height: 44px;
+  object-fit: cover;
+  border-radius: 3px;
+}
+.badge-slot .tier-label {
+  font-size: 11px;
+  margin-top: 6px;
+  text-transform: uppercase;
+}
+.badge-slot.tier-redstone .tier-label { color: var(--redstone); }
+.badge-slot.tier-koper .tier-label { color: var(--copper); }
+.badge-slot.tier-brons .tier-label { color: var(--bronze); }
+.badge-slot.tier-silwer .tier-label { color: var(--silver); }
+.badge-slot.tier-goud .tier-label { color: var(--gold); }
+.badge-slot .tooltip {
+  position: absolute;
+  bottom: 100%; left: 50%;
+  transform: translateX(-50%);
+  background: #111;
+  color: #fff;
+  padding: 6px 10px;
+  border-radius: 4px;
+  font-size: 12px;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s ease;
+  z-index: 10;
+}
+.badge-slot:hover .tooltip { opacity: 1; }
+
+@keyframes badgeUnlock {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+  100% { transform: scale(1); }
+}
+.badge-slot.just-unlocked { animation: badgeUnlock 0.5s ease; }
+
+/* ── Board & move highlighting (shared suite conventions) ──────────── */
+
+#board { max-width: 480px; width: min(480px, calc(100vw - 60px)); margin: 0 auto; }
+
+.highlight-selected { box-shadow: inset 0 0 0 4px #f1c40f !important; }
+.highlight-legal-move { position: relative !important; }
+.highlight-legal-move::after {
+  content: '';
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  width: 25%; height: 25%;
+  background: rgba(0, 0, 0, 0.4);
+  border-radius: 50%;
+  pointer-events: none;
+}
+.highlight-lastmove { box-shadow: inset 0 0 0 3px rgba(243,156,18,0.55) !important; }
+.highlight-engine { box-shadow: inset 0 0 0 4px #e74c3c !important; }
+.highlight-both { box-shadow: inset 0 0 0 4px #2ecc71 !important; }
+
+/* Hint: a blocky Netherite sword icon over the piece-square and, on the 2nd
+   escalation, the target square too. Original pixel art (12x12 grid, shape
+   inspired by images/sword_reference.jpg, recolored dark gunmetal grey to
+   read as Netherite rather than that reference's diamond-blue). */
+.highlight-sword {
+  position: relative !important;
+  box-shadow: inset 0 0 0 3px rgba(52, 152, 219, 0.5) !important;
+}
+.highlight-sword::after {
+  content: '';
+  position: absolute;
+  inset: 6%;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12' shape-rendering='crispEdges'%3E%3Crect x='0' y='0' width='1' height='1' fill='%23a5a5ab'/%3E%3Crect x='1' y='0' width='1' height='1' fill='%23333338'/%3E%3Crect x='1' y='1' width='1' height='1' fill='%237d7d82'/%3E%3Crect x='2' y='1' width='1' height='1' fill='%23333338'/%3E%3Crect x='2' y='2' width='1' height='1' fill='%237d7d82'/%3E%3Crect x='3' y='2' width='1' height='1' fill='%23333338'/%3E%3Crect x='3' y='3' width='1' height='1' fill='%237d7d82'/%3E%3Crect x='4' y='3' width='1' height='1' fill='%23333338'/%3E%3Crect x='4' y='4' width='1' height='1' fill='%237d7d82'/%3E%3Crect x='5' y='4' width='1' height='1' fill='%23333338'/%3E%3Crect x='5' y='5' width='1' height='1' fill='%237d7d82'/%3E%3Crect x='6' y='5' width='1' height='1' fill='%23333338'/%3E%3Crect x='6' y='6' width='1' height='1' fill='%237d7d82'/%3E%3Crect x='7' y='6' width='1' height='1' fill='%23333338'/%3E%3Crect x='7' y='7' width='1' height='1' fill='%237a5f3a'/%3E%3Crect x='8' y='7' width='1' height='1' fill='%237a5f3a'/%3E%3Crect x='9' y='7' width='1' height='1' fill='%237a5f3a'/%3E%3Crect x='8' y='8' width='1' height='1' fill='%231c1712'/%3E%3Crect x='9' y='8' width='1' height='1' fill='%231c1712'/%3E%3Crect x='9' y='9' width='1' height='1' fill='%231c1712'/%3E%3Crect x='10' y='10' width='1' height='1' fill='%23100d0a'/%3E%3C/svg%3E");
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+  pointer-events: none;
+  filter: drop-shadow(1px 1px 0 rgba(0,0,0,0.5));
+  animation: pulse 1.1s ease-in-out infinite;
+}
+
+/* ── Layout ──────────────────────────────────────────────────────────── */
+
+.home-wrap {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+  padding: 30px 16px;
+}
+
+.game-wrap {
+  min-height: 100vh;
+  display: flex;
+  gap: 20px;
+  padding: 20px;
+  align-items: flex-start;
+  justify-content: center;
+  flex-wrap: wrap;
+  position: relative;
+  z-index: 1;
+}
+
+.board-col { flex: 0 0 auto; display: flex; flex-direction: column; gap: 14px; align-items: center; }
+.side-col { flex: 0 0 280px; display: flex; flex-direction: column; gap: 14px; }
+
+/* !important here is load-bearing: game.html's inline <style> (loaded after
+   this file) sets .center-screen/.game-wrap display:flex directly on these
+   same elements, which otherwise wins the cascade at equal specificity and
+   makes every screen visible at once (each screen stacking to full height —
+   the exact cause of a page needing to scroll instead of fitting the viewport). */
+.screen { display: none !important; }
+.screen.active { display: block !important; }
+.screen.flex-active { display: flex !important; }
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.6; }
+}
+@keyframes scorePopIn {
+  0%   { transform: scale(0.5); opacity: 0; }
+  70%  { transform: scale(1.1); }
+  100% { transform: scale(1); opacity: 1; }
+}
+.score-pop { animation: scorePopIn 0.4s ease; }
+
+/* ── Responsive ──────────────────────────────────────────────────────── */
+
+@media (max-width: 1200px) {
+  .game-wrap { flex-direction: column; align-items: center; }
+  .side-col { flex: 0 0 auto; width: min(480px, calc(100vw - 40px)); }
+}
+@media (max-width: 600px) {
+  body { font-size: 16px; }
+  .panel { padding: 14px; }
+  #board { width: calc(100vw - 32px); }
+  .badge-grid.home { grid-template-columns: repeat(2, 1fr); }
+}

@@ -1,0 +1,7 @@
+// Copy this file to config.local.js (gitignored) and fill in your token to
+// raise Lichess Explorer/cloud-eval rate limits locally. The app works fine
+// without it — window.LICHESS_TOKEN defaults to '' and requests go through
+// unauthenticated (subject to Lichess's public rate limits).
+//
+// In production (Netlify), inject this via a snippet instead of committing it.
+window.LICHESS_TOKEN = '';

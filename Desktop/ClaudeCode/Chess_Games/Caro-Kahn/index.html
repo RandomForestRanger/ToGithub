@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="af">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Die Caro-Kann in Blokkie-wêreld</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>%E2%99%9E%EF%B8%8F</text></svg>">
+<link rel="stylesheet" href="css/style.css?v=17">
+</head>
+<body class="home-landing">
+
+<div class="home-wrap">
+
+  <h1 class="pixel-font" style="font-size: clamp(18px, 3.6vw, 30px); text-align:center; color: var(--accent); text-shadow: 3px 3px 0 rgba(0,0,0,0.35);">
+    Die Caro-Kann<br>in Blokkie-wêreld
+  </h1>
+  <p style="text-align:center; margin-top:-8px; color: var(--text-muted);">Met Die Wyse ou Reisiger</p>
+
+  <img class="body-pose" src="images/reisiger/body-idle.png?v=17" alt="Die Wyse ou Reisiger">
+
+  <div class="panel" style="max-width: 480px; width: 100%;">
+    <div class="reisiger-wrap">
+      <img class="face-avatar" src="images/reisiger/face-happy.png?v=17" alt="Die Reisiger">
+      <div class="speech-bubble" id="home-bubble">Welkom! Kies jou naam en kom kuier by die vuur.</div>
+    </div>
+
+    <div style="margin-top:20px;">
+      <label for="player-select" style="display:block; margin-bottom:6px; color: var(--text-muted); font-size:14px;">Wie speel vandag?</label>
+      <select id="player-select" style="width:100%; padding:10px; font-size:16px; border-radius:4px; border:2px solid var(--panel-border); background: rgba(0,0,0,0.3); color:#fff;"></select>
+    </div>
+
+    <div style="margin-top:24px; text-align:center;">
+      <button class="pixel-btn" id="begin-btn">Begin die reis</button>
+    </div>
+  </div>
+
+  <div class="panel" style="max-width: 560px; width:100%;">
+    <h2 class="pixel-font" style="font-size:15px; color:var(--text-primary); margin-top:0;">Jou vordering</h2>
+    <div class="badge-grid home" id="progress-map"></div>
+  </div>
+
+  <div style="display:flex; gap:12px; flex-wrap:wrap; justify-content:center; max-width:560px;">
+    <a class="pixel-btn secondary" href="how-to-play.html">Hoe om te speel</a>
+    <a class="pixel-btn secondary" href="biomes.html">Die Vier Biome</a>
+    <a class="pixel-btn secondary" href="karpov.html">Anatoly Karpov</a>
+  </div>
+
+</div>
+
+<script src="config.local.js" onerror="this.remove()"></script>
+<script src="js/data.js?v=17"></script>
+<script src="js/mastery.js?v=17"></script>
+<script src="js/home.js?v=17"></script>
+</body>
+</html>

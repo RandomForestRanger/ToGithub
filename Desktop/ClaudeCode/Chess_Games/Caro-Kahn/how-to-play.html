@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="af">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Hoe om te speel</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>%E2%99%9E%EF%B8%8F</text></svg>">
+<link rel="stylesheet" href="css/style.css?v=17">
+<style>
+  .info-wrap { max-width: 760px; margin: 0 auto; padding: 30px 16px 60px; }
+  .info-wrap h2 { color: var(--accent); font-size: 18px; margin-top: 30px; }
+  .info-wrap p, .info-wrap li { line-height: 1.7; }
+  .back-btn { display:inline-block; margin-bottom: 18px; }
+  .step-list { counter-reset: step; list-style:none; padding:0; }
+  .step-list li { counter-increment: step; position:relative; padding-left:38px; margin-bottom:12px; }
+  .step-list li::before {
+    content: counter(step); position:absolute; left:0; top:0;
+    width:26px; height:26px; background:var(--accent); color:#1a1a2e;
+    font-family:'Press Start 2P',monospace; font-size:12px;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .score-table { width:100%; border-collapse: collapse; margin-top: 10px; }
+  .score-table th, .score-table td { text-align:left; padding:8px 10px; border-bottom:1px solid var(--panel-border); font-size:15px; }
+  .score-table th { color: var(--text-muted); font-size:13px; text-transform:uppercase; }
+  .chip { display:inline-block; padding:2px 8px; border-radius:10px; font-size:13px; font-weight:700; }
+  .chip.green { background:rgba(46,204,113,0.2); color:#2ecc71; }
+  .chip.blue { background:rgba(93,214,232,0.2); color:#5dd6e8; }
+  .chip.red { background:rgba(231,76,60,0.2); color:#e74c3c; }
+</style>
+</head>
+<body>
+<div class="info-wrap">
+  <a class="pixel-btn secondary back-btn" href="index.html">&#8592; Terug na spawn</a>
+  <h1 class="pixel-font" style="font-size:20px; color:var(--accent); text-align:center;">Hoe om te speel</h1>
+  <img class="body-pose small" src="images/reisiger/body-idle.png?v=17" alt="Die Wyse ou Reisiger">
+
+  <div class="panel">
+    <h2>Die basiese idee</h2>
+    <p>Jy speel altyd <strong>Swart</strong>. Wit (die rekenaar) begin elke speletjie, en saam met Die Wyse ou
+    Reisiger leer jy die Caro-Kann Verdediging (1.e4 c6) — een stap op 'n slag. Jy weet nie vooraf watter bioom
+    julle gaan besoek nie; Wit se eerste paar skuiwe wys dit vir jou.</p>
+
+    <h2>Hoe om 'n skuif te speel</h2>
+    <ol class="step-list">
+      <li>Tik (klik) op een van jou swart stukke — dit lig geel op, en groen kolletjies wys elke plek waarheen
+      dit kan beweeg.</li>
+      <li>Tik op een van daardie kolletjies om die skuif te speel. Wil jy eerder 'n ander stuk kies? Net tik op
+      dit — geen sleep (drag) nodig nie, alles werk met eenvoudige tikke.</li>
+      <li>Wit dink dan en speel sy eie skuif — kyk mooi, want Wit se skuiwe is doelbewus stadig geanimeer
+      (omtrent twee sekondes) sodat jy elke stap kan volg.</li>
+    </ol>
+
+    <h2>Die eerste 5 skuiwe: "Rails"</h2>
+    <p>Vir jou eerste 5 skuiwe as Swart wys die Reisiger jou die korrekte teorie. Speel jy die verkeerde skuif, dan
+    spring die stuk terug en die Reisiger sê <em>"Hierdie is nie die regte lyn nie — soek en vind!"</em>
+    Twee verkeerde probeerslae? Die stuk wat moet beweeg, lig blou op met 'n Netherite-swaard. Drie verkeerde
+    probeerslae? Die teiken-blok kry ook 'n swaard, sodat jy presies weet waarheen.</p>
+    <p>Speel jy die regte skuif, kry jy nie net 'n <span class="chip green">🟢 smarag</span> nie — die Reisiger
+    verduidelik ook <em>hoekom</em> daardie skuif goed is.</p>
+
+    <h2>Skuiwe 6 tot 8: vrye keuse, met punte</h2>
+    <p>Ná die rails-fase mag jy enige wettige skuif speel. Speel jy steeds die teorie-skuif, kry jy steeds 'n smarag.
+    Speel jy iets anders, evalueer die enjin (Stockfish) hoe goed dit was.</p>
+
+    <h2>Skuif 9 en verder: vrye spel</h2>
+    <p>Nou is jy heeltemal op jou eie. Vind jy die enjin se beste skuif presies, verdien jy 'n
+    <span class="chip blue">💎 diamant</span> (dis drie smaragte werd!).</p>
+
+    <h2>Die inventarisbalk</h2>
+    <table class="score-table">
+      <tr><th>Gebeurtenis</th><th>Beloning</th></tr>
+      <tr><td>Teorie-skuif gespeel (skuiwe 1–8)</td><td><span class="chip green">+1 smarag</span></td></tr>
+      <tr><td>Enjin-goedgekeurde skuif (binne 30 cp van beste, skuif 6+)</td><td><span class="chip green">+1 smarag</span></td></tr>
+      <tr><td>Presies die enjin se beste skuif (skuif 9+)</td><td><span class="chip blue">+1 diamant</span></td></tr>
+      <tr><td>Skuif wat meer as 100 cp verloor (skuif 6+)</td><td><span class="chip red">−1 smarag</span></td></tr>
+      <tr><td>Groot flater — meer as 300 cp verloor</td><td><span class="chip red">Reisiger-boodskap + een "terugvat" toegelaat</span></td></tr>
+      <tr><td>Wen die speletjie</td><td><span class="chip green">+5 smaragte</span></td></tr>
+      <tr><td>Bereik The End (skuif 30)</td><td><span class="chip green">+3 smaragte</span></td></tr>
+    </table>
+    <p style="margin-top:10px;">Jou smaragte-telling gaan nooit onder nul nie — jy kan nooit "in die skuld" wees nie.</p>
+
+    <h2>Flaters en "terugvat"</h2>
+    <p>Verloor jy skielik baie posisie (meer as 300 cp), sê die Reisiger <em>"Eina! Kyk weer — wat het ek net
+    weggegee?"</em> Jy kry een gratis kans per speletjie om die skuif terug te vat — maar onthou, die skuif wat jy
+    in sy plek speel, tel dan nie vir 'n smarag of diamant nie. As jy wel terugvat, tel daardie flater ook nie
+    teen jou Silwer-vlak nie — dis asof dit nooit gebeur het nie.</p>
+
+    <h2>Die daglig-meter en "The End"</h2>
+    <p>Bo-aan die bord is 'n balkie met 'n sonnetjie wat oor 30 skuiwe beweeg. Bereik julle skuif 30 sonder mat,
+    kom julle by <strong>The End</strong> — 'n oorsigskerm met jou finale telling, 'n oordeel van hoe die posisie
+    lyk, en die grootste leermoment van die speletjie op 'n mini-bordjie.</p>
+
+    <h2>Vlakke (Redstone tot Goud)</h2>
+    <p>Elke bioom (en elke pad in Die Woud) het sy eie meesterskap-vlak, gewys as 'n erts-kenteken op die
+    tuisskerm. Hoe minder jy 'n bioom bemeester het, hoe waarskynliker kies die enjin dit vir jou volgende
+    speletjie — so jy kry altyd oefening waar jy dit die nodigste het. Hier is presies hoe jy elke vlak kry:</p>
+    <table class="score-table">
+      <tr><th>Vlak</th><th>Hoe kry jy dit</th></tr>
+      <tr><td><span class="chip" style="background:rgba(224,52,47,0.18); color:var(--redstone);">🔴 Redstone</span></td><td>Eindig 'n speletjie (wen, of bereik The End) met minstens 10 smaragte.</td></tr>
+      <tr><td><span class="chip" style="background:rgba(199,123,70,0.18); color:var(--copper);">🟠 Koper</span></td><td>Vind minstens 5 teorie-skuiwe reg in een speletjie.</td></tr>
+      <tr><td><span class="chip" style="background:rgba(205,127,50,0.18); color:var(--bronze);">🥉 Brons</span></td><td>Speel al jou teorie-skuiwe reg, met hoogstens 2 wenk-vlakke in totaal.</td></tr>
+      <tr><td><span class="chip" style="background:rgba(168,168,168,0.18); color:var(--silver);">🥈 Silwer</span></td><td>Eindig met minstens 12 smaragte (elke diamant tel soos 3) en sonder 'n flater wat jy nie teruggevat het nie.</td></tr>
+      <tr><td><span class="chip" style="background:rgba(255,215,0,0.18); color:var(--gold);">🥇 Goud</span></td><td>Wen die speletjie uitreg, OF bereik The End ver voor met minstens 2 diamante.</td></tr>
+    </table>
+    <p style="margin-top:10px;">Elke vlak is onafhanklik — jy kry altyd die hoogste vlak wat jy daardie speletjie
+    verdien het, per bioom (en per pad in Die Woud).</p>
+  </div>
+
+  <a class="pixel-btn secondary back-btn" style="margin-top:20px;" href="index.html">&#8592; Terug na spawn</a>
+</div>
+</body>
+</html>

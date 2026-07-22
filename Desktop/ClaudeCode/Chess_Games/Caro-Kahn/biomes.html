@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="af">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Die Vier Biome</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>%E2%99%9E%EF%B8%8F</text></svg>">
+<link rel="stylesheet" href="css/style.css?v=17">
+<style>
+  .info-wrap { max-width: 860px; margin: 0 auto; padding: 30px 16px 60px; }
+  .back-btn { display:inline-block; margin-bottom: 18px; }
+  .biome-card { display:flex; gap:18px; margin-bottom:22px; overflow:hidden; }
+  .biome-card .thumb {
+    flex: 0 0 180px; height:180px; background-size:cover; background-position:center;
+    border-right: 3px solid var(--panel-border); margin: -20px 0 -20px -20px;
+  }
+  .biome-card .content { flex:1; min-width:0; }
+  .biome-card h2 { margin-top:0; color:var(--accent); font-size:17px; }
+  .biome-card .opening-name { color:var(--text-muted); font-size:13px; margin-top:-8px; }
+  .biome-card .goal { background:rgba(255,255,255,0.08); border-left:4px solid var(--accent-2); padding:10px 14px; margin-top:10px; font-size:15px; }
+  .biome-card .goal strong { display:block; margin-bottom:4px; }
+  .biome-card .goal ul { margin:0; padding-left:18px; }
+  .biome-card .goal li { margin:3px 0; }
+  .biome-card .goal .note { margin:8px 0 0; font-style:italic; color:var(--text-muted); }
+  .story-panel { margin-bottom:26px; }
+  .story-panel h2 { margin-top:0; color:var(--accent); font-size:18px; text-align:center; }
+  .story-panel p { margin:0 0 10px; }
+  .story-panel p:last-of-type { margin-bottom:0; }
+  .rule-list { list-style:none; margin:16px 0; padding:0; }
+  .rule-list li { display:flex; gap:10px; align-items:flex-start; margin:10px 0; font-size:15px; }
+  .rule-list .emoji { font-size:20px; flex:0 0 auto; }
+  .reisiger-quote {
+    margin:16px 0 0; padding:12px 16px; border-left:4px solid var(--accent);
+    background:rgba(255,255,255,0.06); font-style:italic; color:var(--text-muted);
+  }
+  .reisiger-quote cite { display:block; margin-top:6px; font-style:normal; font-size:13px; color:var(--accent); }
+  @media (max-width: 640px) {
+    .biome-card { flex-direction:column; }
+    .biome-card .thumb { flex-basis:140px; margin:-20px -20px 0; }
+  }
+</style>
+</head>
+<body>
+<div class="info-wrap">
+  <a class="pixel-btn secondary back-btn" href="index.html">&#8592; Terug na spawn</a>
+
+  <div class="panel story-panel">
+    <h2>Welkom by die Caro-Kann!</h2>
+    <p>Elke skaakopening het sy eie persoonlikheid.</p>
+    <p>Party spelers hou daarvan om sommer dadelik te storm en oral gevegte te begin.</p>
+    <p>Maar die Caro-Kann werk anders.</p>
+    <p>Jy is soos 'n slim bouer.</p>
+    <p>Jy bou eers 'n sterk basis.<br>Jy kry jou stukke uit.<br>Jy maak seker alles werk saam.</p>
+    <p>Dan, wanneer die tyd reg is...</p>
+    <p>...begin jy stadig die wedstryd oorneem.</p>
+    <p>Die Caro-Kann probeer nie elke wedstryd in vyf skuiwe wen nie.</p>
+    <p>Hy probeer elke wedstryd <strong>goed speel.</strong></p>
+    <p>Dis 'n opening vir spelers wat graag dink, beplan en kalm bly.</p>
+
+    <h2 style="margin-top:24px;">Onthou altyd hierdie vier dinge</h2>
+    <ul class="rule-list">
+      <li><span class="emoji">🛡️</span><span><strong>Wees ontspanne.</strong> Jy hoef nie haastig te wees nie.</span></li>
+      <li><span class="emoji">🧱</span><span><strong>Bou mooi.</strong> Ontwikkel jou stukke voordat jy groot aanvalle begin.</span></li>
+      <li><span class="emoji">👀</span><span><strong>Kyk en dink.</strong> Elke skuif van jou teenstander vertel vir jou in watter wêreld julle speel.</span></li>
+      <li><span class="emoji">⚔️</span><span><strong>Val aan soos 'n ou met 'n Netherite-swaard.</strong> Wanneer jou stukke gereed is, slaan jy toe.</span></li>
+    </ul>
+    <div class="reisiger-quote">
+      "Sterk spelers jaag nie die wedstryd nie.<br>Hulle bou eers."
+      <cite>— Die Wyse Ou Reisiger</cite>
+    </div>
+  </div>
+
+  <h1 class="pixel-font" style="font-size:20px; color:var(--accent); text-align:center;">Die Vier Biome</h1>
+  <img class="body-pose small" src="images/reisiger/body-map-reading.png?v=17" alt="Die Wyse ou Reisiger lees 'n kaart">
+  <div class="panel story-panel" style="text-align:center;">
+    <p>Elke wedstryd begin op dieselfde plek.</p>
+    <p>Die son kom op.<br>Die gras is groen.<br>Alles lyk rustig.</p>
+    <p>Maar dan begin Wit speel...</p>
+    <p>En stadig ontdek jy in watter wêreld julle beland het.</p>
+    <p>Jy kies <strong>nie</strong> die bioom nie. Jy <strong>ontdek</strong> dit.</p>
+    <p>Elke bioom het sy eie gevoel, sy eie plan en sy eie les.</p>
+    <p>Die Wyse Ou Reisiger sal jou wys waar julle is, maar <strong>jy</strong> moet leer om die tekens raak te sien.</p>
+  </div>
+
+  <div class="panel biome-card">
+    <div class="thumb" style="background-image:url('images/bg-vlakte.png');"></div>
+    <div class="content">
+      <h2>🌾 Die Vlakte</h2>
+      <div class="opening-name">Skaak-naam: Exchange Variasie (3.exd5)</div>
+      <p>Hier is baie oop ruimte.</p>
+      <p>Niemand het groot mure gebou nie, en albei spelers kan maklik beweeg.</p>
+      <p>Dis 'n rustige wêreld waar goeie ontwikkeling belangrik is.</p>
+      <div class="goal">
+        <strong>Jou plan</strong>
+        <ul>
+          <li>Kry jou stukke uit.</li>
+          <li>Ontwikkel jou biskoppe en perde vinnig.</li>
+          <li>Hou die b7- en d5-pionne mooi dop.</li>
+          <li>Bou stadig 'n sterk posisie.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel biome-card">
+    <div class="thumb" style="background-image:url('images/bg-muur.png');"></div>
+    <div class="content">
+      <h2>🧱 Die Muur</h2>
+      <div class="opening-name">Skaak-naam: Advance Variasie (3.e5)</div>
+      <p>Wit bou 'n groot muur met sy pionne.</p>
+      <p>Dis indrukwekkend...</p>
+      <p>...maar elke muur het swak plekke.</p>
+      <div class="goal">
+        <strong>Jou plan</strong>
+        <ul>
+          <li>Kry eers jou ligte biskop uit na f5.</li>
+          <li>Maak <em>dán</em> die deur toe met e6.</li>
+          <li>Wanneer die tyd reg is, kraak jy die muur oop met c5.</li>
+        </ul>
+        <p class="note">Moenie die muur storm nie. Werk slim.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel biome-card">
+    <div class="thumb" style="background-image:url('images/bg-woud-bospad.png');"></div>
+    <div class="content">
+      <h2>🌲 Die Woud</h2>
+      <div class="opening-name">Skaak-naam: Klassieke Variasie (3.Nc3)</div>
+      <p>Die bome is dig.</p>
+      <p>Daar is baie paadjies.</p>
+      <p>Albei spelers ontwikkel hul stukke, en klein verskille maak later groot verskille.</p>
+      <div class="goal">
+        <strong>Jou plan</strong>
+        <ul>
+          <li>Laat jou stukke saamwerk.</li>
+          <li>Veg vir belangrike velde.</li>
+          <li>Moenie verdwaal nie.</li>
+          <li>Elke stuk moet 'n werk hê.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel biome-card">
+    <div class="thumb" style="background-image:url('images/bg-nether.png');"></div>
+    <div class="content">
+      <h2>🔥 Die Nether</h2>
+      <div class="opening-name">Skaak-naam: Panov-Botvinnik Aanval (3.exd5 cxd5 4.c4)</div>
+      <p>Hier raak dinge gevaarlik.</p>
+      <p>Wit probeer vinnig aanval.</p>
+      <p>Die lawa borrel oral.</p>
+      <p>Maar onthou... selfs in die Nether verloor die speler wat paniekerig raak.</p>
+      <div class="goal">
+        <strong>Jou plan</strong>
+        <ul>
+          <li>Bly ontspanne.</li>
+          <li>Blokkeer d5.</li>
+          <li>Ruil stukke af wanneer dit jou help.</li>
+          <li>Laat Wit se eensame pion al hoe swakker word.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel story-panel" style="text-align:center;">
+    <h2>Die Goue Reël van die Caro-Kann</h2>
+    <p>Onthou hierdie vier dinge in <strong>elke</strong> wedstryd:</p>
+    <div class="reisiger-quote" style="text-align:left;">
+      <strong>Wees ontspanne. Bou mooi. Kyk en dink. Val aan soos 'n ou met 'n Netherite-swaard.</strong>
+    </div>
+    <p style="margin-top:14px;">As jy dit onthou, speel jy al klaar soos 'n regte Caro-Kann-speler.</p>
+  </div>
+
+  <a class="pixel-btn secondary back-btn" href="index.html">&#8592; Terug na spawn</a>
+</div>
+</body>
+</html>
