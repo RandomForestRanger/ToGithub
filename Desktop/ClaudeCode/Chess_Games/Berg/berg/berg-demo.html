@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="af">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sneeuluiperd se Kruin — Kaart 4 (Die Berg, selfstandige demo)</title>
+<!--
+  Kaart 4-verslag (2026-07-27): selfstandige demo (soos met die gebruiker
+  ooreengekom) -- NIE nog in kruin.html geïntegreer nie. Diere is eenvoudige
+  plekhouer-silhoeëtte; vervang later net die binnekant van elke
+  <g id="bewoner-N"> groep met regte illustrasie (bv. Recraft.ai-uitset) --
+  die kamera-enjin en posisionering hoef nie te verander nie.
+
+  Aanvaardingstoetse geverifieer in Chromium (Playwright): al 30 merkers +
+  10 bewoner-groepe adresseerbaar per id en korrek langs die roete
+  geposisioneer (getPointAtLength, stygende volgorde bevestig); openingsafkoms
+  3.5s (binne 3-4s), oorslaanbaar met een tik, land presies by die huidige
+  merker (viewBox-vergelyking); daal-animasie bevestig monotonies (geen
+  bons/tuimel); bewoner-onthulling ~9.5s en skakel sigbaarheid korrek;
+  prefers-reduced-motion gee 'n vinnige oorvloei (<400ms) sonder paneer-
+  interpolasie; 360px-uitleg funksioneel (berg-boonste-band + bordarea albei
+  sigbaar). Volledige verslag: sien gespreksgeskiedenis / oorgawe-nota vir
+  Kaart 5.
+-->
+<style>
+  html, body {
+    margin: 0; padding: 0;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: #0f1420;
+    color: #e8e8e8;
+  }
+  #kontroles {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 10;
+    background: rgba(15,20,32,0.92);
+    padding: 10px 14px;
+    display: flex; gap: 8px; flex-wrap: wrap; align-items: center;
+    font-size: 13px;
+  }
+  #kontroles button {
+    font-family: inherit; font-size: 13px;
+    background: #f39c12; color: #1a1a2e; border: none; border-radius: 6px;
+    padding: 6px 12px; cursor: pointer;
+  }
+  #kontroles button:hover { filter: brightness(1.1); }
+  #kontroles label { display: flex; align-items: center; gap: 4px; }
+  #bergWrap {
+    position: absolute; top: 46px; left: 0; right: 0; bottom: 0;
+  }
+  #bergSvg { width: 100%; height: 100%; display: block; }
+  #status { margin-left: auto; font-family: 'Consolas','Monaco',monospace; }
+
+  /* §3.4: smal-skerm-uitleg -- berg as boonste band (~40%), bord-plek daaronder. */
+  #bordPlekhouer {
+    display: none;
+    position: absolute; left: 0; right: 0; bottom: 0;
+    background: rgba(255,255,255,0.06);
+    text-align: center; padding: 12px; box-sizing: border-box;
+  }
+  @media (max-width: 700px) {
+    #bergWrap { bottom: 60%; }
+    #bordPlekhouer { display: block; height: 60%; }
+  }
+</style>
+</head>
+<body>
+  <div id="kontroles">
+    <button id="btnAfkoms">Simuleer openingsafkoms</button>
+    <button id="btnKlim">Klim (slaag)</button>
+    <button id="btnDaal">Daal (misluk)</button>
+    <button id="btnBewoner">Toon bewoner-onthulling</button>
+    <label>Sport: <input id="sportInvoer" type="number" min="1" max="30" value="1" style="width:50px"></label>
+    <label><input id="verminderdeBewegingKnop" type="checkbox"> prefers-reduced-motion simuleer</label>
+    <span id="status"></span>
+  </div>
+  <div id="bergWrap">
+    <svg id="bergSvg" viewBox="0 0 1200 800" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="lugGradient" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#bfe3f5"/>
+          <stop offset="55%" stop-color="#e8f4fb"/>
+          <stop offset="100%" stop-color="#fdfdfb"/>
+        </linearGradient>
+      </defs>
+
+      <!-- Laag 1: lug (die enigste gradiënt toegelaat, §4.1) -->
+      <rect id="lug" x="0" y="0" width="1200" height="800" fill="url(#lugGradient)"/>
+
+      <!-- Laag 2: verre pieke -->
+      <g id="verre-pieke" fill="#c9d6de" stroke="#a9bac4" stroke-width="2" opacity="0.7">
+        <polygon points="0,780 180,520 380,780"/>
+        <polygon points="850,780 1030,480 1200,700 1200,780"/>
+      </g>
+
+      <!-- Laag 3: vier bioomstrata (moeras -> woud -> rotse -> sneeu), groot na klein oorlê -->
+      <g id="terrein" stroke="#1a1a2e" stroke-width="4" stroke-linejoin="round">
+        <polygon id="strata-moeras" points="50,780 1150,780 1150,620 250,620" fill="#5b7a4f"/>
+        <polygon id="strata-woud"   points="250,620 1100,620 1100,440 500,440" fill="#3f6b4a"/>
+        <polygon id="strata-rotse"  points="500,440 1050,440 1050,260 750,260" fill="#8d8f92"/>
+        <polygon id="strata-sneeu"  points="750,260 1030,260 1050,90" fill="#f4f7fa"/>
+      </g>
+
+      <!-- Sone-grens-kentekens -->
+      <g id="sone-grense" fill="#f39c12" stroke="#1a1a2e" stroke-width="2">
+        <g id="grens-moeras-woud" transform="translate(250,620)"><circle r="10"/></g>
+        <g id="grens-woud-rotse" transform="translate(500,440)"><circle r="10"/></g>
+        <g id="grens-rotse-sneeu" transform="translate(750,260)"><circle r="10"/></g>
+      </g>
+
+      <!-- Laag 4: die roetepad (een Bézier) -->
+      <path id="roete" d="M 100,760 C 350,650 700,400 1030,90"
+            fill="none" stroke="#c47f2c" stroke-width="6" stroke-linecap="round"/>
+
+      <!-- Laag 5: 30 roetemerkers -- word deur berg.js geposisioneer via getPointAtLength -->
+      <g id="merkers"></g>
+
+      <!-- Laag 6: tien bewoners -- plekhouer-silhoeëtte, visibility deur toestand geskakel -->
+      <g id="bewoners"></g>
+
+      <!-- Laag 7: klimmer-en-Kapok-sprite -->
+      <g id="klimmer">
+        <circle id="klimmer-lyf" r="14" fill="#e8e8e8" stroke="#1a1a2e" stroke-width="3"/>
+        <circle id="kapok-lyf" r="7" cx="16" cy="8" fill="#ffffff" stroke="#1a1a2e" stroke-width="2"/>
+      </g>
+    </svg>
+  </div>
+  <div id="bordPlekhouer">(bord + kontroles leef hier -- Kaart 2/3 se werk, nie hierdie demo nie)</div>
+
+  <script src="berg.js"></script>
+  <script>
+    const Berg = window.BergEngine;
+    Berg.init(document.getElementById('bergSvg'));
+
+    function statusUit(tekst) { document.getElementById('status').textContent = tekst; }
+
+    document.getElementById('btnAfkoms').addEventListener('click', () => {
+      const rung = parseInt(document.getElementById('sportInvoer').value, 10);
+      statusUit('Afkoms speel...');
+      Berg.openingsAfkoms(rung).then(() => statusUit('Afkoms klaar, by sport ' + rung));
+    });
+    document.getElementById('btnKlim').addEventListener('click', () => {
+      const rung = parseInt(document.getElementById('sportInvoer').value, 10);
+      statusUit('Klim...');
+      Berg.klim(rung, rung + 1).then(() => {
+        document.getElementById('sportInvoer').value = rung + 1;
+        statusUit('Geklim na sport ' + (rung + 1));
+      });
+    });
+    document.getElementById('btnDaal').addEventListener('click', () => {
+      const rung = parseInt(document.getElementById('sportInvoer').value, 10);
+      statusUit('Daal...');
+      Berg.daal(rung, Math.max(1, rung - 1)).then(() => {
+        document.getElementById('sportInvoer').value = Math.max(1, rung - 1);
+        statusUit('Gedaal na sport ' + Math.max(1, rung - 1));
+      });
+    });
+    document.getElementById('btnBewoner').addEventListener('click', () => {
+      const rung = parseInt(document.getElementById('sportInvoer').value, 10);
+      statusUit('Bewoner-onthulling...');
+      Berg.bewonerOnthulling(rung).then(() => statusUit('Onthulling klaar vir sport ' + rung));
+    });
+    document.getElementById('verminderdeBewegingKnop').addEventListener('change', (ev) => {
+      Berg._forseerVerminderdeBeweging(ev.target.checked);
+    });
+  </script>
+</body>
+</html>
