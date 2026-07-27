@@ -1,8 +1,9 @@
-// Sneeuluiperd se Kruin — Kaart 4: die berg as koppelvlak (§4).
-// Kamera-enjin (viewBox-interpolasie) + roetemerker/bewoner-posisionering.
-// Selfstandige module -- nog NIE in kruin.html geïntegreer nie (met die
-// gebruiker ooreengekom). Diere is eenvoudige plekhouer-silhoeëtte; vervang
-// later net die binnekant van elke <g id="bewoner-N">-groep.
+// Sneeuluiperd se Kruin — Kaart 4/5: die berg as koppelvlak (§4) + Kapok se
+// gedragstelsel (§5.4). Kamera-enjin (viewBox-interpolasie), roetemerker/
+// bewoner-posisionering, en (Kaart 5) Kapok se reaksie-animasies + kunsies.
+// Sedert Kaart 5 werklik in kruin.html geïntegreer (was 'n Kaart 4-selfstandige
+// demo). Diere is eenvoudige plekhouer-silhoeëtte; vervang later net die
+// binnekant van elke <g id="bewoner-N">-groep.
 (function (root) {
   'use strict';
 
@@ -139,7 +140,7 @@
       for (let n = 1; n <= N_RUNGS; n++) {
         const t = n / (N_RUNGS + 1); // marge aan albei kante (voet/kruin)
         const pt = routePath.getPointAtLength(t * routeLen);
-        markerPos[n] = { x: pt.x, y: pt.y };
+        markerPos[n] = { x: pt.x, y: pt.y, t };
         const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
         g.setAttribute('id', 'merker-' + n);
         g.setAttribute('transform', `translate(${pt.x},${pt.y})`);
@@ -185,14 +186,83 @@
       for (const n of MILESTONE_RUNGS) if (n <= beginRung) stelBewonerZigbaarheid(n, true);
     }
 
+    // §4.2/§1.3 bewoner-persoonlikhede: elke reeds-ontslote bewoner draai sy
+    // kop soos die kamera verbygaan. Benader die "verbygaan-oomblik" met die
+    // bewoner se roete-fraksie (t) teenoor die afkoms se totale duur.
+    function skeduleerKopdraaie(ontslote, afkomsDuurMs) {
+      for (const n of ontslote) {
+        const el = bewonerEl(n);
+        if (!el) continue;
+        const vertraging = markerPos[n].t * afkomsDuurMs * 0.7; // 0.7: kamera "verby" vroeër as landing
+        setTimeout(() => {
+          if (isReducedMotion()) return;
+          el.style.transition = 'transform 400ms ease-in-out';
+          const basis = el.getAttribute('transform');
+          el.style.transformBox = 'fill-box';
+          el.style.transformOrigin = 'center';
+          el.style.transform = 'rotate(18deg)';
+          setTimeout(() => { el.style.transform = 'rotate(0deg)'; }, 420);
+        }, vertraging);
+      }
+    }
+
     // §4.2: openingsafkoms. 3-4s, oorslaanbaar met een tik, land presies by
-    // die huidige merker. Reeds-ontslote bewoners is deurgaans sigbaar.
+    // die huidige merker. Reeds-ontslote bewoners is deurgaans sigbaar en
+    // draai hul kop soos die kamera verbygaan.
     function openingsAfkoms(rung, ontsloteBewoners) {
       const ontslote = ontsloteBewoners || MILESTONE_RUNGS.filter((n) => n <= rung);
       for (const n of MILESTONE_RUNGS) stelBewonerZigbaarheid(n, ontslote.includes(n));
       setViewBox(kruinView());
       setKlimmerPos(markerPos[rung].x, markerPos[rung].y);
-      return animateViewBox(kruinView(), viewBoxForMarker(rung), 3500, { skippable: true });
+      const DUUR = 3500;
+      if (!isReducedMotion()) skeduleerKopdraaie(ontslote, DUUR);
+      return animateViewBox(kruinView(), viewBoxForMarker(rung), DUUR, { skippable: true });
+    }
+
+    // === Kaart 5: Kapok se gedragstelsel (§5.4) ===
+    function kapokEl() { return document.getElementById('kapok-sprite'); }
+
+    function kapokBlaf() {
+      const el = kapokEl();
+      if (!el || isReducedMotion()) return;
+      el.style.transition = 'transform 120ms ease-out';
+      el.style.transformBox = 'fill-box'; el.style.transformOrigin = 'center';
+      el.style.transform = 'scale(1.4)';
+      setTimeout(() => { el.style.transform = 'scale(1)'; }, 130);
+    }
+
+    function kapokTolVanVreugde() {
+      const el = kapokEl();
+      if (!el) return;
+      if (isReducedMotion()) return;
+      el.style.transition = 'transform 700ms ease-in-out';
+      el.style.transformBox = 'fill-box'; el.style.transformOrigin = 'center';
+      el.style.transform = 'rotate(360deg)';
+      setTimeout(() => { el.style.transition = 'none'; el.style.transform = 'rotate(0deg)'; }, 720);
+    }
+
+    function kapokOreVlat() {
+      const el = kapokEl();
+      if (!el || isReducedMotion()) return;
+      el.style.transition = 'transform 300ms ease-in';
+      el.style.transformBox = 'fill-box'; el.style.transformOrigin = 'center';
+      el.style.transform = 'scaleY(0.55)';
+      setTimeout(() => { el.style.transition = 'transform 400ms ease-out'; el.style.transform = 'scaleY(1)'; }, 900);
+    }
+
+    // Kunsies (§5.4): ligte-pas plekhouer-animasies, suiwer kosmeties.
+    const KUNSIE_ANIMASIES = {
+      'modder-skud': (el) => { el.style.transition = 'transform 120ms ease-in-out'; el.style.transform = 'rotate(-15deg)'; setTimeout(() => { el.style.transform = 'rotate(15deg)'; }, 130); setTimeout(() => { el.style.transform = 'rotate(0deg)'; }, 260); },
+      'stok-gaan-haal': (el) => { el.style.transition = 'transform 300ms ease-out'; el.style.transform = 'translateX(24px)'; setTimeout(() => { el.style.transition = 'transform 400ms ease-in'; el.style.transform = 'translateX(0)'; }, 320); },
+      'klip-tot-klip-spring': (el) => { el.style.transition = 'transform 150ms ease-out'; el.style.transform = 'translateY(-14px)'; setTimeout(() => { el.style.transform = 'translateY(0)'; }, 160); setTimeout(() => { el.style.transform = 'translateY(-14px)'; }, 340); setTimeout(() => { el.style.transform = 'translateY(0)'; }, 500); },
+      'sneeu-engel': (el) => { el.style.transition = 'transform 500ms ease-in-out'; el.style.transform = 'scaleX(1.8) scaleY(0.6)'; setTimeout(() => { el.style.transform = 'scale(1)'; }, 900); },
+    };
+    function kapokKunsie(naam) {
+      const el = kapokEl();
+      if (!el || isReducedMotion()) return;
+      el.style.transformBox = 'fill-box'; el.style.transformOrigin = 'center';
+      const anim = KUNSIE_ANIMASIES[naam];
+      if (anim) anim(el);
     }
 
     // §4.2: klim (slaag) -- kamera + klimmer een merker op, ~1.5s.
@@ -235,6 +305,7 @@
       viewBoxForMarker, kruinView, getViewBox, getMarkerPos: (n) => markerPos[n],
       isBewonerZigbaar,
       isReducedMotion,
+      kapokBlaf, kapokTolVanVreugde, kapokOreVlat, kapokKunsie,
       _forseerVerminderdeBeweging: (v) => { reducedMotionOverride = v; },
     };
   }

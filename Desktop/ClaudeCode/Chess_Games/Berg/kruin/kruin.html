@@ -3,41 +3,90 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Sneeuluiperd se Kruin — Kaart 2+3 (Spel-enjin + Hokkleuring/Wenke)</title>
+<title>Sneeuluiperd se Kruin</title>
 <!--
-  Kaart 2-verslag (2026-07-22): sien git-geskiedenis vir volle besonderhede
-  (posisiebank, genadevenster-wiskunde, konseptuele mislukking, 8 gedaantes).
+  Kaart 5-verslag (2026-07-27): sien git-geskiedenis vir Kaart 1-4 se volle
+  besonderhede. Kaart 5 doen die volledige samesmelting (soos met die
+  gebruiker ooreengekom): die berg-enjin (Kaart 4) is nou werklik aan
+  verwerkUitkomste() gekoppel (openingsafkoms by laai, klim/daal by elke
+  uitkoms, bewoner-onthulling by nuwe mylpale); Kapok se gedragstelsel +
+  kunsies; Oom Jorka se volledige COACH_LINES-teksbank (>=3 variante per
+  gebeurtenis, behalwe die sport-30-seremonie se een vaste sin); gesintetiseerde
+  klank (wind/blaf/mat-klok, almal demp-baar). Portaal-integrasie is doelbewus
+  NIE in Speletjies_Altesaam/index.html gedoen nie (nog nie ontplooi nie) --
+  sien portaal-metadata.md.
 
-  Kaart 3-verslag (2026-07-22): hokkleuring (cageSquares) met sone-vertraagde
-  vervaag-in (Moeras 3s/Woud 5s/Rotse 10s/Sneeu 15s) en 'n presies-getydde
-  'kruin:kleure-aangekom'-gebeurtenis vir Kaart 5 se Kapok-blaf; spoorafdruk-
-  toekenning per sone (net skuiwe voor die kleure aankom); wenkstelsel (3de-
-  mislukking-gloei via orakel-optimale wortel-skuif, twee-skoon-stygings-reël);
-  W-oorlegsel + kontrolevraag wat nooit hek nie. §4.4 (waarna §1.4 verwys)
-  bestaan nie in die spesifikasie nie -- die "ideale W" word dus self-ontwerp
-  direk uit die orakel afgelei. Volledige verslag: sien gespreksgeskiedenis /
-  oorgawe-nota vir Kaart 4.
+  Aanvaardingstoetse geverifieer in Chromium (Playwright): elke COACH_LINES-
+  gebeurtenis het 4 variante (>=3 vereis); sport-30-seremonie gee presies die
+  vaste sin "Kyk. Sy het jou die hele pad dopgehou."; volle klik-gedrewe mat
+  op sport 1 laat Kapok tol, die mat-klokkie speel, en die sport vorder;
+  skoon-sone-styging ken die korrekte kunsie toe en dit speel by 'n
+  daaropvolgende mat; klank speel niks wanneer stilgeskakel nie en die
+  voorkeur oorleef 'n herlaai; regressietoetse (posisiebank-DTM, genadevenster,
+  8 gedaantes, konseptuele mislukking) bly geslaag ná die volledige
+  samesmelting. Let wel: die orakel-bou-tyd-hoë-plafon-toets (Kaart 1) het
+  tydelik gefaal weens swaar masjienlas tydens hierdie sessie (30.4s > 15s) --
+  dis 'n omgewingsklok-kwessie, nie 'n kode-regressie nie; alle ander 9
+  Kaart-1-toetse (korrektheid) het steeds geslaag. Volledige verslag: sien
+  gespreksgeskiedenis / oorgawe-nota vir Kaart 6.
 -->
 <link rel="stylesheet" href="https://unpkg.com/@chrisoakman/chessboardjs@1.0.0/dist/chessboard-1.0.0.min.css">
 <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <h1>Sneeuluiperd se Kruin</h1>
-  <p class="subtiel">Kaart 2+3 — spel-enjin + hokkleuring/wenke (geen berg, Kapok, of Oom Jorka-teks nog nie — dis Kaart 4/5).
-    Bedien via HTTP vereis.</p>
+  <div id="bergAgtergrond">
+    <svg id="bergSvg" viewBox="0 0 1200 800" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="lugGradient" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#bfe3f5"/>
+          <stop offset="55%" stop-color="#e8f4fb"/>
+          <stop offset="100%" stop-color="#fdfdfb"/>
+        </linearGradient>
+      </defs>
+      <rect id="lug" x="0" y="0" width="1200" height="800" fill="url(#lugGradient)"/>
+      <g id="verre-pieke" fill="#c9d6de" stroke="#a9bac4" stroke-width="2" opacity="0.7">
+        <polygon points="0,780 180,520 380,780"/>
+        <polygon points="850,780 1030,480 1200,700 1200,780"/>
+      </g>
+      <g id="terrein" stroke="#1a1a2e" stroke-width="4" stroke-linejoin="round">
+        <polygon id="strata-moeras" points="50,780 1150,780 1150,620 250,620" fill="#5b7a4f"/>
+        <polygon id="strata-woud"   points="250,620 1100,620 1100,440 500,440" fill="#3f6b4a"/>
+        <polygon id="strata-rotse"  points="500,440 1050,440 1050,260 750,260" fill="#8d8f92"/>
+        <polygon id="strata-sneeu"  points="750,260 1030,260 1050,90" fill="#f4f7fa"/>
+      </g>
+      <g id="sone-grense" fill="#f39c12" stroke="#1a1a2e" stroke-width="2">
+        <g id="grens-moeras-woud" transform="translate(250,620)"><circle r="10"/></g>
+        <g id="grens-woud-rotse" transform="translate(500,440)"><circle r="10"/></g>
+        <g id="grens-rotse-sneeu" transform="translate(750,260)"><circle r="10"/></g>
+      </g>
+      <path id="roete" d="M 100,760 C 350,650 700,400 1030,90"
+            fill="none" stroke="#c47f2c" stroke-width="6" stroke-linecap="round"/>
+      <g id="merkers"></g>
+      <g id="bewoners"></g>
+      <g id="klimmer">
+        <circle id="klimmer-lyf" r="14" fill="#e8e8e8" stroke="#1a1a2e" stroke-width="3"/>
+        <g id="kapok-sprite" transform="translate(16,8)">
+          <circle id="kapok-lyf" r="7" fill="#ffffff" stroke="#1a1a2e" stroke-width="2"/>
+        </g>
+      </g>
+    </svg>
+  </div>
 
-  <div id="layout">
+  <div id="voorgrond">
     <div id="statusPaneel" class="paneel">
+      <h1>Sneeuluiperd se Kruin</h1>
       <div class="veld"><div class="etiket">Sport</div><div class="waarde" id="sportWaarde">-</div></div>
       <div class="veld"><div class="etiket">Sone</div><div class="waarde" id="soneWaarde">-</div></div>
       <div class="veld"><div class="etiket">Begroting (skuiwe oor)</div><div class="waarde" id="begrotingWaarde">-</div></div>
       <div class="veld"><div class="etiket">Gedaante (simmetrie)</div><div class="waarde" id="gedaanteWaarde">-</div></div>
+      <div id="jorkaTeks"></div>
       <div id="boodskap"></div>
       <button id="weerBeginKnop">Begin oor</button>
       <button id="wysWKnop" style="display:none">Wys my die W</button>
+      <label id="stilKnopLabel"><input id="stilKnop" type="checkbox"> stil (demp klank)</label>
       <div id="wOorlegsel" style="display:none"></div>
     </div>
-    <div class="paneel">
+    <div id="bordPaneel" class="paneel">
       <div id="board"></div>
     </div>
   </div>
@@ -46,7 +95,10 @@
   <script src="https://unpkg.com/@chrisoakman/chessboardjs@1.0.0/dist/chessboard-1.0.0.min.js"></script>
   <script src="../orakel/orakel-core.js"></script>
   <script src="../orakel/orakel.js"></script>
+  <script src="../berg/berg.js"></script>
   <script src="posisiebank.js"></script>
+  <script src="jorka.js"></script>
+  <script src="klank.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

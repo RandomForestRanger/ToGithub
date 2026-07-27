@@ -1,10 +1,13 @@
-// Sneeuluiperd se Kruin — Kaart 2: die spel-enjin.
-// Geen berg-SVG/kamera/Kapok/Jorka nie (Kaart 4/5) -- kaal bord-UI + sportlogika.
+// Sneeuluiperd se Kruin — Kaart 2/3/5: die spel-enjin, hokkleuring/wenke, en
+// (Kaart 5) die berg/Kapok/Jorka/klank volledig geïntegreer.
 (function () {
   'use strict';
 
   const Core = window.OrakelCore;
   const Orakel = window.Orakel;
+  const BergEngine = window.BergEngine;
+  const Jorka = window.Jorka;
+  const Klank = window.Klank;
   const { file, rank, sqOf, symTransformSquare } = Core;
 
   const STATE_KEY = 'sneeuluiperd_v1';
@@ -181,6 +184,11 @@
     el.style.color = klas === 'goed' ? '#2ecc71' : klas === 'sleg' ? '#e74c3c' : '#f39c12';
   }
 
+  // Kaart 5: Oom Jorka se stem (§5.1).
+  function setJorkaTeks(tekst) {
+    document.getElementById('jorkaTeks').textContent = tekst;
+  }
+
   function verversStatus() {
     document.getElementById('sportWaarde').textContent = huidigeSport.rung;
     document.getElementById('soneWaarde').textContent = huidigeSport.zone;
@@ -315,16 +323,19 @@
       alleSkuiweWasSpoorafdrukke = false;
     }
 
-    if (naDTM === 0) { verwerkUitkomste(true, 'Skaakmat! Die sport is geklim.'); return; }
+    if (naDTM === 0) { verwerkUitkomste(true, 'slaag'); return; }
     if (Orakel.isConceptualFail(voorDTM, naDTM)) {
-      verwerkUitkomste(false, 'Konseptuele fout: ' + (naDTM === Orakel.REMISE ? 'die posisie is remise (pat of stukverlies).' : 'DTM het te veel gespring.'));
+      verwerkUitkomste(false, naDTM === Orakel.REMISE ? 'konseptueleFout.remise' : 'konseptueleFout.dtmSprong');
       return;
     }
     const bs = budgetStatus(huidigeSport.rung, whiteMovesPlayed);
-    if (bs.misluk) { verwerkUitkomste(false, `Begroting oorskry by skuif ${whiteMovesPlayed}.`); return; }
+    if (bs.misluk) { verwerkUitkomste(false, 'misluk'); return; }
+
+    // §2.3: tempo-verlies (DTM-styging 1-7) word net gemerk, nie gehek nie.
+    if (typeof naDTM === 'number' && naDTM > voorDTM) setJorkaTeks(Jorka.kies('omweggie'));
 
     posisieGeskiedenis.push(posTuple(huidigePos, turn));
-    if (herhalingsToets()) { verwerkUitkomste(false, 'Drievoudige herhaling.'); return; }
+    if (herhalingsToets()) { verwerkUitkomste(false, 'konseptueleFout.herhaling'); return; }
 
     verversStatus();
     setTimeout(speelSwartSkuif, 250);
@@ -352,31 +363,70 @@
     } catch (e) {
       gekies = Orakel.defenderMove(fen, 'optimaal', {});
     }
-    if (!gekies) { verwerkUitkomste(true, 'Skaakmat! Die sport is geklim.'); return; }
+    if (!gekies) { verwerkUitkomste(true, 'slaag'); return; }
 
     huidigePos = { wK: huidigePos.wK, wB: huidigePos.wB, wN: huidigePos.wN, bK: algToSq(gekies.to) };
     turn = Core.TURN_WHITE;
     verversBord();
     posisieGeskiedenis.push(posTuple(huidigePos, turn));
-    if (herhalingsToets()) { verwerkUitkomste(false, 'Drievoudige herhaling.'); return; }
+    if (herhalingsToets()) { verwerkUitkomste(false, 'konseptueleFout.herhaling'); return; }
     verversStatus();
     startFadeTimer();
     toonWenkGloeiIndienNodig();
   }
 
-  // Kaart 3: routeer die uitkoms deur die verpligte W-oorlegsel+kontrolevraag
-  // (net Rotse, ná 'n slaag) voordat die sport-toestand finaal afgehandel word.
-  function verwerkUitkomste(geslaag, boodskap) {
+  function jorkaKiesVirKategorie(kategoriePad) {
+    return Jorka.kies(...kategoriePad.split('.'));
+  }
+
+  // Kaart 5: routeer die uitkoms deur (a) Kapok se onmiddellike reaksie,
+  // (b) Kaart 3 se verpligte W-oorlegsel+kontrolevraag (net Rotse, ná 'n
+  // slaag), (c) sport-toestand-afhandeling, (d) die kamera (klim/daal) en
+  // enige nuwe bewoner-onthulling.
+  function verwerkUitkomste(geslaag, kategoriePad) {
     stopFadeTimer(); clearCageOverlay(); clearHintGlow();
+    if (geslaag) { BergEngine.kapokTolVanVreugde(); Klank.speelMatKlok(); }
+    else BergEngine.kapokOreVlat();
+
+    const gaanVoort = () => voltooiUitkomste(geslaag, kategoriePad);
     if (geslaag && huidigeSport.zone === 'rotse') {
-      toonWOorlegselEnVraag(() => finaliseerPoging(geslaag, boodskap), true);
+      toonWOorlegselEnVraag(gaanVoort, true);
     } else {
-      finaliseerPoging(geslaag, boodskap);
+      gaanVoort();
+    }
+  }
+
+  function voltooiUitkomste(geslaag, kategoriePad) {
+    const vanRung = huidigeSport.rung;
+    const residenteVoor = state.residents.length;
+    const boodskap = jorkaKiesVirKategorie(kategoriePad);
+    finaliseerPoging(geslaag, boodskap);
+    const naRung = state.currentRung;
+
+    let kameraP = Promise.resolve();
+    if (naRung !== vanRung) {
+      kameraP = geslaag ? BergEngine.klim(vanRung, naRung) : BergEngine.daal(vanRung, naRung);
+    }
+    kameraP.then(() => {
+      if (state.residents.length > residenteVoor) {
+        const nuwe = state.residents[state.residents.length - 1];
+        return BergEngine.bewonerOnthulling(nuwe).then(() => {
+          setJorkaTeks(nuwe === 30 ? Jorka.kies('sneeuluiperd') : Jorka.kies('bewonerOnthulling'));
+        });
+      }
+    });
+
+    // Kapok se kunsies (§5.4): speel lukraak een ontslote kunsie by matte.
+    if (geslaag && state.kapokTricks.length) {
+      const kunsie = state.kapokTricks[Math.floor(Math.random() * state.kapokTricks.length)];
+      setTimeout(() => BergEngine.kapokKunsie(kunsie), 200);
     }
   }
 
   const EERSTE_SPORT_VAN_SONE = { moeras: 1, woud: 7, rotse: 15, sneeu: 23 };
   const LAASTE_SPORT_VAN_SONE = { moeras: 6, woud: 14, rotse: 22, sneeu: 30 };
+  // Kaart 5 (§5.4): kunsie wat 'n skoon-sone-styging ontsluit.
+  const ZONE_KUNSIE = { moeras: 'modder-skud', woud: 'stok-gaan-haal', rotse: 'klip-tot-klip-spring', sneeu: 'sneeu-engel' };
 
   function finaliseerPoging(geslaag, boodskap) {
     sportGeslaagOfMislukEnigste = true;
@@ -386,7 +436,8 @@
     merkZoneSkoonToets(state, huidigeSport, geslaag);
     vorderRung(state, huidigeSport.rung, geslaag, hintActiveThisAttempt);
     stoorToestand(state);
-    setBoodskap(boodskap + (geslaag ? ' Sport ' + (state.currentRung) + ' is nou oop.' : ' Terug na sport ' + state.currentRung + '.'), geslaag ? 'goed' : 'sleg');
+    setJorkaTeks(boodskap);
+    setBoodskap(geslaag ? 'Sport ' + (state.currentRung) + ' is nou oop.' : 'Terug na sport ' + state.currentRung + '.', geslaag ? 'goed' : 'sleg');
     document.getElementById('wysWKnop').style.display = geslaag && huidigeSport.zone !== 'rotse' ? 'inline-block' : 'none';
   }
 
@@ -402,6 +453,8 @@
     if (!skoonHierdiePoging) state._zoneSkoonVanaf[zone] = false;
     if (geslaag && sportInskrywing.rung === LAASTE_SPORT_VAN_SONE[zone] && state._zoneSkoonVanaf[zone] !== false) {
       if (!state.cleanZoneAscents.includes(zone)) state.cleanZoneAscents.push(zone);
+      const kunsie = ZONE_KUNSIE[zone];
+      if (kunsie && !state.kapokTricks.includes(kunsie)) state.kapokTricks.push(kunsie);
     }
   }
 
@@ -441,6 +494,8 @@
     document.getElementById('wysWKnop').style.display = 'none';
     document.getElementById('wOorlegsel').style.display = 'none';
     setBoodskap('', '');
+    // Kaart 5: welkom-per-sone net wanneer die sone se eerste sport betree word.
+    if (rungN === EERSTE_SPORT_VAN_SONE[bank.zone]) setJorkaTeks(Jorka.kies('welkom', bank.zone));
     verversBord();
     verversStatus();
     startFadeTimer();
@@ -551,10 +606,11 @@
         knop.addEventListener('click', () => {
           $(opsiesEl).find('button').prop('disabled', true);
           knop.classList.add(opt === korrek ? 'korrek' : 'verkeerd');
+          setJorkaTeks(Jorka.kies('kontrolevraagTerugvoer', opt === korrek ? 'korrek' : 'verkeerd'));
           if (opt !== korrek) {
             const verduideliking = document.createElement('div');
             verduideliking.className = 'pad-reël';
-            verduideliking.textContent = `Nie heeltemal nie -- ${sqAlg(korrek)} was die blok wat toegemaak is. Ons klim in elk geval.`;
+            verduideliking.textContent = `(${sqAlg(korrek)} was die blok wat toegemaak is)`;
             container.appendChild(verduideliking);
           }
         });
@@ -598,9 +654,38 @@
   function init() {
     state = laaiToestand();
     initBord();
-    setBoodskap('Orakel word gebou/gelaai...', '');
+    setBoodskap('', '');
 
-    Orakel.ready({ workerUrl: '../orakel/orakel-worker.js' }).then(() => {
+    // Kaart 5 (§5.1 hoak): Kapok blaf een keer wanneer die hokkleure aankom;
+    // die wenk-verskyn-gebeurtenis kry Oom Jorka se wenk-aanbieding-teks.
+    document.addEventListener('kruin:kleure-aangekom', () => {
+      BergEngine.kapokBlaf();
+      Klank.speelBlaf();
+    });
+    document.addEventListener('kruin:wenk-verskyn', () => {
+      setJorkaTeks(Jorka.kies('wenkAanbieding'));
+    });
+
+    const stilKnop = document.getElementById('stilKnop');
+    stilKnop.checked = Klank.isStil();
+    stilKnop.addEventListener('change', () => Klank.stelStil(stilKnop.checked));
+
+    BergEngine.init(document.getElementById('bergSvg'), { beginRung: state.currentRung });
+
+    // §5.2: die Web Worker bereken die orakel TERWYL die openingsafkoms speel.
+    // As die orakel eerste klaar is, verander niks nie; as nie, "vang die
+    // klimmer sy asem" by die landing totdat dit gereed is.
+    Klank.speelWind();
+    const afkomsP = BergEngine.openingsAfkoms(state.currentRung, state.residents);
+    const orakelP = Orakel.ready({ workerUrl: '../orakel/orakel-worker.js' });
+    let orakelGereed = false;
+    orakelP.then(() => { orakelGereed = true; });
+    afkomsP.then(() => {
+      if (!orakelGereed) setBoodskap('Kapok vang sy asem...', '');
+    });
+
+    Promise.all([afkomsP, orakelP]).then(() => {
+      setBoodskap('', '');
       const foute = verifieerPosisiebankTeenOrakel();
       if (foute.length) {
         setBoodskap('FOUT: posisiebank stem nie ooreen met die orakel nie -- ' + foute.join('; '), 'sleg');
@@ -663,4 +748,9 @@
   Kruin._verwerkUitkomste = verwerkUitkomste;
   Kruin._berekenIdealePad = berekenIdealePad;
   Kruin._berekenWenkVierkant = berekenWenkVierkant;
+
+  // Kaart 5-toetshake.
+  Kruin._init = init;
+  Kruin._setJorkaTeks = setJorkaTeks;
+  Kruin._jorkaTeksHuidig = () => document.getElementById('jorkaTeks').textContent;
 })();
