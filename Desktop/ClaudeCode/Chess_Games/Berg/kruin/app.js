@@ -13,6 +13,8 @@
   const ZONE_MERCY = { moeras: 2, woud: 4, rotse: 6, sneeu: 10 };
   const ZONE_SWINDLE_KANS = { moeras: 0, woud: 0.10, rotse: 0.25, sneeu: 0.40 };
   const MILESTONE_RUNGS = [3, 6, 9, 12, 15, 18, 21, 24, 27, 30];
+  // Kaart 3: sone-vertraagde vervaag-in (§2.7).
+  const ZONE_FADE_MS = { moeras: 3000, woud: 5000, rotse: 10000, sneeu: 15000 };
 
   function zoneOf(rungN) {
     if (rungN <= 6) return 'moeras';
@@ -45,6 +47,11 @@
         lastVisit: new Date().toISOString(),
       };
     }
+    // Kaart 3-uitbreiding op die §6-vorm (agterwaarts-versoenbaar met
+    // Kaart-2-toestand wat reeds in localStorage kan wees).
+    if (!raw.consecFails) raw.consecFails = {};
+    if (!raw.pendingCleanAscents) raw.pendingCleanAscents = {};
+    if (!raw._zoneSkoonVanaf) raw._zoneSkoonVanaf = {}; // sien merkZoneSkoonToets()
     raw.lastVisit = new Date().toISOString();
     return raw;
   }
@@ -56,14 +63,46 @@
     state.attempts[key].tries++;
     if (geslaag) state.attempts[key].passes++;
   }
-  function vorderRung(state, geslaag) {
-    if (geslaag) {
-      state.currentRung = Math.min(N_RUNGS, state.currentRung + 1);
-      if (MILESTONE_RUNGS.includes(state.currentRung) && !state.residents.includes(state.currentRung)) {
-        state.residents.push(state.currentRung);
-      }
-    } else {
+
+  // Kaart 3: wenkstelsel-telling. Faal -> tel op; slaag -> herstel na 0 sodra
+  // die sport werklik agtergelaat word (nie tydens 'n hangende skoon-styging nie).
+  function hintAktiefVirPoging(state, rungN) {
+    return (state.consecFails[String(rungN)] || 0) >= 2; // dit sou die 3de (of verdere) poging wees
+  }
+  function verwerkKonsekMislukkings(state, rungN, geslaag) {
+    const key = String(rungN);
+    if (geslaag) delete state.consecFails[key];
+    else state.consecFails[key] = (state.consecFails[key] || 0) + 1;
+  }
+
+  function registreerWenkGebruik(state, rungN) {
+    const key = String(rungN);
+    state.hints[key] = (state.hints[key] || 0) + 1;
+  }
+
+  // Kaart 3: twee-skoon-stygings-reël (§2.4). 'n Sport MET 'n wenk geslaag
+  // pouseer die klim op DIESELFDE sport totdat dit twee keer agtereenvolgens
+  // sonder 'n wenk geslaag word. 'n Mislukking tussenin herstel nie die
+  // reeds-opgeboude skoon-telling na nul nie (bevestig deur die gebruiker).
+  function vorderRung(state, rungN, geslaag, wenkAktief) {
+    if (!geslaag) {
       state.currentRung = Math.max(1, state.currentRung - 1);
+      return;
+    }
+    const key = String(rungN);
+    if (state.pendingCleanAscents[key] > 0) {
+      if (wenkAktief) return; // wenk weer gebruik -- geen vordering in die skoon-telling nie
+      state.pendingCleanAscents[key]--;
+      if (state.pendingCleanAscents[key] > 0) return; // nog nie klaar nie
+      delete state.pendingCleanAscents[key];
+      // val deur na normale bevordering hieronder
+    } else if (wenkAktief) {
+      state.pendingCleanAscents[key] = 2;
+      return; // bly op dieselfde sport totdat die reël bevredig is
+    }
+    state.currentRung = Math.min(N_RUNGS, state.currentRung + 1);
+    if (MILESTONE_RUNGS.includes(state.currentRung) && !state.residents.includes(state.currentRung)) {
+      state.residents.push(state.currentRung);
     }
   }
 
@@ -101,6 +140,13 @@
   let state, board, huidigeSport, huidigePos, symIdx, turn, whiteMovesPlayed;
   let posisieGeskiedenis, selected, gedaanteInfo, sportGeslaagOfMislukEnigste;
   let swindleTransformed; // getransformeerde slinkse-lyn-inligting vir hierdie poging
+
+  // Kaart 3: hokkleuring/vervaag-in, spoorafdruk, wenk, W-oorlegsel.
+  let fadeTimerHandle = null, fadeArrived = false;
+  let knightPath = [];               // getransformeerde ruiter-vierkante hierdie poging
+  let hintSquareThisAttempt = null;  // getransformeerde bestemmingsblok, of null
+  let hintActiveThisAttempt = false; // was consecFails>=2 toe hierdie poging begin het
+  let alleSkuiweWasSpoorafdrukke = true; // vir sone-skoon-styging-opsporing
 
   function posTuple(p, t) { return `${p.wK},${p.wB},${p.wN},${p.bK},${t}`; }
 
@@ -154,6 +200,47 @@
     $('#board .square-55d63').removeClass('highlight-selected highlight-legal-move');
   }
 
+  // === Kaart 3: hokkleuring + sone-vertraagde vervaag-in (§2.7) ===
+  function clearCageOverlay() { $('#board .square-55d63').removeClass('hokkleur'); }
+
+  function showCageOverlay() {
+    const cage = Orakel.cageSquares(currentFEN());
+    for (const alg of cage) $(`#board .square-${alg}`).addClass('hokkleur');
+    fadeArrived = true;
+    // Presies-getydde hoak vir Kaart 5 (Kapok blaf een keer wanneer die kleure aankom).
+    document.dispatchEvent(new CustomEvent('kruin:kleure-aangekom', {
+      detail: { rung: huidigeSport.rung, zone: huidigeSport.zone, whiteMovesPlayed },
+    }));
+  }
+
+  function stopFadeTimer() {
+    if (fadeTimerHandle !== null) { clearTimeout(fadeTimerHandle); fadeTimerHandle = null; }
+  }
+
+  // Begin (of herbegin) die vervaag-in-wagperiode. Word geroep elke keer
+  // wanneer dit weer die speler (wit) se beurt word.
+  function startFadeTimer() {
+    stopFadeTimer();
+    clearCageOverlay();
+    fadeArrived = false;
+    if (turn !== Core.TURN_WHITE || sportGeslaagOfMislukEnigste) return;
+    const ms = ZONE_FADE_MS[huidigeSport.zone];
+    fadeTimerHandle = setTimeout(() => { fadeTimerHandle = null; showCageOverlay(); }, ms);
+  }
+
+  // === Kaart 3: wenkstelsel (§2.4) ===
+  function clearHintGlow() { $('#board .square-55d63').removeClass('wenk-gloei'); }
+
+  function toonWenkGloeiIndienNodig() {
+    clearHintGlow();
+    if (!hintActiveThisAttempt || hintSquareThisAttempt === null) return;
+    if (turn !== Core.TURN_WHITE || sportGeslaagOfMislukEnigste) return;
+    $(`#board .square-${sqAlg(hintSquareThisAttempt)}`).addClass('wenk-gloei');
+    document.dispatchEvent(new CustomEvent('kruin:wenk-verskyn', {
+      detail: { rung: huidigeSport.rung, blok: sqAlg(hintSquareThisAttempt) },
+    }));
+  }
+
   function getSquareFromElement(el) {
     const classes = el.className.split(' ');
     const sq = classes.find((c) => /^square-[a-h][1-8]$/.test(c));
@@ -202,6 +289,11 @@
   function speelWitSkuif(m) {
     const voorFen = currentFEN();
     const voorDTM = Orakel.dtm(voorFen);
+    // Kaart 3: spoorafdruk verdien net vir skuiwe VOOR die kleure aankom (§2.7).
+    const spoorafdrukVerdien = !fadeArrived;
+    stopFadeTimer();
+    clearCageOverlay();
+    clearHintGlow();
 
     const nwK = m.piece === 'K' ? m.to : huidigePos.wK;
     const nwB = m.piece === 'B' ? m.to : huidigePos.wB;
@@ -212,19 +304,27 @@
     selected = null;
     verversBord();
 
+    if (m.piece === 'N') knightPath.push(nwN);
+
     const naFen = currentFEN();
     const naDTM = Orakel.dtm(naFen);
 
-    if (naDTM === 0) { eindigPoging(true, 'Skaakmat! Die sport is geklim.'); return; }
+    if (spoorafdrukVerdien) {
+      state.pawPrints[huidigeSport.zone] = (state.pawPrints[huidigeSport.zone] || 0) + 1;
+    } else {
+      alleSkuiweWasSpoorafdrukke = false;
+    }
+
+    if (naDTM === 0) { verwerkUitkomste(true, 'Skaakmat! Die sport is geklim.'); return; }
     if (Orakel.isConceptualFail(voorDTM, naDTM)) {
-      eindigPoging(false, 'Konseptuele fout: ' + (naDTM === Orakel.REMISE ? 'die posisie is remise (pat of stukverlies).' : 'DTM het te veel gespring.'));
+      verwerkUitkomste(false, 'Konseptuele fout: ' + (naDTM === Orakel.REMISE ? 'die posisie is remise (pat of stukverlies).' : 'DTM het te veel gespring.'));
       return;
     }
     const bs = budgetStatus(huidigeSport.rung, whiteMovesPlayed);
-    if (bs.misluk) { eindigPoging(false, `Begroting oorskry by skuif ${whiteMovesPlayed}.`); return; }
+    if (bs.misluk) { verwerkUitkomste(false, `Begroting oorskry by skuif ${whiteMovesPlayed}.`); return; }
 
     posisieGeskiedenis.push(posTuple(huidigePos, turn));
-    if (herhalingsToets()) { eindigPoging(false, 'Drievoudige herhaling.'); return; }
+    if (herhalingsToets()) { verwerkUitkomste(false, 'Drievoudige herhaling.'); return; }
 
     verversStatus();
     setTimeout(speelSwartSkuif, 250);
@@ -252,22 +352,57 @@
     } catch (e) {
       gekies = Orakel.defenderMove(fen, 'optimaal', {});
     }
-    if (!gekies) { eindigPoging(true, 'Skaakmat! Die sport is geklim.'); return; }
+    if (!gekies) { verwerkUitkomste(true, 'Skaakmat! Die sport is geklim.'); return; }
 
     huidigePos = { wK: huidigePos.wK, wB: huidigePos.wB, wN: huidigePos.wN, bK: algToSq(gekies.to) };
     turn = Core.TURN_WHITE;
     verversBord();
     posisieGeskiedenis.push(posTuple(huidigePos, turn));
-    if (herhalingsToets()) { eindigPoging(false, 'Drievoudige herhaling.'); return; }
+    if (herhalingsToets()) { verwerkUitkomste(false, 'Drievoudige herhaling.'); return; }
     verversStatus();
+    startFadeTimer();
+    toonWenkGloeiIndienNodig();
   }
 
-  function eindigPoging(geslaag, boodskap) {
+  // Kaart 3: routeer die uitkoms deur die verpligte W-oorlegsel+kontrolevraag
+  // (net Rotse, ná 'n slaag) voordat die sport-toestand finaal afgehandel word.
+  function verwerkUitkomste(geslaag, boodskap) {
+    stopFadeTimer(); clearCageOverlay(); clearHintGlow();
+    if (geslaag && huidigeSport.zone === 'rotse') {
+      toonWOorlegselEnVraag(() => finaliseerPoging(geslaag, boodskap), true);
+    } else {
+      finaliseerPoging(geslaag, boodskap);
+    }
+  }
+
+  const EERSTE_SPORT_VAN_SONE = { moeras: 1, woud: 7, rotse: 15, sneeu: 23 };
+  const LAASTE_SPORT_VAN_SONE = { moeras: 6, woud: 14, rotse: 22, sneeu: 30 };
+
+  function finaliseerPoging(geslaag, boodskap) {
     sportGeslaagOfMislukEnigste = true;
     registreerPoging(state, huidigeSport.rung, geslaag);
-    vorderRung(state, geslaag);
+    verwerkKonsekMislukkings(state, huidigeSport.rung, geslaag);
+    if (geslaag && hintActiveThisAttempt) registreerWenkGebruik(state, huidigeSport.rung);
+    merkZoneSkoonToets(state, huidigeSport, geslaag);
+    vorderRung(state, huidigeSport.rung, geslaag, hintActiveThisAttempt);
     stoorToestand(state);
     setBoodskap(boodskap + (geslaag ? ' Sport ' + (state.currentRung) + ' is nou oop.' : ' Terug na sport ' + state.currentRung + '.'), geslaag ? 'goed' : 'sleg');
+    document.getElementById('wysWKnop').style.display = geslaag && huidigeSport.zone !== 'rotse' ? 'inline-block' : 'none';
+  }
+
+  // Kaart 3: 'n skoon sone-styging (§5.4/§6 cleanZoneAscents) beteken elke
+  // slaag-skuif in ELKE sport van daardie sone, van die sone se eerste sport
+  // af, was 'n spoorafdruk-skuif (voor die kleure aangekom het), sonder wenke.
+  // 'n lopende "nog-skoon"-vlag per sone word by die sone se eerste sport
+  // herstel (sien beginPoging), deur enige mislukking/wenk/nie-spoorafdruk-
+  // slaag gebreek, en eers by die sone se laaste sport bevestig.
+  function merkZoneSkoonToets(state, sportInskrywing, geslaag) {
+    const zone = sportInskrywing.zone;
+    const skoonHierdiePoging = geslaag && alleSkuiweWasSpoorafdrukke && !hintActiveThisAttempt && whiteMovesPlayed > 0;
+    if (!skoonHierdiePoging) state._zoneSkoonVanaf[zone] = false;
+    if (geslaag && sportInskrywing.rung === LAASTE_SPORT_VAN_SONE[zone] && state._zoneSkoonVanaf[zone] !== false) {
+      if (!state.cleanZoneAscents.includes(zone)) state.cleanZoneAscents.push(zone);
+    }
   }
 
   function beginPoging() {
@@ -296,9 +431,147 @@
       };
     }
 
+    // Kaart 3: sone-skoon-vlag herstel by die sone se eerste sport.
+    if (rungN === EERSTE_SPORT_VAN_SONE[bank.zone]) state._zoneSkoonVanaf[bank.zone] = true;
+    knightPath = [huidigePos.wN];
+    alleSkuiweWasSpoorafdrukke = true;
+    hintActiveThisAttempt = hintAktiefVirPoging(state, rungN);
+    hintSquareThisAttempt = hintActiveThisAttempt ? berekenWenkVierkant(bank, symIdx) : null;
+
+    document.getElementById('wysWKnop').style.display = 'none';
+    document.getElementById('wOorlegsel').style.display = 'none';
     setBoodskap('', '');
     verversBord();
     verversStatus();
+    startFadeTimer();
+    toonWenkGloeiIndienNodig();
+  }
+
+  // Kaart 3: hint_square_logic="oracle" (§3.3) -- die bestemming van die
+  // orakel-optimale eerste skuif uit die sport se WORTEL-posisie. Vir al 30
+  // sporte word hierdie verstek gebruik (geen handoorheersings nog nie).
+  function berekenWenkVierkant(bank, symIdx0) {
+    const canonical = parseFEN(bank.fen);
+    const pos0 = transformPos(canonical, symIdx0);
+    const voorDTM = Orakel.dtm(orakelFen(pos0, Core.TURN_WHITE));
+    for (const m of Core.whiteMoves(pos0.wK, pos0.wB, pos0.wN, pos0.bK)) {
+      const nwK = m.piece === 'K' ? m.to : pos0.wK;
+      const nwB = m.piece === 'B' ? m.to : pos0.wB;
+      const nwN = m.piece === 'N' ? m.to : pos0.wN;
+      const succFen = orakelFen({ wK: nwK, wB: nwB, wN: nwN, bK: pos0.bK }, Core.TURN_BLACK);
+      if (Orakel.dtm(succFen) === voorDTM - 1) return m.to;
+    }
+    return null;
+  }
+
+  // === Kaart 3: W-oorlegsel + kontrolevraag (§2.8) ===
+  // Let wel: §1.4 verwys na §4.4 vir hoe die ruiter se W-pad geleer word, maar
+  // §4 in die spesifikasie gaan net tot §4.2 -- §4.3/§4.4 bestaan nie. Hierdie
+  // is dus 'n redelike eie ontwerp (soos met die gebruiker bespreek): die
+  // "ideale W" word direk uit die orakel afgelei (die ruiter se vierkante
+  // langs 'n volledig optimale hoof-lyn vanaf die sport se WORTEL-posisie),
+  // eerder as 'n aparte, hardgekodeerde meetkundige patroon.
+  function berekenIdealePad(bankFen, symIdx0) {
+    const canonical = parseFEN(bankFen);
+    let pos = transformPos(canonical, symIdx0);
+    let t = Core.TURN_WHITE;
+    const pad = [pos.wN];
+    for (let stap = 0; stap < 80; stap++) { // ruim bo die 66-ply globale maks (Kaart 1)
+      const d = Orakel.dtm(orakelFen(pos, t));
+      if (d === 0 || d === Orakel.REMISE) break;
+      if (t === Core.TURN_WHITE) {
+        let beste = null;
+        for (const m of Core.whiteMoves(pos.wK, pos.wB, pos.wN, pos.bK)) {
+          const nwK = m.piece === 'K' ? m.to : pos.wK;
+          const nwB = m.piece === 'B' ? m.to : pos.wB;
+          const nwN = m.piece === 'N' ? m.to : pos.wN;
+          const succFen = orakelFen({ wK: nwK, wB: nwB, wN: nwN, bK: pos.bK }, Core.TURN_BLACK);
+          if (Orakel.dtm(succFen) === d - 1) { beste = { nwK, nwB, nwN, piece: m.piece }; break; }
+        }
+        if (!beste) break;
+        pos = { wK: beste.nwK, wB: beste.nwB, wN: beste.nwN, bK: pos.bK };
+        if (beste.piece === 'N') pad.push(pos.wN);
+        t = Core.TURN_BLACK;
+      } else {
+        const gekies = Orakel.defenderMove(orakelFen(pos, t), 'optimaal', {});
+        if (!gekies) break;
+        pos = { wK: pos.wK, wB: pos.wB, wN: pos.wN, bK: algToSq(gekies.to) };
+        t = Core.TURN_WHITE;
+      }
+    }
+    return pad;
+  }
+
+  function toonWOorlegselEnVraag(voltooiCallback, verpligtend) {
+    const idealePad = berekenIdealePad(huidigeSport.fen, symIdx);
+    const werkliktePad = knightPath;
+    const paaieVerskil = JSON.stringify(werkliktePad) !== JSON.stringify(idealePad);
+
+    const container = document.getElementById('wOorlegsel');
+    container.style.display = 'block';
+    container.innerHTML = '';
+
+    const werklikEl = document.createElement('div');
+    werklikEl.className = 'pad-reël';
+    werklikEl.textContent = 'Werklike pad hierdie poging: N ' + werkliktePad.map(sqAlg).join(' -> ');
+    container.appendChild(werklikEl);
+
+    const idealeEl = document.createElement('div');
+    idealeEl.className = 'pad-reël';
+    idealeEl.textContent = 'Ideale W-patroon (orakel-optimaal): N ' + idealePad.map(sqAlg).join(' -> ');
+    container.appendChild(idealeEl);
+
+    if (paaieVerskil) {
+      const noot = document.createElement('div');
+      noot.className = 'pad-reël';
+      noot.textContent = '(die werklike pad het van die ideale W afgewyk -- steeds geldig, net nie die vinnigste roete nie)';
+      container.appendChild(noot);
+    }
+
+    // Kontrolevraag: watter gaatjie het die EERSTE ruiterskuif in die ideale
+    // pad toegemaak? (net sinvol as die ruiter regtig geskuif het)
+    if (idealePad.length > 1) {
+      const korrek = idealePad[1];
+      const kandidate = Core.KNIGHT_FLAT
+        .slice(idealePad[0] * 8, idealePad[0] * 8 + Core.KNIGHT_CNT[idealePad[0]])
+        .filter((sq) => sq !== korrek);
+      const afleiers = kandidate.slice(0, 2);
+      const opsies = [korrek, ...afleiers].sort(() => Math.random() - 0.5);
+
+      const vraagEl = document.createElement('div');
+      vraagEl.className = 'kontrolevraag';
+      vraagEl.textContent = 'Watter gaatjie het daardie skuif toegemaak?';
+      container.appendChild(vraagEl);
+
+      const opsiesEl = document.createElement('div');
+      for (const opt of opsies) {
+        const knop = document.createElement('button');
+        knop.className = 'opsie-knoppie';
+        knop.textContent = sqAlg(opt);
+        knop.addEventListener('click', () => {
+          $(opsiesEl).find('button').prop('disabled', true);
+          knop.classList.add(opt === korrek ? 'korrek' : 'verkeerd');
+          if (opt !== korrek) {
+            const verduideliking = document.createElement('div');
+            verduideliking.className = 'pad-reël';
+            verduideliking.textContent = `Nie heeltemal nie -- ${sqAlg(korrek)} was die blok wat toegemaak is. Ons klim in elk geval.`;
+            container.appendChild(verduideliking);
+          }
+        });
+        opsiesEl.appendChild(knop);
+      }
+      container.appendChild(opsiesEl);
+    }
+
+    const gaanVoortKnop = document.createElement('button');
+    gaanVoortKnop.textContent = 'Gaan voort';
+    gaanVoortKnop.addEventListener('click', () => {
+      container.style.display = 'none';
+      if (verpligtend) voltooiCallback();
+    });
+    container.appendChild(gaanVoortKnop);
+
+    if (!verpligtend) return; // "Wys my die W" is op-aanvraag; geen outo-voltooiing nie
   }
 
   function verifieerPosisiebankTeenOrakel() {
@@ -336,6 +609,9 @@
       }
       beginPoging();
       document.getElementById('weerBeginKnop').addEventListener('click', beginPoging);
+      document.getElementById('wysWKnop').addEventListener('click', () => {
+        toonWOorlegselEnVraag(null, false);
+      });
     }).catch((err) => {
       setBoodskap('FOUT: orakel kon nie laai nie -- ' + (err && err.message ? err.message : err), 'sleg');
     });
@@ -366,7 +642,25 @@
     sportGeslaagOfMislukEnigste = false;
     posisieGeskiedenis = [posTuple(huidigePos, turn)];
     swindleTransformed = null;
+    knightPath = [huidigePos.wN];
+    alleSkuiweWasSpoorafdrukke = true;
+    hintActiveThisAttempt = opts.hintActiveThisAttempt || false;
+    hintSquareThisAttempt = opts.hintSquareThisAttempt !== undefined ? opts.hintSquareThisAttempt : null;
     verversBord();
     verversStatus();
+    startFadeTimer();
+    toonWenkGloeiIndienNodig();
   };
+
+  // Kaart 3-toetshake.
+  Kruin.ZONE_FADE_MS = ZONE_FADE_MS;
+  Kruin._kaart3Debug = () => ({
+    fadeArrived, knightPath: knightPath.slice(),
+    hintActiveThisAttempt, hintSquareThisAttempt,
+    alleSkuiweWasSpoorafdrukke,
+  });
+  Kruin._forseerKleureAangekom = showCageOverlay; // vir vinnige toetse sonder om regte sekondes te wag
+  Kruin._verwerkUitkomste = verwerkUitkomste;
+  Kruin._berekenIdealePad = berekenIdealePad;
+  Kruin._berekenWenkVierkant = berekenWenkVierkant;
 })();
