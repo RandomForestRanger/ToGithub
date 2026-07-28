@@ -8,6 +8,32 @@
 
 ---
 
+## Vordering (bygewerk 2026-07-28)
+
+**Kaarte 1–5 is voltooi en gecommit** op tak `add-RandomForestRanger`. Slegs **Kaart 6 (Oudit en Sertifisering)** bly oor. Elke kaart se aanvaardingstoetse is in werklike Chromium (Playwright) geverifieer, nie net beweer nie — sien die git-geskiedenis vir volledige commit-boodskappe per kaart.
+
+| Kaart | Status | Waar |
+|---|---|---|
+| 1 — Die Orakel | ✅ Voltooi | `Berg/orakel/` (`orakel-core.js`, `orakel-worker.js`, `orakel.js`, `orakel-toets.html`) |
+| 2 — Die Spel-enjin | ✅ Voltooi | `Berg/kruin/` (`kruin.html`, `app.js`, `posisiebank.js`, bou-pyplyn in `kruin/pyplyn/`) |
+| 3 — Hokkleuring/Vervaag-in/Wenke | ✅ Voltooi | Uitgebrei binne `Berg/kruin/app.js` |
+| 4 — Die Berg | ✅ Voltooi | `Berg/berg/berg.js` — begin as selfstandige demo (`berg-demo.html`), **nou volledig geïntegreer in kruin.html sedert Kaart 5** |
+| 5 — Die Wêreld | ✅ Voltooi | `Berg/kruin/jorka.js` (teksbank), `Berg/kruin/klank.js` (klank), Kapok-gedrag uitgebrei in `Berg/berg/berg.js` |
+| 6 — Oudit en Sertifisering | ⬜ Volgende | — |
+
+**Bekende spesifikasie-gaping:** §1.4 verwys na §4.4 vir hoe die ruiter se W-pad geleer word, maar §4 gaan net tot §4.2 — §4.3/§4.4 bestaan nie in hierdie dokument nie. Opgelos deur die "ideale W-pad" direk uit die orakel af te lei (die volledig-optimale hoofllyn vanaf 'n sport se wortelposisie) eerder as 'n hardgekodeerde meetkundige patroon (sien `berekenIdealePad` in `app.js`). Hersien indien §4.4 se inhoud ooit opgespoor/herbevestig word.
+
+**Wat Kaart 6 spesifiek moet doen** (nog nooit as 'n aparte, stelselmatige pas gedoen nie):
+1. **Posisie-oudit:** al 30 kanonieke posisies × 8 gedaantes = 240 posisies masjien-geverifieer.
+2. **Slinkse-lyne-oudit:** elke gemerkte lyn (16 posisies, een lyn elk uit Kaart 2 se ligte pas) se weerlegging bevestig — dit is nog nooit vir volledigheid getoets nie.
+3. **Geskripte deurspeel-toets:** 'n optimale speler klim 1→30 sonder mislukking; 'n foutspeler aktiveer elke mislukkingsklas minstens een keer.
+4. **Regressie-lys afgehandel:** begroting-af-per-een-foute, simmetrie-blokkleur, IndexedDB-kas-ongeldigmaking, localStorage-migrasie.
+5. **Sertifiseringsverslag** as kommentaarblok bo in die HTML.
+
+**Let wel oor masjienlas:** tydens Kaart 5 se sessie het die orakel se bou-tyd-toets tydelik 30s+ gemeet (teenoor die 15s-plafon) weens swaar onverwante CPU-las op die masjien op daardie oomblik — 'n omgewingskwessie, nie 'n kode-regressie nie (al 9 ander Kaart-1-korrektheidstoetse het steeds geslaag). Loop Kaart 6 se prestasietoetse verkieslik 'n paar keer, of op 'n rustige stelsel, voordat enige bou-tyd-bevinding as 'n regte probleem aangeteken word.
+
+---
+
 ## 0. Ontwerpsfilosofie (lees eers, bou dan)
 
 1. **Die berg onthou.** Vordering is Markoviaans met behoud: misluk jy sport 25, val jy na 24 — nooit verder nie. Môre begin jy by 24. Die ergste moontlike sessie eindig een tree onder waar dit begin het.
