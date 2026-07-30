@@ -414,6 +414,8 @@
           setJorkaTeks(nuwe === 30 ? Jorka.kies('sneeuluiperd') : Jorka.kies('bewonerOnthulling'));
         });
       }
+    }).then(() => {
+      beginPoging();
     });
 
     // Kapok se kunsies (§5.4): speel lukraak een ontslote kunsie by matte.
@@ -753,4 +755,8 @@
   Kruin._init = init;
   Kruin._setJorkaTeks = setJorkaTeks;
   Kruin._jorkaTeksHuidig = () => document.getElementById('jorkaTeks').textContent;
+
+  // Kaart 6-toetshaak: §6-toestandmigrasie (DOM-vry, toets laaiToestand direk).
+  Kruin._laaiToestand = laaiToestand;
+  Kruin._STATE_KEY = STATE_KEY;
 })();

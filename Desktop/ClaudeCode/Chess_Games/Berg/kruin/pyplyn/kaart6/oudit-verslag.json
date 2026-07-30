@@ -1,0 +1,72 @@
+{
+  "generatedAt": "2026-07-30T06:22:43.226Z",
+  "sections": [
+    {
+      "name": "0. Dubbel-implementasie-konsekwentheid (build-oracle.js vs orakel-worker.js)",
+      "ok": 2,
+      "fail": 0,
+      "total": 2,
+      "note": "Node: 9.3s, blaaier(vm): 26.2s"
+    },
+    {
+      "name": "1. Posisie-oudit (30 sporte x 8 gedaantes = 240 posisies)",
+      "ok": 960,
+      "fail": 0,
+      "total": 960,
+      "note": ""
+    },
+    {
+      "name": "2. Slinkse-lyne-oudit (16 gemerkte lyne)",
+      "ok": 97,
+      "fail": 0,
+      "total": 97,
+      "note": ""
+    },
+    {
+      "name": "3a. Deurspeel-toets: optimale speler klim 1 -> 30",
+      "ok": 30,
+      "fail": 0,
+      "total": 30,
+      "note": ""
+    },
+    {
+      "name": "3b. Deurspeel-toets: foutspeler aktiveer elke mislukkingsklas",
+      "ok": 5,
+      "fail": 0,
+      "total": 5,
+      "note": ""
+    },
+    {
+      "name": "4a. Regressie: begroting-af-per-een-foute",
+      "ok": 12,
+      "fail": 0,
+      "total": 12,
+      "note": ""
+    },
+    {
+      "name": "4b. Regressie: simmetrie-blokkleur",
+      "ok": 10,
+      "fail": 0,
+      "total": 10,
+      "note": ""
+    },
+    {
+      "name": "4c. Regressie: IndexedDB-kas-ongeldigmaking",
+      "ok": 4,
+      "fail": 0,
+      "total": 4,
+      "note": ""
+    },
+    {
+      "name": "4d. Regressie: localStorage-migrasie",
+      "ok": 8,
+      "fail": 0,
+      "total": 8,
+      "note": ""
+    }
+  ],
+  "overallOk": 1128,
+  "overallFail": 0,
+  "overallTotal": 1128,
+  "totalMs": 158118
+}
