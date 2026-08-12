@@ -8,9 +8,9 @@
 
 ---
 
-## Vordering (bygewerk 2026-07-30)
+## Vordering (bygewerk 2026-08-12)
 
-**Al ses kaarte is voltooi en gecommit** op tak `add-RandomForestRanger`. Die projek is volledig.
+**Al ses kaarte is voltooi en gecommit** op tak `add-RandomForestRanger`. 'n Ongeplande Kaart 7 (kunswerk-integrasie, weergawe 1) is sedertdien ook voltooi — sien hieronder.
 
 | Kaart | Status | Waar |
 |---|---|---|
@@ -26,6 +26,46 @@
 **Kaart 6 (2026-07-30):** 1128/1128 outomatiese toetse geslaag — posisie-oudit (240 posisies), slinkse-lyne-oudit (16 lyne), geskripte deurspeel-toets (optimale klim 1→30 + elke mislukkingsklas), en die volle regressielys. Geen fout is in die geskeepte kode gevind nie; twee foute is in die oudit-skrifte self reggestel voor die finale pas. **Metodologie-let wel:** hierdie sessie het geen blaaier-outomatisering gehad nie (Claude-in-Chrome nie geïnstalleer nie), dus is die oudit op reëls-enjin-vlak gedoen (Node `vm`, werklike produksielêers ongewysig gelaai) eerder as 'n volle Chromium/Playwright-DOM-pas soos Kaarte 1–5. Volledige verslag: sien die kommentaarblok bo in `kruin/kruin.html` en `kruin/pyplyn/kaart6/oudit-verslag.json`. Voor Kaart 6 begin het, is ook 'n regte gebruiker-gerapporteerde fout herstel: `beginPoging()` is nooit ná 'n geslaagde klim weer geroep nie (die bord het nie vir die nuwe sport opgestel nie) — herstel in `voltooiUitkomste()`, deur die gebruiker in die blaaier bevestig.
 
 **Let wel oor masjienlas:** die orakel se bou-tyd kan onder swaar onverwante CPU-las tydelik ver bo die 15s-plafon meet (tot 30s+ waargeneem) — 'n omgewingskwessie, nie 'n kode-regressie nie. Loop prestasietoetse verkieslik 'n paar keer, of op 'n rustige stelsel, voordat enige bou-tyd-bevinding as 'n regte probleem aangeteken word. (Bevestig weer tydens Kaart 6: Node se `vm.runInContext`-sandboks voeg sy eie ~2-3x stadigheidskoste by bo suiwer Node — irrelevant vir die werklike blaaier-looptyd, wat nooit deur `vm` gaan nie.)
+
+---
+
+## Kaart 7 — Kunswerk-integrasie, weergawe 1: kinders-kolaz (2026-08-12)
+
+**Status: ✅ Voltooi.** Nie een van die oorspronklike ses kaarte nie — nuwe omvang wat ontstaan het toe die gebruiker vier landskap-kolaz-blaaie (`Berg/berg/1_sneeu.png` .. `4_moeras.png`) gedeel het wat sy kinders self gemaak het, en gevra is of dit as agtergrond kon werk.
+
+**Herkoms — belangrik vir toekomstige sessies:** hierdie kolaz is **nie** die gekommissioneerde illustreerder se werk nie (sien §Kaart 8 hieronder vir daardie brief). Die gebruiker het uitdruklik gevra dat dit as **weergawe 1** van die berg-kuns dien, met die verwagting dat die gekommissioneerde weergawe later as **weergawe 2** bykom. Die twee weergawes moet apart bly — geen kode of koördinate hieronder mag aanvaar dat daar net een weergawe sal wees nie.
+
+**Bevinding voor die integrasie begin het:** toe die vier blaaie in volgorde (Sneeu bo, Rotse, Woud, Moeras onder — soos in die kunstenaarsbrief se stapelvolgorde) saamgevoeg is, het dit uit sigself 'n deurlopende, redelik skoon diagonaal gevorm (lug links, wydte krimp van ~67% bo na ~10-15% onder; berg/terrein regs, groei omgekeerd). Dit is met 'n regte pixel-vlak seam-toets bevestig (grens-x binne ~2-7% van beeldwydte tussen elke naat). **Gevolg:** die bestaande diagonale kamera-argitektuur (kruin regs-bo, voet links-onder, §4.1/§4.2) hoef nié na 'n regop-uitleg te verander soos oorspronklik in hierdie dokument aanvaar is nie (sien die verouderde besluit hieronder, nou vervang).
+
+**Wat gebou is:**
+- `Berg/berg/berg-agtergrond.jpg` — die vier blaaie herskaal na 720px breed (2036px totale hoogte), saamgevoeg in stapelvolgorde, JPEG q=84 (~412 KB). Sone-nate lê by y=509 (sneeu/rotse), y=1018 (rotse/woud), y=1527 (woud/moeras).
+- `Berg/kruin/kruin.html` — die handgetekende SVG-terrein (`#lug`, `#verre-pieke`, `#terrein`-strata, `lugGradient`) is vervang met 'n enkele `<image>`-laag wat `berg-agtergrond.jpg` dek; die SVG se `viewBox` skuif van `0 0 1200 800` na `0 0 720 2036` (die agtergrondbeeld se eie pixelruimte). `#roete` se Bézier-pad en die drie `#sone-grense`-sirkels is herkoördineer om met die kolaz se werklike sigbare diagonaal te pas (pad bly deurgaans op die terrein-kant, nooit oor die lug-kant nie — geverifieer deur al 30 merkerposisies + kamera-vensters teen die werklike beeld te render, sien hieronder). `#merkers`/`#bewoners`/`#klimmer`-groepe (deur `berg.js` gevul) is ongeskonde.
+- `Berg/berg/berg.js` — enjin-argitektuur ongeskonde; net `VENSTER_W/H` (340×260 → 360×280), `kruinView()`, en `bewonerOnthulling()` se `nabyBewoner`-venster is herskaal na die nuwe wêreldruimte. Die nuwe waardes is toevallig soortgelyk in grootte-orde aan die oues (die gekose beeldresolusie het min of meer met die ou hand-SVG se skaal ooreengekom), dus was min afstemming nodig.
+- **Geen "weergawe-wisselaar" in-game gebou nie** (gebruiker se uitdruklike keuse) — weergawe 1 is tans die enigste/verstek-kuns, maar agtergrond-beeld + roete/merker/sone-koördinate + kamera-konstantes is almal in `berg-agtergrond.jpg`/`kruin.html`/`berg.js` gehou as 'n samehangende, herhaalbare stel wysigings — as weergawe 2 later bykom, behoort dit dieselfde patroon te volg (nuwe beeld-lêer, nuwe koördinate, geen ander enjin-verandering) sonder om weergawe 1 aan te raak.
+- **Bewoner-plekhouers (Kaart 4 se kleur+letter-sirkels) is ongeskonde/onveranderd** — dié 10 diere-plekhouers is glad nie deel van hierdie kolaz nie (die kolaz se toevallige foto's — arend, luiperd, olifante — is dekoratiewe teksture in die agtergrond, nié die aangewese Akkedis/Aksolotl/ens.-bewoners nie). Regte bewoner-kuns bly toekomstige werk, ongeag watter agtergrond-weergawe.
+
+**Verifikasie:** geen blaaier-outomatisering beskikbaar hierdie sessie nie (Claude-in-Chrome deur die gebruiker afgewys). In plaas daarvan is die werklike `d`-pad-wiskunde en kamera-vensterformules in Python herbou en teen die werklike `berg-agtergrond.jpg`-pixels gerender (al 30 merkers + 5 kamera-vensterstate: sport 1, 15, 23, 30, kruinView) om te bevestig dat elke merker op sigbare terrein land en elke venster 'n sinvolle landskap-crop gee. SVG-elementstruktuur onafhanklik bevestig as welgevormd (kommentare bevat doelbewus " -- " soos elders in hierdie kodebasis se styl — dis 'n vals-alarm vir streng-XML-ontleders, nie 'n regte fout nie, aangesien blaaiers HTML-kommentaar-ontleding gebruik). **'n Regte Chromium-DOM-pas word steeds aanbeveel wanneer blaaier-outomatisering weer beskikbaar is**, veral om die animasies (klim/daal/afkoms/bewoner-onthulling) werklik met die nuwe wêreldskaal te sien beweeg, nie net statiese vensterrame nie.
+
+`Berg/berg/berg-demo.html` (die ou Kaart 4-selfstandige demo, nie deur `kruin.html` gebruik nie) is doelbewus ongeraak gelaat — dit het steeds die ou 1200×800 hand-SVG. Nie 'n probleem nie (dooie kode, buite die speletjie se werklike pad), maar hersien/verwyder as dit ooit verwarring veroorsaak.
+
+---
+
+## Kaart 8 (toekomstig) — gekommissioneerde illustreerder-weergawe / weergawe-keuse
+
+'n Menslike illustreerder word vroeg-Augustus 2026 gekontrakteer om die berg met die hand te teken — sien `Berg/kunstenaar-brief.txt` (deur die gebruiker in 'n Word-dokument aangepas voor dit gestuur is; die `.txt` weerspieël dus nie noodwendig die finale weergawe wat die kunstenaar ontvang nie). Vier landskap-A4-blaaie (Sneeu bo, dan Rotse, Woud, Moeras onder), regstreeks op mekaar gestapel — presies dieselfde stapelvolgorde as die kinders-kolaz hierbo.
+
+**Hersiene verwagting (2026-08-12, ná Kaart 7):** die oorspronklike aanname hieronder was dat 'n regop (reguit dwarssnit) uitleg nodig sou wees omdat die diagonale hand-SVG nie sou pas nie. Kaart 7 het bewys dat 'n vier-blad-stapel in hierdie volgorde uit sigself 'n bruikbare diagonaal gee — dit **kan** dus wees dat die gekommissioneerde weergawe dieselfde diagonale integrasiepatroon kan volg (nuwe `berg-agtergrond-v2.jpg` of eendersgenaamd, eie roete/sone/kamera-koördinate, geen ander enjin-verandering). Bevestig dit egter eers visueel wanneer die regte kuns ontvang word — moenie aanvaar dit sal dieselfde diagonaal-verhouding hê nie; die kinders-kolaz s'n was gelukkige toeval, nie ontwerp nie.
+
+**Nog nie besluit nie (wag vir hierdie kaart):** hoe die twee weergawes (kinders-kolaz vs. gekommissioneerde kuns) uiteindelik aan die speler blootgestel word. Kaart 7 het doelbewus geen wisselaar gebou nie (op die gebruiker se instruksie); wanneer weergawe 2 bestaan, moet 'n eerste-beginsel-besluit geneem word (instelling-wisselaar? outomaties die jongste weergawe? albei permanent langs mekaar?) — nie vooruitgeloop nie.
+
+**Integrasiebesluit (oorspronklik geneem voordat enige kuns bestaan het — eerste twee punte deur Kaart 7 uitgevoer vir weergawe 1, derde punt deur Kaart 7 se bevinding vervang):**
+- **Gelaagde benadering**, nie hertekening/vektorisering nie: die kuns word 'n rasterbeeld-agtergrond; die bestaande interaktiewe elemente (30 sportmerkers, roetepad-oorlegsel, kamera-`viewBox`-pan, bewoner-verskynings) bly 'n aparte deursigtige SVG-laag bo-oor die beeld. ✅ Presies so gebou in Kaart 7 vir weergawe 1 — behoort dieselfde te werk vir weergawe 2.
+- Dit was 'n bewuste **afwyking van die destydse `berg/berg.js`-argitektuur**, waar terrein en interaktiewe elemente almal een handgeboude SVG was. ✅ Kaart 7 het hierdie oorgang gedoen (rasterbeeld + SVG-oorlegsel vir alles interaktief).
+- ~~Die berg word ook **regop** (reguit dwarssnit, Sneeu bo tot Moeras onder) eerder as die diagonale SVG-uitleg.~~ **Vervang deur Kaart 7 se bevinding:** die diagonale uitleg (kruin regs-bo, voet links-onder) is behou, nie na regop verander nie — sien "Hersiene verwagting" hierbo. Bevestig weer vir weergawe 2 wanneer daardie kuns ontvang word; moenie aanvaar dieselfde diagonaal sal weer toevallig werk nie.
+
+**Wat NIE nou gedoen kan word nie (wag vir die kuns):** enige herkoördinering van sportmerkers, roetepad, of bewonerposisies — dit hang af van presies waar die kunstenaar die pad en terreinkenmerke plaas. Geen kodeverandering hieraan voor die geskandeerde kuns ontvang is nie.
+
+**Karakters as aparte bates:** Oom Jorka, Kapok, en die sneeuluiperd word **nie** in die 4 agtergrondblaaie ingeteken nie — hulle is aparte, standalone tekeninge (sien brief) sodat hulle onafhanklik beweeg/verskyn/verdwyn kan word (veral die sneeuluiperd, wat by sport 30 moet invervaag as 'n los laag).
 
 ---
 

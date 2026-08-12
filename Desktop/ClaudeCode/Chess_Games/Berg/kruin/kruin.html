@@ -98,32 +98,36 @@
 </head>
 <body>
   <div id="bergAgtergrond">
-    <svg id="bergSvg" viewBox="0 0 1200 800" xmlns="http://www.w3.org/2000/svg">
-      <defs>
-        <linearGradient id="lugGradient" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stop-color="#bfe3f5"/>
-          <stop offset="55%" stop-color="#e8f4fb"/>
-          <stop offset="100%" stop-color="#fdfdfb"/>
-        </linearGradient>
-      </defs>
-      <rect id="lug" x="0" y="0" width="1200" height="800" fill="url(#lugGradient)"/>
-      <g id="verre-pieke" fill="#c9d6de" stroke="#a9bac4" stroke-width="2" opacity="0.7">
-        <polygon points="0,780 180,520 380,780"/>
-        <polygon points="850,780 1030,480 1200,700 1200,780"/>
-      </g>
-      <g id="terrein" stroke="#1a1a2e" stroke-width="4" stroke-linejoin="round">
-        <polygon id="strata-moeras" points="50,780 1150,780 1150,620 250,620" fill="#5b7a4f"/>
-        <polygon id="strata-woud"   points="250,620 1100,620 1100,440 500,440" fill="#3f6b4a"/>
-        <polygon id="strata-rotse"  points="500,440 1050,440 1050,260 750,260" fill="#8d8f92"/>
-        <polygon id="strata-sneeu"  points="750,260 1030,260 1050,90" fill="#f4f7fa"/>
-      </g>
+    <svg id="bergSvg" viewBox="0 0 720 2036" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+      <!--
+        Kaart 7 (2026-08-12): kunswerk-weergawe 1 -- 'n kolaz deur die
+        gebruiker se kinders (Berg/berg/1_sneeu.png .. 4_moeras.png),
+        saamgevoeg tot een agtergrondbeeld (Berg/berg/berg-agtergrond.jpg,
+        720x2036, sone-nate by y=509/1018/1527). Die kolaz behou uit sy eie
+        aard 'n deurlopende diagonaal (lug links-bo, berg regs-onder-tot-bo),
+        so die bestaande diagonale kamera-enjin (§4.2) is grootliks onveranderd
+        behou -- net die wêreld-koördinaatstelsel skuif van die handgetekende
+        1200x800-SVG na hierdie beeld se eie 720x2036-pixelruimte. Sien
+        CLAUDE.md "Toekomstige werk" vir die volledige besluit-log. 'n Tweede
+        kunswerk-weergawe (gekommissioneerde illustreerder) mag later bykom;
+        dié weergawe se koördinate/bates staan doelbewus apart hiervan sodat
+        weergawe 1 ongeraak bly wanneer dit gebeur.
+      -->
+      <image id="agtergrondBeeld" x="0" y="0" width="720" height="2036"
+             href="../berg/berg-agtergrond.jpg" xlink:href="../berg/berg-agtergrond.jpg"
+             preserveAspectRatio="none"/>
       <g id="sone-grense" fill="#f39c12" stroke="#1a1a2e" stroke-width="2">
-        <g id="grens-moeras-woud" transform="translate(250,620)"><circle r="10"/></g>
-        <g id="grens-woud-rotse" transform="translate(500,440)"><circle r="10"/></g>
-        <g id="grens-rotse-sneeu" transform="translate(750,260)"><circle r="10"/></g>
+        <g id="grens-moeras-woud" transform="translate(377,1527)"><circle r="8"/></g>
+        <g id="grens-woud-rotse" transform="translate(495,1018)"><circle r="8"/></g>
+        <g id="grens-rotse-sneeu" transform="translate(477,509)"><circle r="8"/></g>
       </g>
-      <path id="roete" d="M 100,760 C 350,650 700,400 1030,90"
-            fill="none" stroke="#c47f2c" stroke-width="6" stroke-linecap="round"/>
+      <path id="roete"
+            d="M 260,2000 C 266.7,1963.3 280,1863.3 300,1780 C 320,1696.7 373.3,1588.3 380,1500
+               C 386.7,1411.7 320,1333.3 340,1250 C 360,1166.7 486.7,1083.3 500,1000
+               C 513.3,916.7 423.3,835 420,750 C 416.7,665 473.3,565 480,490
+               C 486.7,415 446.7,356.7 460,300 C 473.3,243.3 533.3,190 560,150
+               C 586.7,110 610,75 620,60"
+            fill="none" stroke="#c47f2c" stroke-width="5" stroke-linecap="round" opacity="0.85"/>
       <g id="merkers"></g>
       <g id="bewoners"></g>
       <g id="klimmer">

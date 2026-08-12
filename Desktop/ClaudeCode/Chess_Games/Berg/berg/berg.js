@@ -4,6 +4,11 @@
 // Sedert Kaart 5 werklik in kruin.html geïntegreer (was 'n Kaart 4-selfstandige
 // demo). Diere is eenvoudige plekhouer-silhoeëtte; vervang later net die
 // binnekant van elke <g id="bewoner-N">-groep.
+// Kaart 7 (2026-08-12): kunswerk-weergawe 1 (kinders-kolaz) vervang die
+// handgetekende SVG-terrein met 'n raster-agtergrond in kruin.html; hierdie
+// lêer se enjin (kamera, merkers, bewoners, klimmer/Kapok) is argitektuur-
+// ongeskonde -- net VENSTER_W/H, kruinView(), en bewonerOnthulling() se
+// nabyBewoner-venster is herskaal na die nuwe 720x2036-wêreldruimte.
 (function (root) {
   'use strict';
 
@@ -50,7 +55,11 @@
     }
 
     // Vaste-grootte kamera-venster gesentreer op 'n merker se posisie.
-    const VENSTER_W = 340, VENSTER_H = 260;
+    // Kaart 7: wêreld-skaal skuif van die handgetekende 1200x800-SVG na die
+    // kolaz-agtergrond se eie 720x2036-pixelruimte -- hierdie venstergrootte
+    // is herskaal om dieselfde "hoeveel sporte sigbaar"-gevoel te behou
+    // (voorheen ~340x260 in 'n 1200-breë wêreld met ~42 eenhede per sport).
+    const VENSTER_W = 360, VENSTER_H = 280;
     function viewBoxForMarker(n) {
       const p = markerPos[n];
       return { x: p.x - VENSTER_W / 2, y: p.y - VENSTER_H / 2, w: VENSTER_W, h: VENSTER_H };
@@ -58,7 +67,7 @@
     // Kruin-venster: styf op die kruin geraam (opening van elke sessie).
     function kruinView() {
       const p = markerPos[N_RUNGS];
-      return { x: p.x - 120, y: p.y - 260, w: 240, h: 200 };
+      return { x: p.x - 140, y: p.y - 90, w: 280, h: 220 };
     }
 
     function animateViewBox(fromBox, toBox, durationMs, opts) {
@@ -286,7 +295,7 @@
       if (!MILESTONE_RUNGS.includes(rung)) return Promise.resolve();
       const huidige = viewBoxForMarker(rung);
       const p = markerPos[rung];
-      const nabyBewoner = { x: p.x - 40, y: p.y - 100, w: 220, h: 170 };
+      const nabyBewoner = { x: p.x - 42, y: p.y - 108, w: 230, h: 180 };
       const el = bewonerEl(rung);
       return animateViewBox(huidige, nabyBewoner, 3000)
         .then(() => {
