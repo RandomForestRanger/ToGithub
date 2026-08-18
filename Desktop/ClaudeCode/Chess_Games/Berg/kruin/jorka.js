@@ -80,7 +80,7 @@
       'Kyk daar. Kapok wys jou iets.',
       "Hier's 'n leidraad. Neem dit sonder skaamte.",
       'Selfs die berg gee soms \'n hand.',
-      "Die blok gloei. Dis nie punte-afgetrek nie -- dis net hulp.",
+      "Die blokke gloei -- een vir die stuk, een vir waar dit trek. Dis nie punte-afgetrek nie -- dis net hulp.",
     ],
 
     kontrolevraagTerugvoer: {

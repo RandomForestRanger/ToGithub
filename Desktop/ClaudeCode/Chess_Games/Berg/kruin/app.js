@@ -83,10 +83,12 @@
     state.hints[key] = (state.hints[key] || 0) + 1;
   }
 
-  // Kaart 3: twee-skoon-stygings-reël (§2.4). 'n Sport MET 'n wenk geslaag
-  // pouseer die klim op DIESELFDE sport totdat dit twee keer agtereenvolgens
-  // sonder 'n wenk geslaag word. 'n Mislukking tussenin herstel nie die
-  // reeds-opgeboude skoon-telling na nul nie (bevestig deur die gebruiker).
+  // Kaart 3-vervolg (2026-08-14, gebruiker-versoek): een-skoon-styging-reël
+  // (§2.4, herroep vanaf oorspronklik twee). 'n Sport MET 'n wenk geslaag
+  // pouseer die klim op DIESELFDE sport vir presies een verdere poging;
+  // slaag daardie volgende poging sonder 'n wenk, gaan die klim voort. 'n
+  // Mislukking tussenin herstel nie die reeds-opgeboude skoon-telling na nul
+  // nie (bevestig deur die gebruiker, Kaart 3).
   function vorderRung(state, rungN, geslaag, wenkAktief) {
     if (!geslaag) {
       state.currentRung = Math.max(1, state.currentRung - 1);
@@ -100,7 +102,7 @@
       delete state.pendingCleanAscents[key];
       // val deur na normale bevordering hieronder
     } else if (wenkAktief) {
-      state.pendingCleanAscents[key] = 2;
+      state.pendingCleanAscents[key] = 1;
       return; // bly op dieselfde sport totdat die reël bevredig is
     }
     state.currentRung = Math.min(N_RUNGS, state.currentRung + 1);
@@ -147,7 +149,7 @@
   // Kaart 3: hokkleuring/vervaag-in, spoorafdruk, wenk, W-oorlegsel.
   let fadeTimerHandle = null, fadeArrived = false;
   let knightPath = [];               // getransformeerde ruiter-vierkante hierdie poging
-  let hintSquareThisAttempt = null;  // getransformeerde bestemmingsblok, of null
+  let hintSquareThisAttempt = null;  // { van, na } (getransformeerde blokke), of null
   let hintActiveThisAttempt = false; // was consecFails>=2 toe hierdie poging begin het
   let alleSkuiweWasSpoorafdrukke = true; // vir sone-skoon-styging-opsporing
 
@@ -243,9 +245,17 @@
     clearHintGlow();
     if (!hintActiveThisAttempt || hintSquareThisAttempt === null) return;
     if (turn !== Core.TURN_WHITE || sportGeslaagOfMislukEnigste) return;
-    $(`#board .square-${sqAlg(hintSquareThisAttempt)}`).addClass('wenk-gloei');
+    // Albei blokke gloei: die vertrekblok (watter stuk moet trek -- dikwels
+    // dubbelsinnig, aangesien meer as een stuk soms na dieselfde bestemming
+    // kan trek) EN die bestemmingsblok.
+    $(`#board .square-${sqAlg(hintSquareThisAttempt.van)}`).addClass('wenk-gloei');
+    $(`#board .square-${sqAlg(hintSquareThisAttempt.na)}`).addClass('wenk-gloei');
     document.dispatchEvent(new CustomEvent('kruin:wenk-verskyn', {
-      detail: { rung: huidigeSport.rung, blok: sqAlg(hintSquareThisAttempt) },
+      detail: {
+        rung: huidigeSport.rung,
+        van: sqAlg(hintSquareThisAttempt.van),
+        na: sqAlg(hintSquareThisAttempt.na),
+      },
     }));
   }
 
@@ -504,9 +514,12 @@
     toonWenkGloeiIndienNodig();
   }
 
-  // Kaart 3: hint_square_logic="oracle" (§3.3) -- die bestemming van die
-  // orakel-optimale eerste skuif uit die sport se WORTEL-posisie. Vir al 30
-  // sporte word hierdie verstek gebruik (geen handoorheersings nog nie).
+  // Kaart 3: hint_square_logic="oracle" (§3.3) -- die orakel-optimale eerste
+  // skuif uit die sport se WORTEL-posisie. Vir al 30 sporte word hierdie
+  // verstek gebruik (geen handoorheersings nog nie). Gee beide die vertrek-
+  // (watter stuk moet trek) en bestemmingsblok terug -- meer as een stuk kan
+  // dikwels na dieselfde blok trek, so die bestemming alleen is dikwels
+  // dubbelsinnig oor WATTER stuk moet trek.
   function berekenWenkVierkant(bank, symIdx0) {
     const canonical = parseFEN(bank.fen);
     const pos0 = transformPos(canonical, symIdx0);
@@ -516,7 +529,10 @@
       const nwB = m.piece === 'B' ? m.to : pos0.wB;
       const nwN = m.piece === 'N' ? m.to : pos0.wN;
       const succFen = orakelFen({ wK: nwK, wB: nwB, wN: nwN, bK: pos0.bK }, Core.TURN_BLACK);
-      if (Orakel.dtm(succFen) === voorDTM - 1) return m.to;
+      if (Orakel.dtm(succFen) === voorDTM - 1) {
+        const van = m.piece === 'K' ? pos0.wK : m.piece === 'B' ? pos0.wB : pos0.wN;
+        return { van, na: m.to };
+      }
     }
     return null;
   }
@@ -672,35 +688,39 @@
     stilKnop.checked = Klank.isStil();
     stilKnop.addEventListener('change', () => Klank.stelStil(stilKnop.checked));
 
-    BergEngine.init(document.getElementById('bergSvg'), { beginRung: state.currentRung });
-
-    // §5.2: die Web Worker bereken die orakel TERWYL die openingsafkoms speel.
-    // As die orakel eerste klaar is, verander niks nie; as nie, "vang die
-    // klimmer sy asem" by die landing totdat dit gereed is.
-    Klank.speelWind();
-    const afkomsP = BergEngine.openingsAfkoms(state.currentRung, state.residents);
-    const orakelP = Orakel.ready({ workerUrl: '../orakel/orakel-worker.js' });
-    let orakelGereed = false;
-    orakelP.then(() => { orakelGereed = true; });
-    afkomsP.then(() => {
-      if (!orakelGereed) setBoodskap('Kapok vang sy asem...', '');
-    });
-
-    Promise.all([afkomsP, orakelP]).then(() => {
-      setBoodskap('', '');
-      const foute = verifieerPosisiebankTeenOrakel();
-      if (foute.length) {
-        setBoodskap('FOUT: posisiebank stem nie ooreen met die orakel nie -- ' + foute.join('; '), 'sleg');
-        document.getElementById('weerBeginKnop').disabled = true;
-        return;
-      }
-      beginPoging();
-      document.getElementById('weerBeginKnop').addEventListener('click', beginPoging);
-      document.getElementById('wysWKnop').addEventListener('click', () => {
-        toonWOorlegselEnVraag(null, false);
+    // Kaart 7-vervolg: BergEngine.init() is nou async (dit haal eers
+    // berg/kuns-bates.svg -- Kapok/Yorka/Sneeuluiperd/bewoner-kuns -- voordat
+    // dit merkers/bewoners/Kapok bou). Alles wat op merkerPos/bewoner-
+    // elemente staatmaak (openingsAfkoms ingesluit) wag dus hierop.
+    BergEngine.init(document.getElementById('bergSvg'), { beginRung: state.currentRung }).then(() => {
+      // §5.2: die Web Worker bereken die orakel TERWYL die openingsafkoms speel.
+      // As die orakel eerste klaar is, verander niks nie; as nie, "vang die
+      // klimmer sy asem" by die landing totdat dit gereed is.
+      Klank.speelWind();
+      const afkomsP = BergEngine.openingsAfkoms(state.currentRung, state.residents);
+      const orakelP = Orakel.ready({ workerUrl: '../orakel/orakel-worker.js' });
+      let orakelGereed = false;
+      orakelP.then(() => { orakelGereed = true; });
+      afkomsP.then(() => {
+        if (!orakelGereed) setBoodskap('Kapok vang sy asem...', '');
       });
-    }).catch((err) => {
-      setBoodskap('FOUT: orakel kon nie laai nie -- ' + (err && err.message ? err.message : err), 'sleg');
+
+      Promise.all([afkomsP, orakelP]).then(() => {
+        setBoodskap('', '');
+        const foute = verifieerPosisiebankTeenOrakel();
+        if (foute.length) {
+          setBoodskap('FOUT: posisiebank stem nie ooreen met die orakel nie -- ' + foute.join('; '), 'sleg');
+          document.getElementById('weerBeginKnop').disabled = true;
+          return;
+        }
+        beginPoging();
+        document.getElementById('weerBeginKnop').addEventListener('click', beginPoging);
+        document.getElementById('wysWKnop').addEventListener('click', () => {
+          toonWOorlegselEnVraag(null, false);
+        });
+      }).catch((err) => {
+        setBoodskap('FOUT: orakel kon nie laai nie -- ' + (err && err.message ? err.message : err), 'sleg');
+      });
     });
   }
 
