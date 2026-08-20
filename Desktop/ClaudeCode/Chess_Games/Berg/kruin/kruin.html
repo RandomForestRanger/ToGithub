@@ -97,6 +97,20 @@
 <link rel="stylesheet" href="styles.css">
 </head>
 <body>
+  <!-- Kaart 7-vervolg (2026-08-21, gebruiker-versoek): "klik om te begin"-
+       hek. Die hele berg word eers in een stelsel gewys (app.js stel die
+       SVG se viewBox terug na die volledige 0-0-720-2036-wêreld, ná
+       BergEngine.init() dit klaar op 'n toegespitste sport-kamera gestel
+       het); die openingsafkoms-animasie én sy klank begin eers ná 'n regte
+       kliek hier. Rede: 'n blaaier reken 'n kliek wat BINNE hierdie
+       dokument self gebeur (nie 'n kliek op 'n vorige bladsy wat toe
+       hierheen genavigeer het nie) as 'n egte gebruiker-gebaar -- dus kan
+       Klank.speelAfkomsKlank() (binne app.js se kliek-hanteraar hier)
+       betroubaar outo-speel, waar dit ná 'n bladsy-oorgang van welkom.html
+       nie kon nie. -->
+  <div id="klikOmTeBeginOorlegsel">
+    <div id="klikOmTeBeginBlok">Klik om te begin</div>
+  </div>
   <div id="bergAgtergrond">
     <svg id="bergSvg" viewBox="0 0 720 2036" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
       <!-- Kaart 7-vervolg (2026-08-13): karakter-kuns (Kapok se vier posisies,

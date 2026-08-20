@@ -37,6 +37,28 @@
     if (!skrip || !skrip.src) return ''; // terugval: relatief tot dokument
     return skrip.src.slice(0, skrip.src.lastIndexOf('/') + 1);
   })();
+
+  // Kaart 7-vervolg (2026-08-21): sommige blaaiers blokkeer outo-speel-met-
+  // klank vir 'n bladsy se HEEL EERSTE geluid as die bladsy self self deur
+  // 'n klik-gedrewe navigasie bereik is (bv. welkom.html se spelerkaart ->
+  // location.href = 'kruin.html') -- die "gebruiker-gebaar" wat die klik
+  // gegee het, geld nie meer betroubaar teen die tyd wat 'n paar
+  // belofte-wendings later (BergEngine.init().then(...)) die eerste .play()
+  // regtig probeer nie. .play() se verwerping (Promise-afwysing) word
+  // stilweg geslik (soos voorheen), maar 'n eenmalige "pointerdown"-
+  // luisteraar op die dokument probeer dieselfde klank een slag oor sodra
+  // die speler self weer met HIERDIE bladsy interaksie het (bv. 'n
+  // skaakblok kliek) -- gewoonlik binne oomblikke.
+  function speelMetOntsluit(el) {
+    const p = el.play();
+    if (p && typeof p.catch === 'function') {
+      p.catch(() => {
+        const herprobeer = () => { el.play().catch(() => {}); };
+        document.addEventListener('pointerdown', herprobeer, { once: true });
+      });
+    }
+  }
+
   // Kaart 7-vervolg (2026-08-20, herroep): 'n Web Audio-konteks is weer
   // nodig -- speelMatKlok() (hieronder) is teruggebring as 'n veiligheidsnet
   // vir die oorblywende geval waar geen regte opname sou gespeel het nie
@@ -77,10 +99,7 @@
       blafElemente[naam] = el;
     }
     el.currentTime = 0;
-    // .play() kan verwerp word as die blaaier dit (selde, aangesien dit
-    // altyd ná 'n klik-gedrewe skuif geroep word) as onopgeroep beskou --
-    // 'n stil catch voorkom 'n ongehanteerde promise-verwerping.
-    el.play().catch(() => {});
+    speelMetOntsluit(el);
   }
 
   // Kaart 7-vervolg (2026-08-20): omgewingsklanke -- die moeras-rivier-
@@ -122,7 +141,7 @@
     if (stil) return;
     const el = kryOmgewingEl(naam);
     el.currentTime = 0;
-    el.play().catch(() => {});
+    speelMetOntsluit(el);
   }
   // Kaart 7-vervolg (2026-08-21): infasering vir die rivier-agtergrondlus
   // (gebruiker-versoek). Gewone <audio>-elemente het nie 'n ingeboude
@@ -154,7 +173,7 @@
     const el = kryOmgewingEl('rivier');
     if (!el.paused) return;
     faseInVolume(el, OMGEWING_LEERS.rivier.volume, 2000);
-    el.play().catch(() => {});
+    speelMetOntsluit(el);
   }
   function stopRivierAmbient() {
     const el = omgewingElemente.rivier;

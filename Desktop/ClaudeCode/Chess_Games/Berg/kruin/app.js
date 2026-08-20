@@ -789,34 +789,53 @@
     // dit merkers/bewoners/Kapok bou). Alles wat op merkerPos/bewoner-
     // elemente staatmaak (openingsAfkoms ingesluit) wag dus hierop.
     BergEngine.init(document.getElementById('bergSvg'), { beginRung: state.currentRung }).then(() => {
-      // §5.2: die Web Worker bereken die orakel TERWYL die openingsafkoms speel.
-      // As die orakel eerste klaar is, verander niks nie; as nie, "vang die
-      // klimmer sy asem" by die landing totdat dit gereed is.
-      Klank.speelAfkomsKlank();
-      const afkomsP = BergEngine.openingsAfkoms(state.currentRung, state.residents);
+      // Kaart 7-vervolg (2026-08-21, gebruiker-versoek): "klik om te begin"-
+      // hek. BergEngine.init() het die SVG se viewBox reeds op 'n
+      // toegespitste sport-kamera gestel (viewBoxForMarker) -- stel dit
+      // eers terug na die VOLLEDIGE berg (die SVG-merkup se eie
+      // oorspronklike "0 0 720 2036"-verstek) sodat die speler die hele
+      // berg in een stelsel sien voordat enigiets begin.
+      document.getElementById('bergSvg').setAttribute('viewBox', '0 0 720 2036');
+
+      // §5.2: die Web Worker begin die orakel REEDS in die agtergrond
+      // bereken terwyl die "klik om te begin"-oorlegsel wag -- teen die
+      // tyd wat die speler kliek, is dit gewoonlik reeds klaar of ver
+      // gevorder.
       const orakelP = Orakel.ready({ workerUrl: '../orakel/orakel-worker.js' });
       let orakelGereed = false;
       orakelP.then(() => { orakelGereed = true; });
-      afkomsP.then(() => {
-        if (!orakelGereed) setBoodskap('Kapok vang sy asem...', '');
-      });
 
-      Promise.all([afkomsP, orakelP]).then(() => {
-        setBoodskap('', '');
-        const foute = verifieerPosisiebankTeenOrakel();
-        if (foute.length) {
-          setBoodskap('FOUT: posisiebank stem nie ooreen met die orakel nie -- ' + foute.join('; '), 'sleg');
-          document.getElementById('weerBeginKnop').disabled = true;
-          return;
-        }
-        beginPoging();
-        document.getElementById('weerBeginKnop').addEventListener('click', beginPoging);
-        document.getElementById('wysWKnop').addEventListener('click', () => {
-          toonWOorlegselEnVraag(null, false);
+      const oorlegsel = document.getElementById('klikOmTeBeginOorlegsel');
+      oorlegsel.addEventListener('click', () => {
+        oorlegsel.style.display = 'none';
+        // Kaart 7-vervolg: hierdie kliek is 'n regte, vars gebruiker-gebaar
+        // BINNE hierdie dokument self (nie een wat van welkom.html se
+        // spelerkaart-kliek oorgedra moes word oor 'n bladsy-oorgang heen
+        // nie) -- dus kan die blaaier outo-speel-met-klank hier betroubaar
+        // toelaat. Sinchroon geroep, direk in die kliek-hanteraar.
+        Klank.speelAfkomsKlank();
+        const afkomsP = BergEngine.openingsAfkoms(state.currentRung, state.residents);
+        afkomsP.then(() => {
+          if (!orakelGereed) setBoodskap('Kapok vang sy asem...', '');
         });
-      }).catch((err) => {
-        setBoodskap('FOUT: orakel kon nie laai nie -- ' + (err && err.message ? err.message : err), 'sleg');
-      });
+
+        Promise.all([afkomsP, orakelP]).then(() => {
+          setBoodskap('', '');
+          const foute = verifieerPosisiebankTeenOrakel();
+          if (foute.length) {
+            setBoodskap('FOUT: posisiebank stem nie ooreen met die orakel nie -- ' + foute.join('; '), 'sleg');
+            document.getElementById('weerBeginKnop').disabled = true;
+            return;
+          }
+          beginPoging();
+          document.getElementById('weerBeginKnop').addEventListener('click', beginPoging);
+          document.getElementById('wysWKnop').addEventListener('click', () => {
+            toonWOorlegselEnVraag(null, false);
+          });
+        }).catch((err) => {
+          setBoodskap('FOUT: orakel kon nie laai nie -- ' + (err && err.message ? err.message : err), 'sleg');
+        });
+      }, { once: true });
     });
   }
 

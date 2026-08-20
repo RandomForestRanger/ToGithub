@@ -23,6 +23,38 @@ h1 { color: #f39c12; font-size: 20px; margin: 0 0 12px 0; }
 }
 #bergSvg { width: 100%; height: 100%; display: block; transition: opacity 150ms ease; }
 
+/* Kaart 7-vervolg: "klik om te begin"-hek (§ opening-app.js). Bo-op alles
+   anders (z-index 5) totdat 'n regte kliek dit wegneem. */
+#klikOmTeBeginOorlegsel {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(15, 20, 32, 0.35);
+  cursor: pointer;
+}
+#klikOmTeBeginBlok {
+  background: rgba(255,255,255,0.10);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 14px;
+  padding: 22px 44px;
+  font-size: 22px;
+  font-weight: 600;
+  color: #f39c12;
+  text-shadow: 0 2px 10px rgba(0,0,0,0.5);
+  animation: klikOmTeBeginPols 1.8s ease-in-out infinite;
+}
+@keyframes klikOmTeBeginPols {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+}
+@media (prefers-reduced-motion: reduce) {
+  #klikOmTeBeginBlok { animation: none; }
+}
+
 #voorgrond {
   position: fixed;
   top: 0; left: 0; right: 0; bottom: 0;
