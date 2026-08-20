@@ -20,8 +20,10 @@
 // Padda/Papegaai/Klipdassie/Sneeuman bygevoeg (Padda en Sneeuman vervang/
 // hernoem "Akkedis"/"Lammergier" -- 'n padda en 'n sneeuman i.p.v. 'n
 // akkedis en 'n lammergier, op die gebruiker se versoek; sien CLAUDE.md).
-// Slegs Bergkraai het nog geen kuns nie en bly die kleur+letter-plekhouer
-// van Kaart 4 tot sy kuns ook opgelaai word.
+// Kaart 7-vervolg (2026-08-21): 'n derde kuns-lewering (Berghaan.jpg) het
+// die laaste oorblywende plekhouer vervang -- "Bergkraai" hernoem na
+// "Berghaan" ('n bateleur, nie 'n kraai nie). Al tien bewoners het nou
+// werklike kuns.
 (function (root) {
   'use strict';
 
@@ -45,7 +47,7 @@
     12: { naam: 'Apie', kleur: '#8a5a3c', letter: 'Ap' },
     15: { naam: 'Klipdassie', kleur: '#a08060', letter: 'Kd' },
     18: { naam: 'Ibeks', kleur: '#c9a876', letter: 'Ib' },
-    21: { naam: 'Bergkraai', kleur: '#3a3a3a', letter: 'Bk' },
+    21: { naam: 'Berghaan', kleur: '#3a3a3a', letter: 'Bh' }, // Kaart 7-vervolg (2026-08-21): was "Bergkraai" -- 'n regte berghaan (bateleur), nie 'n kraai nie, sien Berghaan.jpg
     24: { naam: 'Sneeuhaas', kleur: '#f0f0f0', letter: 'Sh' },
     27: { naam: 'Sneeuman', kleur: '#8a7060', letter: 'Sm' },
     30: { naam: 'Sneeuluiperd', kleur: '#dfe6ea', letter: 'Sl' },
@@ -115,6 +117,7 @@
     12: { type: 'crop', ids: CREATURE_USE_IDS, crop: [585, 50, 210, 275], maxDim: 42 }, // Apie
     15: { type: 'raster', id: 'creature2-klipdassie', maxDim: 42 }, // Klipdassie
     18: { type: 'crop', ids: CREATURE_USE_IDS, crop: [1035, 55, 290, 280], maxDim: 42 }, // Ibeks
+    21: { type: 'raster', id: 'creature2-berghaan', maxDim: 42 },   // Berghaan (was Bergkraai)
     24: { type: 'crop', ids: CREATURE_USE_IDS, crop: [585, 405, 235, 270], maxDim: 42 }, // Sneeuhaas
     27: { type: 'raster', id: 'creature2-sneeuman', maxDim: 42 },  // Sneeuman (was Lammergier)
     30: { type: 'group', id: 'sneeuluiperd-figure', crop: [130, 35, 1080, 733], maxDim: 80 }, // Sneeuluiperd (2026-08-20: 56 -> 67 -> 80, twee opeenvolgende 20%-versoeke)

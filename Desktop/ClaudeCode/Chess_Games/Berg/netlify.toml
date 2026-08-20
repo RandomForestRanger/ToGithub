@@ -1,0 +1,69 @@
+[build]
+  publish = "."
+
+# Sneeuluiperd se Kruin — geen bou-stap nie: suiwer HTML/CSS/JS, geen
+# raamwerk of bundelaar nie (soos die res van hierdie gesin-suite se
+# vanilla-JS-spelle, sien die wortel-CLAUDE.md).
+#
+# Plaaslike ontwikkeling: python3 -m http.server 8000 (vanuit hierdie gids).
+# 'n Regte HTTP-oorsprong is nodig (nie file://) -- die orakel se Web
+# Worker, sy IndexedDB-tabelbasis-kas, en die Lichess-verwante CDN-skripte
+# (jQuery/chessboard.js) vereis dit almal.
+#
+# Netlify-opstelling: hierdie lêer leef in Desktop/ClaudeCode/Chess_Games/Berg
+# binne 'n groter monorepo (repo-wortel = die gebruiker se tuisgids, sien
+# `git rev-parse --show-toplevel`). Stel Netlify se "Base directory" na
+# `Desktop/ClaudeCode/Chess_Games/Berg` wanneer die werf geskep word, presies
+# soos die suite se ander spelle (Spanish_Opening, Caro-Kahn, ens.) elk hul
+# eie Netlify-werf uit hul eie subgids kry.
+#
+# Geen Lichess-teken/omgewingveranderlike nodig nie -- Sneeuluiperd se Kruin
+# gebruik geen eksterne skaakenjin of Lichess-API nie (die orakel word ter
+# plaatse in die blaaier bereken, §3.1). Die enigste eksterne afhanklikhede
+# is die statiese jQuery/chessboard.js-CDN-skripte, wat Netlify se hosting
+# glad nie raak nie.
+
+# Werf-wortel wys na die speler-keuse-tuisblad (nie kruin.html direk nie --
+# kruin.html weier in elk geval om te laai sonder 'n gekose speler).
+[[redirects]]
+  from = "/"
+  to = "/kruin/welkom.html"
+  status = 302
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+
+# Kaart 7-vervolg is nog aktief in ontwikkeling (kuns/klank het hierdie
+# sessie herhaaldelik verander) -- doelbewus GEEN aggressiewe/onveranderlike
+# kas nie (i.t.v. party ander spelle se 1-jaar-immutable-patroon), juis omdat
+# verstaalde-blaaier-kas plaaslik al 'n paar keer vir regte verwarring gesorg
+# het hierdie sessie (sien CLAUDE.md). Verskerp na max-age=31536000+immutable
+# sodra die kuns/klank stabiliseer.
+[[headers]]
+  for = "/*.html"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+
+[[headers]]
+  for = "/*.js"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+
+[[headers]]
+  for = "/*.css"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+
+[[headers]]
+  for = "/*.mp3"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+
+[[headers]]
+  for = "/*.jpg"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"

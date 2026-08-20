@@ -276,6 +276,35 @@ Doelbewus **vermy**: enige `MILESTONE_RUNGS`-sport (3,6,9,12,15\*,18,21,24,27,30
 
 ---
 
+### Berghaan vervang Bergkraai — al tien bewoners het nou kuns (2026-08-21)
+
+**Status: ✅ Voltooi.** `Berg/Berghaan.jpg` (566×644, dieselfde halftoon-geverfde konstruksie as die vorige twee kuns-leverings) het die laaste oorblywende bewoner-plekhouer vervang. `Bergkraai` (rung 21, Rotse) is hernoem na **Berghaan** ('n bateleur, `#3a3a3a`→dieselfde plekhouerkleur, letter `Bk`→`Bh`) — dieselfde soort inhoud-wysiging (nie net 'n herskin nie) as Padda/Sneeuman vroeër, aangesien 'n berghaan 'n ander voël is as 'n kraai.
+
+**Pyplyn:** identies aan die Padda/Papegaai/Klipdassie/Sneeuman-battery — rand-verbonde kleursleutel (nie 'n globale een nie; getoets en bevestig geen "amper-suiwer-wit"-vagsel/vere-problem hier het soos die sneeuman/papegaai gehad het nie, dus was rand-verbondenheid dadelik voldoende sonder verdere aanpassing), stomp uitgeknip, afgeskaal na 200px-hoogte (~48 KB), base64-ingebed as `<image id="creature2-berghaan">` in al drie lêers se `<defs>` (`kruin.html`, `berg-demo2.html`, `kuns-bates.svg`). Nuwe `BEWONER_KUNS[21]`-inskrywing (`type:'raster'`, `maxDim:42`, dieselfde skaal as die ander raster-bewoners) in `berg/berg.js`.
+
+**Verifikasie:** teen magenta en 'n donker agtergrond bevestig (geen oorblywende wit kolle, geen lekplekke by die stert/rots-oorvleueling nie); 'n finale render direk vanaf die werklike, reeds-gewysigde `kruin.html`-inhoud by die werklike `maxDim=42`-ikoongrootte. `node --check` op `berg.js`; XML-welgevormdheid van al drie gewysigde lêers bevestig. **Geen werklike blaaier-toets gedoen nie** (steeds geen blaaier-outomatisering hierdie sessie nie) — 'n bewoner-onthulling by sport 21 in die regte blaaier word aanbeveel om te bevestig.
+
+---
+
+### Netlify-ontplooiing voorberei (2026-08-21)
+
+**Status: ✅ Voltooi.** Nuwe `Berg/netlify.toml`, dieselfde patroon as die suite se ander vanilla-JS-spelle (`Spanish_Opening`/`Caro-Kahn`/`Italiaans`), geen bou-stap nie (`publish = "."`).
+
+**Bevindinge voor die lêer geskryf is (nagegaan, nie aangeneem nie):**
+- Die repo-wortel is die gebruiker se **tuisgids** (`git rev-parse --show-toplevel` → `/Users/martinbekker`), 'n groot monorepo waarbinne elke suite-spel sy EIE Netlify-werf uit sy EIE subgids kry (elke sibbe-spel se `netlify.toml` leef reeds so). Netlify se "Base directory" moet dus op `Desktop/ClaudeCode/Chess_Games/Berg` gestel word wanneer die werf geskep word -- **nie iets wat hierdie sessie self kon doen nie** (Netlify-dashbord-opstelling, buite hierdie sessie se bereik).
+- **Hoof-kwessie doelbewus getoets:** Netlify se Linux-bedieners is **kassensitief** (macOS s'n gewoonlik nie) -- 'n regte risiko gegewe hoeveel lêers/vouers hierdie sessie rondgeskuif is (`Kapok/` met 'n hoofletter, ens.). 'n Volledige soektog deur elke `.html`/`.js`-lêer se relatiewe pad-verwysings (`src`/`href`/`xlink:href`/`new Worker(...)`/`workerUrl:`) teen die werklike lêerstelsel het **net een vals-alarm** gewys (`kaart6/harness.js`, 'n plekhouerstring in 'n oudit-skrif, nie 'n werklike loop-tyd-pad nie) -- geen regte kassensitiwiteits-foute gevind nie.
+- **Geen Lichess-teken/omgewingveranderlike nodig nie** -- bevestig via soektog: Sneeuluiperd se Kruin gebruik glad geen Lichess-API of eksterne skaakenjin nie (die orakel is ter plaatse in die blaaier bereken, §3.1/§8). Anders as party ander suite-spelle (wat `window.LICHESS_TOKEN` via Netlify-knipsel-inspuiting kry) is daar hier niks om op te stel nie.
+- Enigste eksterne afhanklikhede is die statiese jQuery/chessboard.js-CDN-skripte (`kruin.html`) -- glad nie deur Netlify-huisvesting geraak nie.
+
+**Ontwerpbesluite in `netlify.toml`:**
+- `/` word na `/kruin/welkom.html` gestuur (302, nie 'n 200-herskrywing nie) -- 'n herskrywing sou die blaaier laat dink dit is steeds by `/`, wat `welkom.html` se relatiewe paaie (`jorka.js`, `../berg/...`) verkeerd sou laat oplos (hulle is relatief tot `/kruin/`). 'n Regte 302-omleiding laat die adresbalk (en dus pad-oplossing) korrek na `/kruin/welkom.html` verskuif.
+- **Doelbewus GEEN aggressiewe/onveranderlike kas nie** (`max-age=0, must-revalidate` vir HTML/JS/CSS/mp3/jpg), anders as party sibbe-spelle se 1-jaar-immutable-patroon -- juis omdat verstaalde-blaaier-kas hierdie sessie al minstens twee keer regte verwarring veroorsaak het (`Klank.speelRivierAmbient is not a function`; "ek hoor net die elektroniese klanke"). Verskerp later sodra die kuns/klank stabiliseer.
+- Standaard veiligheidskoptekste (`X-Frame-Options`/`X-Content-Type-Options`/`Referrer-Policy`), dieselfde as die res van die suite.
+
+**Wat NOG oorbly (buite hierdie sessie se bereik):** die werklike Netlify-werf self skep, "Base directory" instel, en 'n regte ontplooide werf toets -- 'n dashbord-stap wat die gebruiker self moet doen.
+
+---
+
 ## Kaart 8 (toekomstig) — gekommissioneerde illustreerder-weergawe / weergawe-keuse
 
 'n Menslike illustreerder word vroeg-Augustus 2026 gekontrakteer om die berg met die hand te teken — sien `Berg/kunstenaar-brief.txt` (deur die gebruiker in 'n Word-dokument aangepas voor dit gestuur is; die `.txt` weerspieël dus nie noodwendig die finale weergawe wat die kunstenaar ontvang nie). Vier landskap-A4-blaaie (Sneeu bo, dan Rotse, Woud, Moeras onder), regstreeks op mekaar gestapel — presies dieselfde stapelvolgorde as die kinders-kolaz hierbo.
