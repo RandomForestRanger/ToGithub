@@ -385,6 +385,13 @@ header h1 {
 .move-score.score-2 { background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.16); color: #cfd6e6; }
 .move-score.score-1 { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.10); color: var(--muted); font-size: 1rem; }
 
+/* Bal-vir-Bal commentary line — sits under the boundary-burst flash */
+.commentary-line {
+    margin-top: 7px;
+    font-family: 'Mukta', sans-serif; font-style: italic; font-size: 0.86rem;
+    color: #cdd6e6; text-align: center; line-height: 1.4;
+}
+
 /* ── Bal-vir-Bal — move history scorecard ─────────────────── */
 .move-history {
     width: 100%; max-width: 510px; padding: 12px;

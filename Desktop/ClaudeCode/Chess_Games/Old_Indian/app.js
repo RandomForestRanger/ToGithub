@@ -208,6 +208,7 @@ let board              = null;
 let currentMoveNumber  = 1;
 let score              = 0;
 let gameOver           = false;
+let gameEndReason      = 'moves'; // 'moves' | 'checkmate-white-wins' | 'checkmate-black-wins' | 'draw'
 let moveHistory        = [];
 let positionHistory    = [];
 let bestMove           = null;   // { san, from, to, source }
@@ -237,23 +238,23 @@ function getBadgesKey()    { return `philidorOldIndian_${currentPlayer}_badges`;
 
 const WISDOM_QUOTES = [
     "...d6 is soos 'n vertroude verdedigende bal — dit werk teen vinnige boulwerk (e4) én stadige spin (d4).",
-    "Philidor het gesê pionne is die siel van skaak — d6 is die eerste bal van daardie innings.",
-    "Bou jou posisie soos 'n goeie innings — lopie vir lopie, nie roekeloos nie.",
+    "Philidor het gesê pionne is die siel van skaak — d6 is die eerste bal van daardie beurt.",
+    "Bou jou posisie soos 'n goeie beurt — lopie vir lopie, nie roekeloos nie.",
     "Die Hanham-opstelling speel soos 'n verdedigende kolwer: Nd7, Ngf6, Be7, dan rokade — wikets in die hand.",
     "In die Ou-Indiër ontwikkel jou loper na e7 — nie 'n groot slag nie, maar 'n betroubare enkelloop.",
     "Moheschunder Bannerjee het hierdie idees in Calcutta gespeel — dieselfde stad waar krieket-koors al vir 200 jaar brand.",
     "Tartakower het die naam 'Indiër' voorgestel uit respek — 'n eerbewys, soos 'n gehoor wat vir 'n goeie kolwer opstaan.",
     "Chigorin het die Ou-Indiër ontwikkel — soliede tegniek bo flambojante slae.",
-    "'n Fianchetto na g7 verander jou hele innings-plan — weet watter pad jy kies voor jy swaai.",
+    "'n Fianchetto na g7 verander jou hele beurt-plan — weet watter pad jy kies voor jy swaai.",
     "Philidor self was aggressief: hy het ...f5 aanbeveel — soms moet jy vir die grens slaan, nie net verdedig nie.",
     "Morphy se opponente in die Opera-spel het roekeloos ...Bg4 gespeel — 'n wanhopige slag wat 'n wiket gekos het.",
     "Geduld bou 'n groot telling; haas bou net 'n vroeë wiket.",
     "'n Perd op d7 lyk passief, maar soos 'n goeie veldwagter hou dit al die belangrike velde dop.",
-    "Speel nooit vir die grens voor jou ontwikkeling reg is nie — bou eers jou innings, val dan aan.",
+    "Speel nooit vir die grens voor jou ontwikkeling reg is nie — bou eers jou beurt, val dan aan.",
     "Die Tsjeggiese Variasie (...c6) is 'n stil enkelloop — geen groot slag nie, maar geen fout ook nie.",
     "Janowski het ...Bf5 gespeel om sy loper betyds uit te kry — soos 'n kolwer wat vroeg sy skoot kies.",
-    "Elke groot innings begin met een bal wat reg gespeel is.",
-    "'n Koningin gevang is soos 'n groot wiket — maar 'n goeie innings wen die meeste wedstryde."
+    "Elke groot beurt begin met een bal wat reg gespeel is.",
+    "'n Koningin gevang is soos 'n groot wiket — maar 'n goeie beurt wen die meeste wedstryde."
 ];
 
 const BADGE_DESCRIPTIONS = {
@@ -583,6 +584,11 @@ async function makeWhiteMove() {
 
     board.position(game.fen());
     positionHistory.push(game.fen());
+
+    // White may have just delivered mate (or the position is a draw) —
+    // check before showing hints for a Black move that will never happen.
+    if (await checkGameTermination()) return;
+
     updateBranchInfo();
     updateMoveCounter();
     updateWhitePoolInfo();
@@ -729,6 +735,146 @@ async function scoreByStockfishOnly(moveSan, uciMove, engineTopMoves, sfData, fe
     return 3;
 }
 
+// ==================== BAL-VIR-BAL COMMENTARY ====================
+// Template bank, no live API — same deterministic-random-pick pattern as
+// WISDOM_QUOTES and the SES!/VIER! score labels. Placeholders filled from
+// the move chess.js just returned, plus lastWhiteMoveSan for lines that
+// react to White's preceding move.
+
+const PIECE_NAMES_AF = { p: 'Pion', n: 'Perd', b: 'Loper', r: 'Toring', q: 'Koningin', k: 'Koning' };
+
+const COMMENTARY_BANK = {
+    5: [
+        "SES! Swart skuif {san} — die {piece} vind die perfekte veld op {square}!",
+        "SES! Wat 'n slag! {san} stuur die bal reg oor die tou.",
+        "SES! Swart se {piece} land op {square} — die skare spring op!",
+        "SES! Presies reg gelees — {san} is 'n meesterlike keuse.",
+        "SES! Die {piece} na {square} — suiwer, kalm, korrek.",
+        "Wit speel {white}, maar Swart sien die bal kom en antwoord met {san} — SES!",
+        "SES! Na Wit se {white}, vind Swart die perfekte teenslag: {san}!"
+    ],
+    4: [
+        "VIER! Swart speel {san} en die skare hou daarvan.",
+        "VIER! Die {piece} na {square} — 'n mooi, skoon slag.",
+        "VIER! {san} vind die grens met gemak.",
+        "VIER! Swart se {piece} beweeg na {square} — vier lopies vir 'n gewilde keuse.",
+        "VIER! 'n Solide {san} — presies wat die boek voorstel.",
+        "Wit probeer {white}; Swart antwoord doodluiters met {san} — VIER!",
+        "VIER! {san} — die veld het geen kans gehad nie.",
+        "VIER! {san} — 'n gehalte-slag wat die veld werklik onder druk sit.",
+        "VIER! Die {piece} vind {square} met styl — presies wat 'n Indiese kolfblad graag wys."
+    ],
+    3: [
+        "Drie lopies! {san} — 'n stewige lopie tussen die paaltjies.",
+        "Drie lopies! Die {piece} na {square} — nie flambojant nie, maar bruikbaar.",
+        "Drie lopies! Swart hardloop hard met {san}.",
+        "Drie lopies! {san} hou die beurt aan die gang.",
+        "Drie lopies! Die {piece} op {square} — solied genoeg.",
+        "Drie lopies! Goeie besluit — {san} bou stadig voort.",
+        "Drie lopies! Deeglik, maar nie fantasties vir 'n Indiese kolfblad nie — {san} kry darem die werk gedoen.",
+        "Drie lopies! Swart vergeet amper hierdie is 'n Indiese kolfblad — {san} is veilig, maar broos.",
+        "Drie lopies! Swart sien {white} en kap terug met {san}, dalk 'n bietjie te vinnig gespeel. Hier kom die volgende bal."
+    ],
+    2: [
+        "Twee lopies. {san} — niks spesiaals nie, maar veilig.",
+        "Twee lopies. Die {piece} skuif na {square}, kalm en stil.",
+        "Twee lopies. {san} hou die telbord aan die beweeg.",
+        "Twee lopies. Nie die beste keuse nie, maar {san} werk nog steeds.",
+        "Twee lopies. Die {piece} na {square} — 'n bietjie versigtig."
+    ],
+    1: [
+        "Enkelloop. {san} — 'n stil bal, geen risiko geneem nie.",
+        "Geen lopie. {san} laat lopies op tafel.",
+        "Enkelloop. Die {piece} na {square} — kon dalk beter gewees het.",
+        "Enkelloop. Swart speel veilig met {san}, maar mis die kans.",
+        "Enkelloop. Die {piece} op {square} — tyd om weer te dink oor jou plan."
+    ]
+};
+
+// Checkmate is a separate category from the 1-5 score tiers — triggered by
+// checkGameTermination(), not by scoreMove().
+const MATE_COMMENTARY = {
+    blackMated: [
+        "Uitgeboul! Daar spat Swart se penne!",
+        "Uitgeboul! Swart se koning het nêrens om te loop nie.",
+        "Uitgeboul! Die enjin sluit die beurt af — geen ontsnapping vir Swart nie."
+    ],
+    whiteMated: [
+        "Uitgeboul! Daar spat Wit se penne!",
+        "UITGEBOUL! Swart vang Wit se koning — wat 'n beurt!",
+        "Uitgeboul! Wit se verdediging val plat — Swart wen die wedstryd!"
+    ]
+};
+
+function fillTemplate(tpl, vars) {
+    return tpl.replace(/\{(\w+)\}/g, (_, key) => vars[key] !== undefined ? vars[key] : `{${key}}`);
+}
+
+function showCommentary(move, tier) {
+    const el = document.getElementById('commentary-line');
+    if (!el) return;
+    const bank = COMMENTARY_BANK[tier] || COMMENTARY_BANK[1];
+    const tpl  = bank[Math.floor(Math.random() * bank.length)];
+    el.textContent = fillTemplate(tpl, {
+        san:    move.san,
+        piece:  PIECE_NAMES_AF[move.piece] || 'stuk',
+        square: move.to,
+        white:  lastWhiteMoveSan || '...'
+    });
+    el.style.display = 'block';
+}
+
+function showMateCommentary(matedSide) {
+    const el = document.getElementById('commentary-line');
+    if (!el) return;
+    const lines = matedSide === 'b' ? MATE_COMMENTARY.blackMated : MATE_COMMENTARY.whiteMated;
+    el.textContent = lines[Math.floor(Math.random() * lines.length)];
+    el.style.display = 'block';
+}
+
+// ==================== GAME TERMINATION (checkmate / draw) ====================
+// Previously the game only ever ended via MAX_MOVES — a mid-game checkmate
+// (either side) wasn't detected at all. Checked after every move, both
+// Black's (processBlackMove) and White's (makeWhiteMove).
+
+async function checkGameTermination() {
+    if (gameOver) return false;
+    if (game.in_checkmate()) {
+        const matedSide = game.turn(); // side to move when checkmated
+        await endGameByCheckmate(matedSide);
+        return true;
+    }
+    if (game.game_over()) {
+        await endGameByDraw();
+        return true;
+    }
+    return false;
+}
+
+async function endGameByCheckmate(matedSide) {
+    gameOver = true;
+    isThinking = false;
+    gameEndReason = matedSide === 'b' ? 'checkmate-white-wins' : 'checkmate-black-wins';
+    clearHighlights();
+    clearArrows();
+    updatePhaseInfo();
+    showMateCommentary(matedSide);
+    showMessage(matedSide === 'b' ? "Uitgeboul! Swart is skaakmat." : "Uitgeboul! Wit is skaakmat!",
+                matedSide === 'b' ? 'error' : 'info');
+    setTimeout(async () => { await showEndGameModal(); }, 3500);
+}
+
+async function endGameByDraw() {
+    gameOver = true;
+    isThinking = false;
+    gameEndReason = 'draw';
+    clearHighlights();
+    clearArrows();
+    updatePhaseInfo();
+    showMessage("Gelykop! Die beurt eindig sonder 'n wenner.", "info");
+    setTimeout(async () => { await showEndGameModal(); }, 3500);
+}
+
 // ==================== PROCESS BLACK'S MOVE ====================
 
 async function processBlackMove(move, fenBeforeBlack) {
@@ -769,6 +915,11 @@ async function processBlackMove(move, fenBeforeBlack) {
     updateHistory();
     updateTargetDisplay();
     checkBadges();
+    showCommentary(move, moveScore);
+
+    // Black may have just delivered mate (or the position is a draw) — check
+    // before running analysis on what would otherwise be a terminal FEN.
+    if (await checkGameTermination()) return;
 
     await showMoveAnalysis(fenBeforeBlack, move.san);
     await updatePositionEval();
@@ -1143,7 +1294,7 @@ function updateWhitePoolInfo() {
 }
 
 // Doodsbeurte ("death overs") — a hot-red pill for the final stretch of the
-// innings (moves 26-30), mirroring T20's tense final overs. Purely a mood
+// beurt (moves 26-30), mirroring T20's tense final overs. Purely a mood
 // cue: White's move-selection logic is unaffected.
 function updatePhaseInfo() {
     const el = document.getElementById('phase-pill');
@@ -1201,9 +1352,9 @@ function selectWeightedMove(moves) {
 // ==================== GAME END ====================
 
 function getEndMessage(pct) {
-    if (pct >= 97) return "Perfekte innings! Jy het die d6-verdedigings volledig bemeester!";
-    if (pct >= 90) return "Uitstekende innings! Jy ken hierdie verdedigings baie goed.";
-    if (pct >= 80) return "Baie goed gespeel! 'n Sterk innings met mooi vordering.";
+    if (pct >= 97) return "Perfekte beurt! Jy het die d6-verdedigings volledig bemeester!";
+    if (pct >= 90) return "Uitstekende beurt! Jy ken hierdie verdedigings baie goed.";
+    if (pct >= 80) return "Baie goed gespeel! 'n Sterk beurt met mooi vordering.";
     if (pct >= 70) return "Goeie werk! Bly oefen vir daardie fynere lopies.";
     if (pct >= 60) return "Nie sleg nie! Elke wedstryd leer jou meer.";
     if (pct >= 50) return "Mooi probeer! Die d6-stelsel verg oefening — soos enige goeie kolfwerk.";
@@ -1213,6 +1364,7 @@ function getEndMessage(pct) {
 
 async function endGame() {
     gameOver = true;
+    gameEndReason = 'moves';
     isThinking = false;
     clearHighlights();
     clearArrows();
@@ -1220,12 +1372,28 @@ async function endGame() {
     setTimeout(async () => { await showEndGameModal(); }, 5000);
 }
 
+const MODAL_TITLES = {
+    'moves':               'Wedstryd Verby!',
+    'checkmate-white-wins':'Uitgeboul!',              // White mated Black — student lost
+    'checkmate-black-wins':'Uitgeboul! Swart Wen!',    // Black mated White — student won!
+    'draw':                'Gelykop!'
+};
+
 async function showEndGameModal() {
     await checkEndGameBadges();
     const isNew = saveHighScore(score);
 
+    document.getElementById('modal-title').textContent = MODAL_TITLES[gameEndReason] || MODAL_TITLES.moves;
+
+    // Fair rating for an early-ended game (checkmate/draw before move 30):
+    // percentage of the points actually possible in the moves played, not
+    // always against the full 30-move TARGET_SCORE.
+    const movesPlayed  = moveHistory.length;
+    const maxPossible  = movesPlayed * 5;
+    const pct          = maxPossible > 0 ? (score / maxPossible) * 100 : 0;
+
     document.getElementById('modal-score').textContent   = `${score}/${TARGET_SCORE} lopies`;
-    document.getElementById('modal-rating').textContent  = getEndMessage((score / TARGET_SCORE) * 100);
+    document.getElementById('modal-rating').textContent  = getEndMessage(pct);
 
     const hsMsgEl = document.getElementById('modal-highscore-msg');
     if (isNew) { hsMsgEl.textContent = "NUWE BESTE TELLING!"; hsMsgEl.style.display = 'block'; }
@@ -1252,6 +1420,7 @@ function newGame() {
     currentMoveNumber    = 1;
     score                = 0;
     gameOver             = false;
+    gameEndReason        = 'moves';
     moveHistory          = [];
     positionHistory      = [game.fen()];
     bestMove             = null;
@@ -1273,6 +1442,7 @@ function newGame() {
     document.getElementById('progress-fill').style.width   = '0%';
     document.getElementById('history-list').innerHTML       = '';
     document.getElementById('move-score-display').style.display = 'none';
+    document.getElementById('commentary-line').style.display = 'none';
     document.getElementById('branch-row').style.display    = 'none';
     document.getElementById('white-pool').textContent       = 'Top 20 skuiwe';
     document.getElementById('white-pool').style.color      = '#2EC4B6';

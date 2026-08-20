@@ -449,3 +449,57 @@ published artifact. Verified post-implementation with the same Playwright smoke-
 used for the eval-sign bug fix: local `python3 -m http.server`, headless Chromium driving a
 real game through moves 1–2, confirming scoring/analysis logic is byte-for-byte unchanged and
 no new console errors were introduced by the reskin.
+
+---
+
+## 13. Bal-vir-Bal Commentary + Checkmate Detection (2026-08-20)
+
+### No live LLM API — template bank instead
+An LLM-generated commentary idea (Cricinfo-style, one call per move) was considered and
+rejected in favour of a deterministic template bank: no API key to secure (this app family is
+static/client-side, no server to hold a secret), no per-move latency added to an already
+call-heavy pipeline, and no hallucination risk — an LLM freely judging move quality could
+contradict `scoreMove()`'s actual verdict and teach the wrong lesson. `COMMENTARY_BANK` in
+`app.js` (keyed 1–5, matching the existing score tiers) and `MATE_COMMENTARY` (checkmate, a
+separate category) use the same random-pick-from-a-list pattern as `WISDOM_QUOTES` and the
+SES!/VIER! labels — `fillTemplate()` does simple `{placeholder}` substitution from the move
+chess.js just returned (`{san}`, `{piece}` via `PIECE_NAMES_AF`, `{square}`) plus
+`{white}` (`lastWhiteMoveSan`, for lines that react to White's preceding move). Displayed in a
+new `#commentary-line` element under the move-score flash — `showCommentary()`/
+`showMateCommentary()`, called from `processBlackMove()` and the new checkmate/draw handlers.
+
+### Checkmate detection — a real pre-existing gap
+Before this, the game only ever ended via `currentMoveNumber >= MAX_MOVES` — a mid-game
+checkmate (either side) was never detected. `checkGameTermination()` (checks
+`game.in_checkmate()` then `game.game_over()` for stalemate/draw/insufficient-material/
+threefold-repetition) is now called after every move — Black's, in `processBlackMove()` before
+`showMoveAnalysis()` runs on what would otherwise be a terminal FEN, and White's, in
+`makeWhiteMove()` before hints are shown for a Black move that will never happen.
+`endGameByCheckmate(matedSide)` and `endGameByDraw()` set a new `gameEndReason` (`'moves'` |
+`'checkmate-white-wins'` | `'checkmate-black-wins'` | `'draw'`), which `MODAL_TITLES` maps to
+the modal heading — mind the naming: `'checkmate-white-wins'` means White delivered mate
+(student lost), `'checkmate-black-wins'` means the student won. Caught and fixed a real bug
+here during testing: the two `MODAL_TITLES` strings were initially swapped (student's win
+showed a plain "Uitgeboul!", the loss showed "Swart Wen!") — found by tracing a real Fool's
+Mate FEN through the code by hand rather than trusting the first pass.
+
+### Fair rating on an early-ended game
+`showEndGameModal()` used to always compute the end-of-game percentage against the fixed
+`TARGET_SCORE` (150, i.e. a full 30-move game). That's unfair to a game that ends early via
+checkmate — a student who played 5 perfect moves before delivering mate would have scored
+5/150 (3%) and gotten "Moenie moed verloor nie" instead of a perfect rating. Fixed by computing
+the percentage against `moveHistory.length * 5` (the points actually possible in the moves
+played) instead — verified via a direct Fool's-mate injection test: 1 perfect move played,
+5/5 = 100%, correctly shows "Perfekte beurt!". `modal-score` still always displays `X/150` for
+context (the fixed full-game target), only the rating text's percentage changed.
+
+### Six-celebration images — deferred
+The user wants a celebratory image shown when a SES! (six) lands. First attempt (7
+Gemini-generated images) was rejected: they reproduced the real IPL logo, real sponsor logos
+(VIVO IPL, Dream11, TATA), real CSK team colours, and what reads as a specific recognizable
+real cricketer's likeness — exactly what this project's own "inspired, not branded" rule (§2,
+§12) exists to avoid, even for personal/local use. The user is re-processing their own images
+(cropping, blurring the CSK/IPL marks) before handing them over. **Not yet wired in** — no
+image-display code exists yet. When ready: images go in `six-celebrations/` (empty folder,
+created and gitignored-equivalent by convention — check before assuming it's tracked), picked
+at random the same way `COMMENTARY_BANK` is, shown briefly on tier-5 moves only.
