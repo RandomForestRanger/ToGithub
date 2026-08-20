@@ -19,8 +19,8 @@ const ENDGAME_TYPES = [
     sleutelgedagte: 'Jou twee biskoppe werk saam — een op die lig vierkante, een op die donker — om die swart koning stelselmatig na \'n hoek te dryf. Hou hulle langs mekaar sodat hulle \'n muur oor twee kolomme of rye vorm wat die koning nie kan oorsteek nie. Bring jou eie koning nader om die laaste stap te help. Die mat kom altyd in \'n hoek, nooit in die middel nie.' },
   { id: 4,  name: 'Koning, Biskop & Ruiter teen Koning', icon: '🐴',
     sleutelgedagte: 'Die moeilikste basiese mat: jy moet die swart koning na \'n hoek dryf wat DIESELFDE kleur is as jou biskop. Gebruik jou koning en biskop om die koning oor te druk, en jou ruiter om die laaste blokkies af te sny en mat te help lewer. Dit vat geduld — verwag baie skuiwe voor die koning selfs naby die regte hoek is.' },
-  { id: 5,  name: 'Koning & Twee Ruiters teen Koning',  icon: '🏇',
-    sleutelgedagte: 'Twee ruiters kan \'n kaal koning nie op hulle eie mat gee nie — hulle het \'n swart pion nodig as hulpmiddel! Een ruiter blokkeer die pion, terwyl jou koning en die ander ruiter die swart koning na \'n hoek dryf. Op die regte oomblik laat jy die pion een tree vorentoe beweeg — dit gee jou die ekstra tempo om mat te lewer sonder pat.' },
+  // Tipe 5 (Koning & Twee Ruiters teen Koning) permanent verwyder 2026-08-20 —
+  // sien CLAUDE.md se grafskrif-paragraaf vir die rede.
   { id: 6,  name: 'Koning & Pion teen Koning',          icon: '♟',
     sleutelgedagte: 'Alles gaan oor sleutelblokkies: as jou koning voor jou pion \'n sekere blokkie kan bereik voordat swart se koning dit keer, bevorder die pion outomaties. Tel skuiwe versigtig — soms moet jy WAG met \'n koningsskuif eerder as om die pion te druk, sodat jy die opposisie kry. As jou koning nie betyds daar kan kom nie, is dit dikwels net gelykspel.' },
   { id: 7,  name: 'Verbygeraakte Pion Wedren',          icon: '🏁',
@@ -42,8 +42,8 @@ const ENDGAME_TYPES = [
     sleutelgedagte: '\'n Ou reël: sit jou kasteel altyd AGTER \'n verbygeraakte pion — of dit joune is (om dit te ondersteun terwyl dit bevorder) of s\'n (om dit van agter af te agtervolg). \'n Kasteel voor \'n pion word maklik weggejaag; \'n kasteel agter dit bly ewig aktief.' },
   { id: 16, name: 'Aktiewe vs Passiewe Kasteel',         icon: '⚔️',
     sleutelgedagte: '\'n Aktiewe kasteel — een wat agter die vyand se linies op die sewende of agtste ry werk — is soveel sterker as een wat net sy eie pion pas. Hou jou kasteel aktief, selfs al beteken dit jy moet dit tydelik van jou eie pion af wegvat, en bevorder deur.' },
-  { id: 17, name: 'Goeie Biskop vs Slegte Biskop',        icon: '🌓',
-    sleutelgedagte: '\'n Slegte biskop word deur sy eie pione geblokkeer, wat almal op dieselfde kleur vierkante staan as die biskop self. \'n Goeie biskop het oop diagonale. Gebruik jou koning om in te dring op die kleur wat die vyand se slegte biskop nie kan beskerm nie — dit is die swak plek in sy vesting.' },
+  // Tipe 17 (Goeie Biskop vs Slegte Biskop) permanent verwyder 2026-08-20 —
+  // sien CLAUDE.md se grafskrif-paragraaf vir die rede.
   { id: 18, name: 'Biskop teen Ruiter',                  icon: '🐎',
     sleutelgedagte: 'In oop posisies met pionne aan BEIDE kante van die bord is \'n biskop sterker as \'n ruiter — die biskop kan in een skuif van kant na kant spring, maar die ruiter moet stap-vir-stap oorbeweeg. Skep twee wyd geskeide verbygeraakte pionne: die ruiter kan nooit altwee gelyk keer nie.' },
   { id: 19, name: 'Verkeerde Kleur Biskop',              icon: '🔲',
@@ -705,111 +705,8 @@ const POSITIONS = {
     ],
   },
 
-  // ── Tipe 5: Koning & Twee Ruiters teen Koning ────────────────────────────
-  // AFGETREE 2026-07-09 (heel tipe — "In herbou 🔧"): drie posisies is teoreties
-  // gelykspel of verlore (tabelbasis), drie is cursed-win (wen eers na 50+
-  // skuiwe), twee is wel wen maar DTM 84-86 teenoor limiete van 22-34 — die
-  // onakkuraatheidsreël (Opdrag 2 verwyder) was die enigste ding wat dit ooit
-  // haalbaar gemaak het. Opdrag 5 herbou hierdie tipe van voor af.
-  // Tegniek (histories): dryf die swart koning na 'n hoek.
-  // Brons: swart in of naby hoek, ruiters aktief — mat binne 22 beurte.
-  // Silwer: swart meer sentraal — langer maneuver benodig (34 beurte).
-  // Goud: swart ver van hoek — volle hoek-dryf-tegniek (46 beurte).
-  5: {
-    bronze: [
-      // B1: Kd1 Nd4 Ne4 vs Ke7 ph7 — pion op 7de ry gee swart 'n haak
-      // AFGETREE 2026-07-09: DTM=86 > limiet 22 (enjin-geverifieer, Opdrag 3).
-      { fen: '8/4k2p/8/8/3NN3/8/8/3K4 w - - 0 1',
-        note: 'Swart se pion op h7 gee jou die haak — dryf die swart koning na h8 en gebruik die pion om pat te vermy',
-        moveLimit: 22, retired: true },
-      // B2: Kd1 Nd2 Ne2 vs Ka4 ph7 — swart reeds op rand, pion op 7de ry
-      // AFGETREE 2026-07-09: DTM=84 > limiet 22 (enjin-geverifieer, Opdrag 3).
-      { fen: '8/7p/8/8/k7/8/3NN3/3K4 w - - 0 1',
-        note: 'Swart op die a-lyn met pion op h7 — dryf na a1-hoek terwyl die pion die pat-gevaar verwyder',
-        moveLimit: 22, retired: true },
-      // B3: Kg1 Nf2 Ng2 vs Kf3 pa7 — pion op 7de ry, swart naby h-hoek
-      // AFGETREE 2026-07-09: tabelbasis DRAW (Opdrag 3).
-      { fen: '8/p7/8/8/8/5k2/5NN1/6K1 w - - 0 1',
-        note: 'Pion op a7, swart naby die h-hoek — druk die koning toe met Nh4 en Nf4, gebruik die pion as haak',
-        moveLimit: 22, retired: true },
-      // ── Opdrag 5 herbou: agt nuwe posisies, Troitsky-metode, tabelbasis-gesertifiseer ──
-      // B4: Kb5 Nc5 Nf8 vs Kb8 pc6 — pion op c6 (Troitsky-lyn), ruiter op c5 blokkeer direk
-      // Tabelbasis: category=win, DTM=8 wit-skuiwe (sien verslag)
-      { fen: '1k3N2/8/2p5/1KN5/8/8/8/8 w - - 0 1',
-        note: 'Die ruiter op c5 hou die pion vas — bring jou koning nader met Kb6! en onthou: los die pion op die regte oomblik om die laaste net te voltooi.',
-        moveLimit: 22 },
-      // B5: Kd4 Na5 Ne1 vs Ka1 pa6 — pion op a6 (Troitsky-lyn), ruiter op a5 blokkeer direk
-      // Tabelbasis: category=win, DTM=9 wit-skuiwe (sien verslag)
-      { fen: '8/8/p7/N7/3K4/8/8/k3N3 w - - 0 1',
-        note: 'Die ruiter op a5 hou die pion vas — druk met Kc3! na die a1-hoek. Te vroeg gelos = die pion hardloop; te laat gelos = pat. Vind die presiese oomblik!',
-        moveLimit: 22 },
-      // B6: Ke6 Nd5 Ne3 vs Kg8 pe4 — pion op e4 (Troitsky-lyn), ruiter op e3 blokkeer direk
-      // Tabelbasis: category=win, DTM=8 wit-skuiwe (sien verslag)
-      { fen: '6k1/8/4K3/3N4/4p3/4N3/8/8 w - - 0 1',
-        note: 'Die ruiter op e3 hou die pion vas — Kf6! sit die laaste stuk van die net vas voor jy die pion op die regte oomblik los.',
-        moveLimit: 22 },
-    ],
-    silver: [
-      // S1: Kd1 Nd4 Ne4 vs Kd7 ph5 — pion op 5de ry, swart middelblok
-      // AFGETREE 2026-07-09: tabelbasis CURSED-WIN — wen eers na 50+ skuiwe (Opdrag 3).
-      { fen: '8/3k4/8/7p/3NN3/8/8/3K4 w - - 0 1',
-        note: 'Pion op h5, swart middelblok — kombineer ruiter-maneuvers om na hoek te dryf voor die pion te ver vorder',
-        moveLimit: 34, retired: true },
-      // S2: Kd1 Nd2 Ne2 vs Ka5 ph5 — pion op 5de ry, swart op rand
-      // AFGETREE 2026-07-09: tabelbasis CURSED-WIN — wen eers na 50+ skuiwe (Opdrag 3).
-      { fen: '8/8/8/k6p/8/8/3NN3/3K4 w - - 0 1',
-        note: 'Pion op h5 met swart op a5 — jaag na die hoek terwyl jy die pion se vordering dophou',
-        moveLimit: 34, retired: true },
-      // S3: Kd1 Nd2 Ne2 vs Ka8 ph5 — swart in hoek maar wit ver weg, pion dreig
-      // AFGETREE 2026-07-09: tabelbasis CURSED-WIN — wen eers na 50+ skuiwe (Opdrag 3).
-      { fen: 'k7/8/8/7p/8/8/3NN3/3K4 w - - 0 1',
-        note: 'Swart in a8-hoek met pion op h5 — wit moet vinnig mat gee voor die pion bevorder!',
-        moveLimit: 34, retired: true },
-      // ── Opdrag 5 herbou ──
-      // S4: Ke6 Nc5 Ne2 vs Ka2 pc6 — pion op c6 (Troitsky-lyn), ruiter op c5 blokkeer direk
-      // Tabelbasis: category=win, DTM=17 wit-skuiwe (sien verslag)
-      { fen: '8/8/2p1K3/2N5/8/8/k3N3/8 w - - 0 1',
-        note: 'Die swart koning is amper in die hoek — Ke5! druk verder na die a1-hoek toe, terwyl die ruiter op c5 die pion vashou vir die res van die druk.',
-        moveLimit: 34 },
-      // S5: Kd5 Nh5 Nd4 vs Kd8 ph6 — pion op h6 (Troitsky-lyn), ruiter op h5 blokkeer direk
-      // Tabelbasis: category=win, DTM=20 wit-skuiwe (sien verslag)
-      { fen: '3k4/8/7p/3K3N/3N4/8/8/8 w - - 0 1',
-        note: 'Nog \'n stuk pad om te loop — Kd6! begin die tweede helfte van die druk, terwyl die ruiter op h5 die pion geduldig vashou.',
-        moveLimit: 34 },
-      // S6: Ke3 Ne4 Nc1 vs Kg1 pe5 — pion op e5 (Troitsky-lyn), ruiter op e4 blokkeer direk
-      // Tabelbasis: category=win, DTM=20 wit-skuiwe (sien verslag)
-      { fen: '8/8/8/4p3/4N3/4K3/8/2N3k1 w - - 0 1',
-        note: 'Kf3! sit die druk na die g1-hoek voort — die ruiter op e4 hou die pion vas totdat die net byna toe is.',
-        moveLimit: 34 },
-    ],
-    gold: [
-      // G1: Kd1 Nd4 Ne4 vs Ka7 ph2 — pion op 2de ry, amper bevordering, dringende mat
-      // AFGETREE 2026-07-09: tabelbasis DRAW (Opdrag 3).
-      { fen: '8/k7/8/8/3NN3/8/7p/3K4 w - - 0 1',
-        note: "Pion op h2, een skuif van bevordering — dryf swart na a8 met presisie voor die pion 'n koningin word",
-        moveLimit: 46, retired: true },
-      // G2: Kd1 Nd2 Ne2 vs Ke8 ph2 — swart sentraal, pion op h2, langste uitdaging
-      // AFGETREE 2026-07-09: tabelbasis DRAW (Opdrag 3).
-      { fen: '4k3/8/8/8/8/8/3NN2p/3K4 w - - 0 1',
-        note: 'Pion op h2 dreig bevordering — dryf swart na hoek en lewer mat presies voor dit te laat is',
-        moveLimit: 46, retired: true },
-      // ── Opdrag 5 herbou ──
-      // G3: Ke2 Nc5 Ne8 vs Kh5 pc6 — pion op c6 (Troitsky-lyn), ruiter op c5 blokkeer direk
-      // Tabelbasis: category=win, DTM=28 wit-skuiwe (sien verslag)
-      { fen: '4N3/8/2p5/2N4k/8/8/4K3/8 w - - 0 1',
-        note: 'Die volle Troitsky-tog begin hier — die koning is nog sentraal. Kf3! begin die lang dryf na die hoek, terwyl die ruiter op c5 die pion geduldig vashou vir die hele reis.',
-        moveLimit: 46 },
-      // G4: Ke1 Ne3 Nb5 vs Kb1 pe4 — pion op e4 (Troitsky-lyn), ruiter op e3 blokkeer direk.
-      // Bewustelik anders as G3: hier is die TWEEDE ruiter (b5) reeds naby die
-      // swart koning; die BLOKKEERDER (e3) is ver weg en moet later oorreis
-      // ná loslating — 'n omgekeerde verhaal, ander hoek (a-kant/1ste ry vs
-      // G3 se h-kant/8ste ry), en dieper DTM (32 vs 28).
-      // Tabelbasis: category=win, DTM=32 wit-skuiwe (sien verslag)
-      { fen: '8/8/8/1N6/4p3/4N3/8/1k2K3 w - - 0 1',
-        note: '\'n Ander reis: die ruiter op b5 is klaar naby, maar die blokkeerder op e3 moet later ver oorreis. Kd2! begin die laaste toedraai na die a1-hoek.',
-        moveLimit: 46 },
-    ],
-  },
+  // Tipe 5 (Koning & Twee Ruiters teen Koning) permanent verwyder 2026-08-20 —
+  // sien CLAUDE.md se grafskrif-paragraaf vir die rede.
 
   // ── Tipe 11: Piondeurbraak ────────────────────────────────────────────────
   // Tegniek: offer die middelste pion om 'n verbygeraakte pion te skep!
@@ -1170,74 +1067,8 @@ const POSITIONS = {
     ],
   },
 
-  // ── Tipe 17: Goeie Biskop vs Slegte Biskop ─────────────────────────────────
-  // Tegniek: GOEIE biskop = eie pione op die TEENOORGESTELDE kleur van die biskop (oop diagonale).
-  // SLEGTE biskop = eie pione op DIESELFDE kleur as die biskop (geblokkeer deur eie pione).
-  // Wit se biskop (donker vierkante, Be3) het oop diagonale. Swart se biskop (ook donker) word
-  // geblokkeer deur sy eie pione op donker vierkante (c5, e5).
-  // Die wenplan: gebruik die konings-infiltrasie op die lig vierkante wat swart nie kan verdedig.
-  17: {
-    // Opdrag 3, §2a: hierdie is winnende omskakelings (+2.6 tot +38) wat net
-    // die (nou verwyderde) wobble "nodig gehad het" omdat mat buite bereik was.
-    // Re-getag as promote — hulle is vandag speelbaar. G2 is 'n egte gelykspel
-    // en is afgetree (sien retirement-blok hieronder).
-    bronze: [
-      // B1: Ke2 Be3 Pc4 Pe4 vs Kd6 be7 pc5 pe5 — goeie biskop teen slegte biskop (be7 geblokkeer)
-      // AFGETREE 2026-07-09: die §4 selfspel-uitrol (Opdrag 3) is hoogs wisselvallig
-      // hier (28 op een lopie, 42 op 'n vars een) — dis 'n stadige posisionele
-      // opbou, nie 'n geforseerde taktiek nie (diepte-24 PV vind selfs geen
-      // bevordering binne die soektog nie). 'n veilige limiet (~50) is nie meer
-      // 'n brons-posisie nie — selfde gebrek-klas as T04 S2/S3, T10 B3, T12 B1.
-      { fen: '8/4b3/3k4/2p1p3/2P1P3/4B3/4K3/8 w - - 0 1',
-        note: 'Wit se Be3 het oop diagonale (goeie biskop) — swart se be7 is geblokkeer deur sy eie pione op dieselfde kleur (slegte biskop). Infiltreer met die koning!', moveLimit: 26,
-        winCondition: 'promote', retired: true },
-      // B2: Ke2 Be3 Pc4 Pe4 vs Kd6 bf6 pc5 pe5 — slegte biskop op f6
-      { fen: '8/8/3k1b2/2p1p3/2P1P3/4B3/4K3/8 w - - 0 1',
-        note: 'Swart se bf6 is op dieselfde donker kleur as sy pione op c5 en e5 — goeie vs slegte biskop. Gebruik die lig vierkante om in te dring!', moveLimit: 26,
-        winCondition: 'promote' },
-      // B3: Ke2 Be3 Pc4 Pe4 vs Kd6 bg7 pc5 pe5 — slegte biskop op g7
-      { fen: '8/6b1/3k4/2p1p3/2P1P3/4B3/4K3/8 w - - 0 1',
-        note: 'Swart se bg7 vasgesit agter sy pione — infiltreer met die wit koning op die lig vierkante wat swart se slegte biskop nie kan beskerm nie', moveLimit: 26,
-        winCondition: 'promote' },
-      // B4 (Opdrag 8): dieselfde geraamte, slegte biskop op d8. Selfspel: bevorder op wit-skuif 20.
-      { fen: '3b4/8/3k4/2p1p3/2P1P3/4B3/4K3/8 w - - 0 1',
-        note: 'Swart se bd8 is ver terug en steeds op donker vierkante — infiltreer met die koning op die lig vierkante', moveLimit: 26,
-        winCondition: 'promote' },
-    ],
-    silver: [
-      // S1: Ke2 Be3 Pc4 Pe4 vs Kd6 bc7 pc5 pe5 — slegte biskop op c7
-      { fen: '8/2b5/3k4/2p1p3/2P1P3/4B3/4K3/8 w - - 0 1',
-        note: 'Swart se bc7 is passief en geblokkeer — dring deur op die lig vierkante wat die slegte biskop nie kan dek nie', moveLimit: 25,
-        winCondition: 'promote' },
-      // S2: Ke2 Be3 Pc4 Pe4 vs Kd6 bh6 pc5 pe5 — slegte biskop op h6
-      { fen: '8/8/3k3b/2p1p3/2P1P3/4B3/4K3/8 w - - 0 1',
-        note: 'Swart se bh6 lyk aktief maar is geblokkeer deur donker-kleur pione — die goeie biskop-konings-kombinasie wen die strukturele geveg', moveLimit: 25,
-        winCondition: 'promote' },
-      // S3: Ke2 Be3 Pc4 Pe4 Pf4 vs Kd6 bf6 pc5 pe5 — wit het ekstra f-pion
-      { fen: '8/8/3k1b2/2p1p3/2P1PP2/4B3/4K3/8 w - - 0 1',
-        note: 'Wit het ekstra Pf4 — gebruik die goeie biskop saam met die ekstra pion om deur te breek teen die geblokkeerde slegte biskop', moveLimit: 25,
-        winCondition: 'promote' },
-    ],
-    gold: [
-      // G1: Ke2 Be3 Pc4 Pe4 vs Kd6 ba5 pc5 pe5 — slegte biskop op a5, aktiefer geplaas
-      // moveLimit 24→30 2026-07-09: die §4 selfspel-uitrol (Opdrag 3) bevorder
-      // op wit-skuif 25 — net bo die vorige limiet van 24. 30 bly ruim binne
-      // goud se tipiese omvang (verstek 36).
-      { fen: '8/8/3k4/b1p1p3/2P1P3/4B3/4K3/8 w - - 0 1',
-        note: 'Swart se ba5 lyk aktief — maar dis steeds op dieselfde donker kleur as sy pione. Wen die goeie-biskop-eindspel teen die mees aktiewe slegte biskop', moveLimit: 30,
-        winCondition: 'promote' },
-      // G3 (Opdrag 8): dieselfde geraamte, slegte biskop op b4 — nog aktiewer geplaas. Selfspel: bevorder op wit-skuif 28.
-      { fen: '8/8/3k4/2p1p3/1bP1P3/4B3/4K3/8 w - - 0 1',
-        note: 'Swart se bb4 is die aktiefste plasing nog — steeds op donker vierkante. Voer die presisiespel uit om deur te breek', moveLimit: 32,
-        winCondition: 'promote' },
-      // G2: Kd2 Be3 Pc4 Pe4 vs Kd6 bh4 pc5 pe5 — slegte biskop by h4, aktiewe swart
-      // AFGETREE 2026-07-09: egte gelykspel (enjin: DRAWN +0.08 op diepte 28) — die
-      // slegte biskop hou wel die vesting. Opdrag 9 (minder-stuk-eindspels) herbou dit.
-      { fen: '8/8/3k4/2p1p3/2P1P1b1/4B3/3K4/8 w - - 0 1',
-        note: 'Die moeilikste weergawe — swart se bh4 is aktief maar steeds geblokkeer deur donker pione. Voer die presisiespel uit om deur die verdediging te breek', moveLimit: 24,
-        retired: true },
-    ],
-  },
+  // Tipe 17 (Goeie Biskop vs Slegte Biskop) permanent verwyder 2026-08-20 —
+  // sien CLAUDE.md se grafskrif-paragraaf vir die rede.
 
   // ── Tipe 18: Biskop teen Ruiter ───────────────────────────────────────────
   // Tegniek: in OOP posisies met pione op BEIDE vleuels is die biskop sterker as die ruiter.

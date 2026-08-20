@@ -32,7 +32,7 @@ python3 -m http.server 8080
 
 ```
 index.html, app.js, positions.js, fases.js, styles.css, stockfish-worker.js   # the shipped app
-assets/cats/             # 100 badge-mascot cat PNGs (25 types x 4 tiers), also shipped — see Kentekenkat below
+assets/cats/             # 92 badge-mascot cat PNGs (23 types x 4 tiers), also shipped — see Kentekenkat below
 New_Cat.png              # source reference cat for the assets/cats/ generator, kept for regeneration
 netlify.toml            # deploy config; build step copies the above into dist/ (gitignored)
 CLAUDE.md                # this file
@@ -55,9 +55,9 @@ Opdrag_09_Finale_QA.md   # the active task spec, until it's done too
 
 ---
 
-## The 25 Endgame Types (Badge Names in Afrikaans)
+## The 23 Endgame Types (Badge Names in Afrikaans)
 
-Each type is one badge. Listed by numeric ID, not play order — actual curriculum sequencing is the Fase-Poorte grouping below. **Type numbers 10 and 21 are permanently dead — never reuse them** (see Epitaphs).
+Each type is one badge. Listed by numeric ID, not play order — actual curriculum sequencing is the Fase-Poorte grouping below. **Type numbers 5, 10, 17, and 21 are permanently dead — never reuse them** (see Epitaphs).
 
 | # | Afrikaans Name | English Reference |
 |---|---|---|
@@ -65,7 +65,6 @@ Each type is one badge. Listed by numeric ID, not play order — actual curricul
 | 2 | Koning & Kasteel teen Koning | King & Rook vs King |
 | 3 | Koning & Twee Biskoppe teen Koning | King & Two Bishops vs King |
 | 4 | Koning, Biskop & Ruiter teen Koning | King & Bishop & Knight vs King |
-| 5 | Koning & Twee Ruiters teen Koning | King & Two Knights vs King |
 | 6 | Koning & Pion teen Koning | King & Pawn vs King |
 | 7 | Verbygeraakte Pion Wedren | Passed Pawn Races |
 | 8 | Opposisie & Koningaktiwiteit | Opposition & King Activity |
@@ -76,7 +75,6 @@ Each type is one badge. Listed by numeric ID, not play order — actual curricul
 | 14 | Philidor-posisie | Philidor Position |
 | 15 | Kasteel Agter Verbygeraakte Pion | Rook Behind Passed Pawn |
 | 16 | Aktiewe vs Passiewe Kasteel | Active vs Passive Rook |
-| 17 | Goeie Biskop vs Slegte Biskop | Good Bishop vs Bad Bishop |
 | 18 | Biskop teen Ruiter | Bishop vs Knight |
 | 19 | Verkeerde Kleur Biskop | Wrong-Coloured Bishop |
 | 20 | Koningin teen Pion op 7de Ry | Queen vs Pawn on 7th Rank |
@@ -87,7 +85,7 @@ Each type is one badge. Listed by numeric ID, not play order — actual curricul
 | 26 | Biskop-en-Pion teen Biskop | Bishop & Pawn vs Bishop (same colour) |
 | 27 | Teenoorgestelde Biskoppe: Verdedig! | Opposite-Coloured Bishops: Defend! |
 
-Total badge count: **75** (25 types × 3 tiers).
+Total badge count: **69** (23 types × 3 tiers).
 
 **Piece-name convention:** Koning (King), Koningin (Queen), Kasteel (Rook), Biskop (Bishop), Ruiter (Knight), Pion (Pawn) — used consistently in every player-facing string and in this document. SAN-shorthand move notation inside position notes (e.g. `Kf5!`, `Bf3!`, `Td4!`) is standard algebraic notation, independent of this word choice — `tools/verify_positions.py`'s `NOTE_PIECE_LETTER_MAP` accepts both the Afrikaans-initial letters (K/Q/D/T/L/R) and English ones (B/N) for exactly this reason, and neither needed to change when the prose words did.
 
@@ -101,7 +99,7 @@ Total badge count: **75** (25 types × 3 tiers).
 | Silver | Silwer | 24 moves | 3 | First 10 moves only, then *"Jy kan dit doen!"* |
 | Gold | Goud | 36 moves | 2 | None |
 
-A puzzle may override its tier's default via `moveLimit` in `positions.js` (e.g. when a type's material can't structurally convert within the default — see Type 24 in the status table). Type 5 uses extended limits (22/34/46) throughout, per its Troitsky-method construction.
+A puzzle may override its tier's default via `moveLimit` in `positions.js` (e.g. when a type's material can't structurally convert within the default — see Type 24 in the status table).
 
 **Definition of "move":** one full turn = one white move + one black response.
 
@@ -141,14 +139,14 @@ The 50-move rule stays **disabled** in every mode — move limits are shorter an
 
 ## Badge & Progression Logic — Fase-Poorte (Curriculum Gate)
 
-The 25 types are grouped into **5 fases** (`fases.js`), a curriculum sequence rather than a flat random pool.
+The 23 types are grouped into **5 fases** (`fases.js`), a curriculum sequence rather than a flat random pool.
 
 | Fase | Afrikaans Name | Types |
 |---|---|---|
 | 1 | Basiese Mats | 1, 2, 3 |
 | 2 | Pioneindspele | 6, 7, 8, 9, 11, 12 |
 | 3 | Kasteeleindspele | 13, 14, 15, 16 |
-| 4 | Meesterklas | 4, 5, 17, 18, 19, 20 |
+| 4 | Meesterklas | 4, 18, 19, 20 |
 | 5 | Fyn Kuns | 22, 23, 24, 25, 26, 27 |
 
 Type 4 sits in Fase 4 despite being "basic material" — its DTM runs up to 33, the hardest technique in the app.
@@ -211,8 +209,8 @@ Triggered automatically after **every** round, win or fail:
 - Chessboard, centre
 - Top bar: badge name + tier, objective label (*"Doel: Skaakmat"* / *"Doel: Promoveer 'n pion"* / *"Doel: Hou die gelykspel — oorleef {n} skuiwe"*), move counter
 - Conditional hint button per tier rules above
-- **Sybalk links:** compact 2-column badge grid (`.badge-sidebar`, 112px), same helper (`renderSidebarBadges`) also serves the Replay screen. 25 is odd, so the grid always ends with one badge alone in column 1 — `.sidebar-badge-item:last-child` spans both columns and centres itself so it doesn't look stranded.
-- **Sleutelgedagte panel:** a glass panel to the right of the board (`.sleutelgedagte-panel`, 260px — matches the shared Chess_Games "Analysis/Review" right-column convention). The key-idea text sits in a comic-style speech bubble (`.speech-bubble`, CSS triangle tail pointing down) attributed to the type's mascot cat (`.sleutelgedagte-cat`, ~85px) shown below it — see Kentekenkat below. Normally the bubble shows the current type's key-idea explanation: a <100-word Afrikaans paragraph on the core technique, addressed directly to the player (`ENDGAME_TYPES[i].sleutelgedagte` in `positions.js`, all 25 types). About 1 round in 10 the bubble shows a silly cat one-liner from `KAT_GRAPPIES` instead (and the "💡 Sleutelgedagte" heading hides itself for that round). All populated in `startGame()`. One thing to remember per type, not a theory lesson.
+- **Sybalk links:** compact 2-column badge grid (`.badge-sidebar`, 112px), same helper (`renderSidebarBadges`) also serves the Replay screen. 23 is odd, so the grid always ends with one badge alone in column 1 — `.sidebar-badge-item:last-child` spans both columns and centres itself so it doesn't look stranded.
+- **Sleutelgedagte panel:** a glass panel to the right of the board (`.sleutelgedagte-panel`, 260px — matches the shared Chess_Games "Analysis/Review" right-column convention). The key-idea text sits in a comic-style speech bubble (`.speech-bubble`, CSS triangle tail pointing down) attributed to the type's mascot cat (`.sleutelgedagte-cat`, ~85px) shown below it — see Kentekenkat below. Normally the bubble shows the current type's key-idea explanation: a <100-word Afrikaans paragraph on the core technique, addressed directly to the player (`ENDGAME_TYPES[i].sleutelgedagte` in `positions.js`, all 23 types). About 1 round in 10 the bubble shows a silly cat one-liner from `KAT_GRAPPIES` instead (and the "💡 Sleutelgedagte" heading hides itself for that round). All populated in `startGame()`. One thing to remember per type, not a theory lesson.
 
 ### 3. Uitslag (Result Screen)
 Shown for every round, win or fail. Heading/icon/message vary by reason (`checkmate`, `promote`, `hold_survived`, `hold_stalemate`, `hold_repetition`, `hold_insufficient` for wins; `stalemate`, `black_checkmate`, `repetition`, `limit`, `hold_mated`, `hold_adjudicated` for failures) — wins styled green (`.win`), stalemate red, other failures orange. Transitions to replay after 2 seconds.
@@ -230,13 +228,13 @@ Shown immediately after badge-unlock, never concurrently (`finishRound()` snapsh
 
 ## Kentekenkat (Badge Mascot)
 
-Each of the 25 types has its own mascot cat, shown in the Sleutelgedagte panel below the speech bubble. It wears no medal until Brons is earned for that type, then swaps to a bronze/silver/gold necklace pendant — driven by `highestEarnedTier(typeData.id)`, the same source of truth the badge system already uses, re-evaluated every `startGame()` call (`catImg.src = 'assets/cats/type' + catId + '_' + catTier + '.png'`).
+Each of the 23 types has its own mascot cat, shown in the Sleutelgedagte panel below the speech bubble. It wears no medal until Brons is earned for that type, then swaps to a bronze/silver/gold necklace pendant — driven by `highestEarnedTier(typeData.id)`, the same source of truth the badge system already uses, re-evaluated every `startGame()` call (`catImg.src = 'assets/cats/type' + catId + '_' + catTier + '.png'`).
 
-**Asset pipeline** (`tools/build_cats_from_single.py` → `assets/cats/type{ID}_{tier}.png`, 25 types × 4 tiers = 100 PNGs):
+**Asset pipeline** (`tools/build_cats_from_single.py` → `assets/cats/type{ID}_{tier}.png`, 23 types × 4 tiers = 92 PNGs; the type05/type17 PNGs were deleted 2026-08-20 when those types were removed):
 - Source is a single reference image, `New_Cat.png` (user-supplied, gold necklace already on it) — not a multi-cat sprite sheet. An earlier attempt extracted cats from a 9×4-cell NanoBanana grid sheet; every cell's tail curled into the gap toward its neighbour, so no fixed crop boundary could avoid slicing through one cat's tail or bleeding in a stray fragment from the next. A single isolated cat sidesteps that entire class of bug — nothing adjacent to crop around.
 - Its background is a baked-in checkerboard (not real alpha) — stripped via flood-fill from the image border over near-grey pixels; the cat's black outline reliably contains the fill so the interior fur is untouched.
 - The necklace (chest-band region + gold colour threshold) is isolated, inpainted out with the surrounding chest colour for the medal-less "normal" tier, and recoloured in place — not redrawn — for bronze/silver/gold, preserving the original chain's shading/highlight pattern.
-- Types 1–11 (first 10 in this doc's numeric order) get a gentle, low-saturation recolour (grey, chocolate, ginger, black, blue-grey, brown tabby, etc.) so they read as realistic cat colours; types 12–27 get a vivid hue-rotated + saturation-boosted "zany" coat. All 25 share one silhouette/pose — colour and medal are the only variety, a deliberate trade-off after two sprite-sheet extraction attempts (`generate_cat_sprites.py`, `build_cat_sprites_from_ref.py`) both produced cut/malformed cats despite looking fine on a spot-check.
+- Types 1–11 (first 9 in this doc's numeric order) get a gentle, low-saturation recolour (grey, chocolate, ginger, black, blue-grey, brown tabby, etc.) so they read as realistic cat colours; types 12–27 get a vivid hue-rotated + saturation-boosted "zany" coat. All 25 share one silhouette/pose — colour and medal are the only variety, a deliberate trade-off after two sprite-sheet extraction attempts (`generate_cat_sprites.py`, `build_cat_sprites_from_ref.py`) both produced cut/malformed cats despite looking fine on a spot-check.
 - **Standing lesson for any future regeneration:** verify every one of the 100 output files by eye, not a sample — both failed attempts passed a 5-6-image spot-check and broke once every type was actually looked at.
 
 **Speech bubble & grapkies:** the sleutelgedagte text sits in `.speech-bubble` (CSS triangle tail pointing down at the cat below it) so it reads as the cat talking, not a plain panel of prose. About 1 round in 10 (`Math.random() < 0.1` in `startGame()`), the bubble shows a random line from `KAT_GRAPPIES` (in `app.js`) instead of the real key-idea text, and the "💡 Sleutelgedagte" heading hides itself for that round — a heading over a meow would be a non-sequitur.
@@ -329,7 +327,9 @@ The gauntlet, in order — this is the same shape `generate_type5.py`/`generate_
 
 ## Current State (positions.js)
 
-**264 positions on file** across 25 types, **206 active (servable), 58 retired** (audit trail only, never served). Full harness: **0 ERRORs**, 8 WARNs (all pre-existing budget/stalemate-fraction notes on untouched positions, none blocking). Dedup scan: 0 exact, 0 translation-aware near-duplicates among actives (one pre-existing INFO shadow, T08 S6 vs retired T10 B2, not a defect).
+**238 positions on file** across 23 types, **190 active (servable), 48 retired** (audit trail only, never served). Full harness: **0 ERRORs**, 6 WARNs (all pre-existing budget/stalemate-fraction notes on untouched positions, none blocking). Dedup scan: 0 exact, 0 translation-aware near-duplicates among actives (one pre-existing INFO shadow, T08 S6 vs retired T10 B2, not a defect).
+
+**2026-08-20:** Type 5 (Koning & Twee Ruiters teen Koning) and Type 17 (Goeie Biskop vs Slegte Biskop) removed permanently — see Epitaphs. This dropped the totals from 264/206/58 across 25 types (75 badges) to the figures above (69 badges). Every player's medals/progress was also reset once-off (`storageKey()` bumped v1 → v2 in `app.js`) since old badge data no longer lines up with the shrunk type list.
 
 | Type | Active (B/S/G) | Retired | Notes |
 |---|---|---|---|
@@ -337,7 +337,6 @@ The gauntlet, in order — this is the same shape `generate_type5.py`/`generate_
 | 2 — K+R vs K | 5/3/2 | 0 | Brons #5 `moveLimit` 19 (budget) |
 | 3 — K+BB vs K | 2/3/2 | 1 | Mate-in-1 stalemate minefield retired |
 | 4 — K+BN vs K | 3/3/2 | 2 | Two silvers replaced (were gold-depth DTM) |
-| 5 — K+NN vs K | 3/3/2 | 8 (legacy) | Troitsky method, extended limits 22/34/46, tablebase-certified |
 | 6 — K+P vs K | 5/3/2 | 0 | `promote`; all limits rollout-budgeted |
 | 7 — Verbygeraakte Pion Wedren | 5/3/2 | 0 | `promote`; golds are genuine promotion-with-check races |
 | 8 — Opposisie & Koningaktiwiteit | 10/6/2 | 10 (legacy) | `promote`, C5-strict-certified throughout, incl. 2 distant-opposition golds |
@@ -348,7 +347,6 @@ The gauntlet, in order — this is the same shape `generate_type5.py`/`generate_
 | 14 — Philidor-posisie | 3/3/2 | 0 | Silwer #2 `moveLimit` 26 (budget) |
 | 15 — Kasteel Agter Verbygeraakte Pion | 3/3/2 | 0 | `mate` |
 | 16 — Aktiewe vs Passiewe Kasteel | 3/3/2 | 2 | |
-| 17 — Goeie Biskop vs Slegte Biskop | 3/3/2 | 2 | **B1/G2 retired as genuine draws** — real theory gap, open, see below |
 | 18 — Biskop teen Ruiter | 3/2/2 | 5 (legacy) | Silver/gold rebuilt: bishop + two widely-separated passers vs a knight that can't blockade both, tablebase-certified |
 | 19 — Verkeerde Kleur Biskop | 3/3/2 | 4 | S6 (silver) is `hold` mode — white is the weaker side, holds the wrong-colour corner |
 | 20 — Koningin teen Pion op 7de Ry | 3/3/2 | 0 | Brons #3 `moveLimit` 17 (budget) |
@@ -364,11 +362,15 @@ The gauntlet, in order — this is the same shape `generate_type5.py`/`generate_
 
 ## Epitaphs
 
+**Type 5 (Koning & Twee Ruiters teen Koning)** — cut permanently 2026-08-20, at the coach's judgement that the underlying technique doesn't work for this audience. Two knights can't mate a bare king without a helper pawn (the Troitsky method — block the pawn, drive the king to a corner, release the pawn at the exact tempo needed to avoid stalemate), and that fragility already showed up in the data: the type needed extended move limits (22/34/46 vs. the standard 12/24/36) throughout, and eight of its original positions had to be retired outright as tablebase draws, cursed-wins (mate only after 50+ moves), or DTM 84–86 misses against a 22-move limit. Even the eight replacement positions that did pass verification depended on a precise release-the-pawn timing that's a poor fit for the target age group.
+
+**Type 17 (Goeie Biskop vs Slegte Biskop)** — cut permanently 2026-08-20, at the coach's judgement. Bronze #1 and Gold #2 were already retired as genuine theoretical draws (engine-confirmed, not a construction bug) across two prior rebuild passes (Opdrag 3, Opdrag 8), and the type never once reached a clean 3/3/2 despite that effort — a persistent sign the "infiltrate on the colour the bad bishop can't cover" technique doesn't compress reliably into a bounded-move-limit puzzle on this skeleton.
+
 **Type 10 (Driehoeksbeweging)** — cut permanently. A genuine reciprocal-zugzwang core requires both black pawns to be simultaneously unguardable by the single black king (confirmed directly: whenever black's king can guard a pawn, it's a stable draw regardless of tempo, zero exceptions in 200 tested cases) — but that same unguardedness lets white's king simply walk over and capture the loose pawn instead of triangulating, faster than the tablebase's own detour, every time. Tried and failed across five structurally distinct families (~534 candidates total): bare 4-man, 6-man double-blocked, defended-reserve-pawn, adjacent mutually-guardable pairs, bare K+P vs K. The one untested escape route: a *tethered-by-passer* construction, where black's king is obligated elsewhere by an outside passed pawn rather than the blocked pair itself. `check_c7` and all retired Type 10 positions stay as working infrastructure should anyone reopen this.
 
 **Type 21 (Hartjie van die Bord)** — removed. The "central checkmate only" constraint was unachievable: the pawns in those positions didn't reliably cage the king away from the edge, and B+N naturally mates on edge squares.
 
-**Both numbers are permanently dead — never reuse 10 or 21 for a new type.**
+**All four numbers are permanently dead — never reuse 5, 10, 17, or 21 for a new type.**
 
 ---
 
@@ -376,7 +378,6 @@ The gauntlet, in order — this is the same shape `generate_type5.py`/`generate_
 
 Genuine, known, not-yet-fixed items — surfaced here rather than silently left implicit:
 
-- **Type 17 (Goeie Biskop vs Slegte Biskop):** Bronze #1 and Gold #2 are retired as real theoretical draws (engine-confirmed, not a construction bug). A rebuild on a different skeleton would restore full 3/3/2.
 - **Type 12 (Buitenste Verbygeraakte Pion):** bronze's decoy pawn is present but not thematically binding — white wins with or without pushing it, since material is 3-vs-2 pawns overall. A tighter 2-vs-2 construction (one outside pawn + one contested-wing pawn per side, where the bait is what turns a draw into a win) would close this properly.
 - **Type 27 (Teenoorgestelde Biskoppe: Verdedig!):** silver/gold ship with the tightest available reversed-C5 candidates from a capped 50-position sample, not ones meeting the confirmed ≤3-drawing-move bar bronze hit exactly. A wider (uncapped, ~30 min) sample might find tighter examples.
 

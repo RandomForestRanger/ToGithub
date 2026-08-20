@@ -12,7 +12,12 @@ const PLAYERS = ['Besoeker', 'Jacobus', 'Thomas', 'Nasionale Eenheid', 'Coach']
 let currentPlayer = localStorage.getItem('skaakmat-current-player') || 'Besoeker'
 
 function storageKey() {
-  return 'skaakmat-afrigter-v1-' + currentPlayer.replace(/\s+/g, '-')
+  // v1 -> v2 2026-08-20: once-off reset of every player's medals/progress
+  // (Type 5 & Type 17 removal made old badge data inconsistent with the new
+  // type list). Bumping the version orphans all old v1-* keys permanently —
+  // this is a one-time rename, not a runtime action, so it can never fire
+  // again or re-wipe progress on a later load.
+  return 'skaakmat-afrigter-v2-' + currentPlayer.replace(/\s+/g, '-')
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════

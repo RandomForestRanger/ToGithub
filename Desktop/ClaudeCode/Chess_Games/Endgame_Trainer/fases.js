@@ -9,12 +9,15 @@
 //
 // Tipe 10 (Driehoeksbeweging) is permanent gesny (Opdrag 6b) — nie net
 // "in herbou" nie. Sien CLAUDE.md se grafskrif-paragraaf vir die rede.
+//
+// Tipe 5 (Koning & Twee Ruiters teen Koning) en Tipe 17 (Goeie Biskop vs
+// Slegte Biskop) permanent gesny 2026-08-20 — sien CLAUDE.md.
 
 const FASES = [
   { id: 1, name: 'Basiese Mats',     types: [1, 2, 3] },
   { id: 2, name: 'Pioneindspele',    types: [6, 7, 8, 9, 11, 12] },
   { id: 3, name: 'Kasteeleindspele',  types: [13, 14, 15, 16] },
-  { id: 4, name: 'Meesterklas',      types: [4, 5, 17, 18, 19, 20] },
+  { id: 4, name: 'Meesterklas',      types: [4, 18, 19, 20] },
   // Fase 5 (Opdrag 8b): gepoort deur Fase 4 se bronse, per die standaardreël
   // in isFaseUnlocked() — geen nuwe logika benodig nie.
   { id: 5, name: 'Fyn Kuns',         types: [22, 23, 24, 25, 26, 27] },

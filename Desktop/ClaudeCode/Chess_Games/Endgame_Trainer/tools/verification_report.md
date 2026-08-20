@@ -1,13 +1,13 @@
 # Verifikasieverslag — Skaakmat Afrigter posisies.js
 
-- Gegenereer: 2026-07-13 15:10:08
+- Gegenereer: 2026-08-20 16:20:03
 - Enjin: Stockfish 18
 - Diepte-instellings: C2=28, C3=30+15.0s, C5=18
-- Modus: volledig
-- Totaal: 264 posisies | Aktief: 206 · Afgetree: 58
-- Aktief — OK=198 WARN=8 ERROR=0
+- Modus: volledig, --no-net
+- Totaal: 238 posisies | Aktief: 190 · Afgetree: 48
+- Aktief — OK=184 WARN=6 ERROR=0
 
-## WARNINGS (8)
+## WARNINGS (6)
 
 | Tipe | Pos | FEN | Uitspraak | Besonderhede |
 |---|---|---|---|---|
@@ -16,11 +16,9 @@
 | Koning, Biskop & Ruiter teen Koning (T4) | Silwer #1 | `8/8/8/3N3k/4K3/8/B7/8 w - - 0 1` | WARN | [C3/WARN] DTM=23 (cache) oorskry silver-begroting (18.0 = 75% van 24) |
 | Verbygeraakte Pion Wedren (T7) | Brons #2 | `k7/8/K1P5/8/8/8/8/8 w - - 0 1` | WARN | [C4/WARN] 1/4 skuiwe gee onmiddellike pat (c7) |
 | Buitenste Verbygeraakte Pion (T12) | Brons #5 | `8/1pp5/8/4k2P/8/8/1PP5/6K1 w - - 0 1` | WARN | [C3/WARN] selfspel-uitrol: bevordering op skuif 20 oorskry bronze begroting (13.2) |
-| Goeie Biskop vs Slegte Biskop (T17) | Brons #2 | `8/8/3k1b2/2p1p3/2P1P3/4B3/4K3/8 w - - 0 1` | WARN | [C3/WARN] selfspel-uitrol: bevordering op skuif 18 oorskry bronze begroting (15.6) |
-| Goeie Biskop vs Slegte Biskop (T17) | Brons #4 | `3b4/8/3k4/2p1p3/2P1P3/4B3/4K3/8 w - - 0 1` | WARN | [C3/WARN] selfspel-uitrol: bevordering op skuif 22 oorskry bronze begroting (15.6) |
 | Verkeerde Kleur Biskop (T19) | Goud #2 | `7k/7P/5K2/1B6/8/P7/8/8 w - - 0 1` | WARN | [C4/WARN] 2/17 skuiwe gee onmiddellike pat (Kg6, Bd3) |
 
-<details><summary>OK (198) — saamgevou</summary>
+<details><summary>OK (184) — saamgevou</summary>
 
 | Tipe | Pos | FEN | Uitspraak | Besonderhede |
 |---|---|---|---|---|
@@ -56,14 +54,6 @@
 | Koning, Biskop & Ruiter teen Koning (T4) | Silwer #5 | `8/8/4N3/2K5/8/8/6Bk/8 w - - 0 1` | OK | alles in orde |
 | Koning, Biskop & Ruiter teen Koning (T4) | Goud #1 | `8/8/4k3/8/8/2NB4/K7/8 w - - 0 1` | OK | alles in orde |
 | Koning, Biskop & Ruiter teen Koning (T4) | Goud #2 | `8/8/3k4/8/8/8/6B1/K4N2 w - - 0 1` | OK | alles in orde |
-| Koning & Twee Ruiters teen Koning (T5) | Brons #4 | `1k3N2/8/2p5/1KN5/8/8/8/8 w - - 0 1` | OK | alles in orde |
-| Koning & Twee Ruiters teen Koning (T5) | Brons #5 | `8/8/p7/N7/3K4/8/8/k3N3 w - - 0 1` | OK | alles in orde |
-| Koning & Twee Ruiters teen Koning (T5) | Brons #6 | `6k1/8/4K3/3N4/4p3/4N3/8/8 w - - 0 1` | OK | alles in orde |
-| Koning & Twee Ruiters teen Koning (T5) | Silwer #4 | `8/8/2p1K3/2N5/8/8/k3N3/8 w - - 0 1` | OK | alles in orde |
-| Koning & Twee Ruiters teen Koning (T5) | Silwer #5 | `3k4/8/7p/3K3N/3N4/8/8/8 w - - 0 1` | OK | alles in orde |
-| Koning & Twee Ruiters teen Koning (T5) | Silwer #6 | `8/8/8/4p3/4N3/4K3/8/2N3k1 w - - 0 1` | OK | alles in orde |
-| Koning & Twee Ruiters teen Koning (T5) | Goud #3 | `4N3/8/2p5/2N4k/8/8/4K3/8 w - - 0 1` | OK | alles in orde |
-| Koning & Twee Ruiters teen Koning (T5) | Goud #4 | `8/8/8/1N6/4p3/4N3/8/1k2K3 w - - 0 1` | OK | alles in orde |
 | Koning & Pion teen Koning (T6) | Brons #1 | `8/3P4/2K5/8/8/8/8/3k4 w - - 0 1` | OK | alles in orde |
 | Koning & Pion teen Koning (T6) | Brons #2 | `8/4P3/3K4/8/8/8/8/6k1 w - - 0 1` | OK | alles in orde |
 | Koning & Pion teen Koning (T6) | Brons #3 | `8/8/3KP3/8/8/8/8/3k4 w - - 0 1` | OK | alles in orde |
@@ -152,12 +142,6 @@
 | Aktiewe vs Passiewe Kasteel (T16) | Silwer #3 | `8/1R6/7k/8/3K2P1/8/8/1r6 w - - 0 1` | OK | alles in orde |
 | Aktiewe vs Passiewe Kasteel (T16) | Goud #1 | `8/1R6/8/5k2/3K4/8/6P1/1r6 w - - 0 1` | OK | alles in orde |
 | Aktiewe vs Passiewe Kasteel (T16) | Goud #2 | `8/4R3/8/1k6/3K4/8/4P3/1r6 w - - 0 1` | OK | alles in orde |
-| Goeie Biskop vs Slegte Biskop (T17) | Brons #3 | `8/6b1/3k4/2p1p3/2P1P3/4B3/4K3/8 w - - 0 1` | OK | alles in orde |
-| Goeie Biskop vs Slegte Biskop (T17) | Silwer #1 | `8/2b5/3k4/2p1p3/2P1P3/4B3/4K3/8 w - - 0 1` | OK | alles in orde |
-| Goeie Biskop vs Slegte Biskop (T17) | Silwer #2 | `8/8/3k3b/2p1p3/2P1P3/4B3/4K3/8 w - - 0 1` | OK | alles in orde |
-| Goeie Biskop vs Slegte Biskop (T17) | Silwer #3 | `8/8/3k1b2/2p1p3/2P1PP2/4B3/4K3/8 w - - 0 1` | OK | alles in orde |
-| Goeie Biskop vs Slegte Biskop (T17) | Goud #1 | `8/8/3k4/b1p1p3/2P1P3/4B3/4K3/8 w - - 0 1` | OK | alles in orde |
-| Goeie Biskop vs Slegte Biskop (T17) | Goud #2 | `8/8/3k4/2p1p3/1bP1P3/4B3/4K3/8 w - - 0 1` | OK | alles in orde |
 | Biskop teen Ruiter (T18) | Brons #1 | `4k1n1/8/P7/2K5/3B4/8/8/8 w - - 0 1` | OK | alles in orde |
 | Biskop teen Ruiter (T18) | Brons #2 | `k5n1/8/4KP2/5B2/8/8/8/8 w - - 0 1` | OK | alles in orde |
 | Biskop teen Ruiter (T18) | Brons #3 | `n5k1/8/4KP2/8/2B5/8/8/8 w - - 0 1` | OK | alles in orde |
@@ -225,21 +209,13 @@
 
 </details>
 
-<details><summary>AFGETREE (58) — saamgevou</summary>
+<details><summary>AFGETREE (48) — saamgevou</summary>
 
 | Tipe | Pos | FEN | Uitspraak | Besonderhede |
 |---|---|---|---|---|
 | Koning & Twee Biskoppe teen Koning (T3) | Brons #2 | `k1B5/2B5/1K6/8/8/8/8/8 w - - 0 1` | OK | alles in orde |
 | Koning, Biskop & Ruiter teen Koning (T4) | Silwer #2 | `8/8/8/3k4/8/8/8/K4BN1 w - - 0 1` | OK | alles in orde |
 | Koning, Biskop & Ruiter teen Koning (T4) | Silwer #3 | `8/8/5k2/8/8/3N4/4B3/2K5 w - - 0 1` | OK | alles in orde |
-| Koning & Twee Ruiters teen Koning (T5) | Brons #1 | `8/4k2p/8/8/3NN3/8/8/3K4 w - - 0 1` | OK | alles in orde |
-| Koning & Twee Ruiters teen Koning (T5) | Brons #2 | `8/7p/8/8/k7/8/3NN3/3K4 w - - 0 1` | OK | alles in orde |
-| Koning & Twee Ruiters teen Koning (T5) | Brons #3 | `8/p7/8/8/8/5k2/5NN1/6K1 w - - 0 1` | OK | alles in orde |
-| Koning & Twee Ruiters teen Koning (T5) | Silwer #1 | `8/3k4/8/7p/3NN3/8/8/3K4 w - - 0 1` | OK | alles in orde |
-| Koning & Twee Ruiters teen Koning (T5) | Silwer #2 | `8/8/8/k6p/8/8/3NN3/3K4 w - - 0 1` | OK | alles in orde |
-| Koning & Twee Ruiters teen Koning (T5) | Silwer #3 | `k7/8/8/7p/8/8/3NN3/3K4 w - - 0 1` | OK | alles in orde |
-| Koning & Twee Ruiters teen Koning (T5) | Goud #1 | `8/k7/8/8/3NN3/8/7p/3K4 w - - 0 1` | OK | alles in orde |
-| Koning & Twee Ruiters teen Koning (T5) | Goud #2 | `4k3/8/8/8/8/8/3NN2p/3K4 w - - 0 1` | OK | alles in orde |
 | Opposisie & Koningaktiwiteit (T8) | Brons #1 | `8/3k4/8/4K3/4P3/8/8/8 w - - 0 1` | OK | alles in orde |
 | Opposisie & Koningaktiwiteit (T8) | Brons #2 | `4k3/8/3K4/3P4/8/8/8/8 w - - 0 1` | OK | alles in orde |
 | Opposisie & Koningaktiwiteit (T8) | Brons #3 | `8/5k2/8/4K3/4P3/8/8/8 w - - 0 1` | OK | alles in orde |
@@ -281,8 +257,6 @@
 | Buitenste Verbygeraakte Pion (T12) | Goud #3 | `8/5pp1/8/P7/4k3/8/5PP1/6K1 w - - 0 1` | OK | alles in orde |
 | Aktiewe vs Passiewe Kasteel (T16) | Silwer #4 | `8/2R5/8/8/3K2k1/8/6P1/1r6 w - - 0 1` | OK | alles in orde |
 | Aktiewe vs Passiewe Kasteel (T16) | Silwer #5 | `8/4R3/8/5k2/3K4/8/4P3/1r6 w - - 0 1` | OK | alles in orde |
-| Goeie Biskop vs Slegte Biskop (T17) | Brons #1 | `8/4b3/3k4/2p1p3/2P1P3/4B3/4K3/8 w - - 0 1` | OK | alles in orde |
-| Goeie Biskop vs Slegte Biskop (T17) | Goud #3 | `8/8/3k4/2p1p3/2P1P1b1/4B3/3K4/8 w - - 0 1` | OK | alles in orde |
 | Verkeerde Kleur Biskop (T19) | Brons #1 | `k7/P7/K7/2B5/5P2/8/8/8 w - - 0 1` | OK | alles in orde |
 | Verkeerde Kleur Biskop (T19) | Brons #3 | `7k/7P/7K/1B6/8/P7/8/8 w - - 0 1` | OK | alles in orde |
 | Verkeerde Kleur Biskop (T19) | Silwer #4 | `k7/P7/K7/2B5/5P2/3p4/8/8 w - - 0 1` | OK | alles in orde |
