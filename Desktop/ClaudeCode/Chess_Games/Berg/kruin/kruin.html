@@ -140,6 +140,11 @@
   <div id="voorgrond">
     <div id="statusPaneel" class="paneel">
       <h1>Sneeuluiperd se Kruin</h1>
+      <!-- Kaart 7-vervolg (2026-08-21): speler-toestand. app.js se init()
+           stuur terug na welkom.html as geen speler gekies is nie (sien
+           HUIDIGE_SPELER_SLEUTEL), dus is spelerWaarde altyd gevul teen die
+           tyd wat dit sigbaar is. -->
+      <div class="veld"><div class="etiket">Speler</div><div class="waarde" id="spelerWaarde">-</div></div>
       <div class="veld"><div class="etiket">Sport</div><div class="waarde" id="sportWaarde">-</div></div>
       <div class="veld"><div class="etiket">Sone</div><div class="waarde" id="soneWaarde">-</div></div>
       <div class="veld"><div class="etiket">Begroting (skuiwe oor)</div><div class="waarde" id="begrotingWaarde">-</div></div>
@@ -156,6 +161,7 @@
       <button id="weerBeginKnop">Begin oor</button>
       <button id="wysWKnop" style="display:none">Wys my die W</button>
       <label id="stilKnopLabel"><input id="stilKnop" type="checkbox"> stil (demp klank)</label>
+      <a href="welkom.html" id="wisselSpelerSkakel">Wissel speler</a>
       <div id="wOorlegsel" style="display:none"></div>
     </div>
     <div id="bordPaneel" class="paneel">

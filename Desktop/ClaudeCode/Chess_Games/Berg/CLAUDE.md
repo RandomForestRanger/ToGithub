@@ -245,6 +245,28 @@ Doelbewus **vermy**: enige `MILESTONE_RUNGS`-sport (3,6,9,12,15\*,18,21,24,27,30
 
 ---
 
+### Speler-keuse: `welkom.html`, drie name (Jacobus/Thomas/Ander) (2026-08-21)
+
+**Status: ✅ Voltooi.** Op versoek is 'n tuisblad/spelerkeuse-skerm bygevoeg vóór die spel self — "Die avontuur van 'Sneeuluiperd se Kruin'", met Oom Jorka wat die reisiger groet en drie name om uit te kies.
+
+**Nuwe lêer `Berg/kruin/welkom.html`** (2,1 MB, staties, geen bord/orakel/skaaklogika nie):
+- Titel + drie spelerkaarte (Jacobus/Thomas/Ander), elk met 'n enkele-letter-avatar (dieselfde konvensie as die bewoner-plekhouers) en 'n lewende vorderingsvoorskou (`Sport N van 30` + 'n balkie, of "'n Nuwe reisiger" as daardie speler nog nooit gespeel het nie) — gelees direk uit `localStorage.sneeuluiperd_<naam>_v1` by bladsy-laai, geen wagtyd nie.
+- Oom Jorka se portret (dieselfde `viewBox="935 50 270 360"`-crop as die statuspaneel s'n) langs 'n nuwe teksbank-kategorie: `Jorka.kies('tuisblad')` in `kruin/jorka.js` (4 variante, 3+ soos die res van die teksbank vereis) — bewustelik 'n ANDER kategorie-naam as die bestaande `welkom.moeras/woud/rotse/sneeu` (per-sone, ná 'n speler klaar gekies het), om verwarring/oorskrywing te vermy.
+- Kuns: Oom Jorka (`#yorka-figure`), die Sneeuluiperd (`#sneeuluiperd-figure`, groot regsonder as "held"-beeld), en Kapok (`kapok-fur`/`kapok-shade`/`kapok-outline`, klein drafend bo die groetblok) — al drie **staties uit `kruin.html` se eie `<defs>` oorgekopieer** (nie 'n looptyd-fetch nie, dieselfde argitektuur-besluit as die res van Kaart 7-vervolg). `berg-agtergrond.jpg` as 'n gedempte (22% deurskynend) volskerm-agtergrond, **verwys** (nie ingebed nie) sodat dit nie 'n tweede keer as bytes gedupliseer word nie. Grootte-oorweging: Jorka (1,19 MB) en die Sneeuluiperd (803 KB) is albei aansienlik — bewustelik gekies bo die vier-diere-canvas/Stapper-Seun-rasterbeelde (goedkoper, maar minder "die held van die storie") vir hierdie een keer-af tuisblad; nie 'n presedent om oral so kwistig te wees nie.
+- Kliek op 'n naam stel `localStorage.sneeuluiperd_huidige_speler` en stuur na `kruin.html`.
+
+**`kruin/app.js`-wysigings:**
+- `STATE_KEY` (voorheen 'n vaste `'sneeuluiperd_v1'`-konstante) is nou `let STATE_KEY = null;`, eers gestel in `init()` sodra die speler bekend is: `'sneeuluiperd_' + speler + '_v1'`.
+- `init()` se allereerste stap: as `localStorage.sneeuluiperd_huidige_speler` ontbreek, stuur dadelik terug na `welkom.html` (vóór enige bord/orakel-opstelwerk begin) — dus kan `kruin.html` nooit sonder 'n gekose speler bereik word nie.
+- Nuwe "Speler"-veld in die statuspaneel (`kruin.html`) en 'n "Wissel speler"-skakel wat `HUIDIGE_SPELER_SLEUTEL` uitvee en terugstuur na `welkom.html`.
+- **Bestaande toestand (van vóór hierdie kaart, onder die ou ongeskoopte `sneeuluiperd_v1`-sleutel) is doelbewus NIE gemigreer nie** — op die gebruiker se uitdruklike keuse begin al drie name vars by sport 1. Die ou sleutel bly 'n stil, onbenutte oorblyfsel in localStorage (nooit weer gelees nie), geen opruimings-aksie geneem nie.
+- **Doelbewus GLOBAAL/gedeeld gelaat, nie per-speler nie:** die stil/demp-voorkeur (`sneeuluiperd_klank_stil`, 'n toestel-vlak instelling, nie 'n speler-vordering-item nie) en die orakel se IndexedDB-tabelbasis-kas (`sneeuluiperd_tb_v1` — die KLR-v-K-waarheidstabel hang nie af van WIE speel nie, sou net verkwistend wees om per speler te herbereken/te dupliseer).
+- Volg die suite-wye sleutelpatroon uit die wortel-CLAUDE.md (`{gamePrefix}_{playerName}_{dataType}`), al gebruik hierdie spel sy eie drie vaste name i.p.v. die gedeelde `J/L/KC/CA/MB/T`-aftreklys wat ander spelle in dié gesin-suite gebruik (uitdruklike gebruikersversoek: presies Jacobus/Thomas/Ander vir hierdie spel).
+
+**Verifikasie:** die drie ingebedde kuns-stukke (Jorka-portret, Sneeuluiperd, Kapok) elk direk vanaf die werklike `welkom.html`-inhoud gerender en visueel bevestig (korrekte vul, korrekte verf-volgorde by Kapok). Tag-balans (`<defs>`/`<g>`/`<svg>`) en volle XML-welgevormdheid bevestig ná kommentare uitgehaal is — 'n eerste naïewe telling het 'n vals-alarm gewys (2 "<defs>"-voorkomste teenoor 1 "</defs>"), presies dieselfde bekende vals-positief-patroon as vroeër in Kaart 7-vervolg (die kop-kommentaar noem "<defs>" in prosa); met kommentare eers verwyder was dit 1-vs-1, korrek gebalanseer. `node --check` op al die gewysigde/nuwe JS (`app.js`, `jorka.js`, en `welkom.html` se ingebedde skrip apart onttrek). Alle relatiewe paaie (`jorka.js`, `../berg/berg-agtergrond.jpg`, `kruin.html`) teen die werklike lêerstelsel bevestig. **Geen werklike blaaier-toets gedoen nie** (geen blaaier-outomatisering hierdie sessie nie, en CSS-uitleg/-tipografie kan sowieso nie deur `cairosvg` (slegs SVG) nagegaan word nie) — 'n regte oopmaak in die blaaier (`python3 -m http.server`, dan `welkom.html`) word sterk aanbeveel om die volle bladsy-uitleg (nie net die ingebedde kuns nie) te bevestig voor commit.
+
+---
+
 ## Kaart 8 (toekomstig) — gekommissioneerde illustreerder-weergawe / weergawe-keuse
 
 'n Menslike illustreerder word vroeg-Augustus 2026 gekontrakteer om die berg met die hand te teken — sien `Berg/kunstenaar-brief.txt` (deur die gebruiker in 'n Word-dokument aangepas voor dit gestuur is; die `.txt` weerspieël dus nie noodwendig die finale weergawe wat die kunstenaar ontvang nie). Vier landskap-A4-blaaie (Sneeu bo, dan Rotse, Woud, Moeras onder), regstreeks op mekaar gestapel — presies dieselfde stapelvolgorde as die kinders-kolaz hierbo.

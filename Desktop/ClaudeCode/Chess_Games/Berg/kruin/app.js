@@ -10,7 +10,15 @@
   const Klank = window.Klank;
   const { file, rank, sqOf, symTransformSquare } = Core;
 
-  const STATE_KEY = 'sneeuluiperd_v1';
+  // Kaart 7-vervolg (2026-08-21): drie name (Jacobus/Thomas/Ander), elk sy
+  // eie toestand -- STATE_KEY is nou eers bekend ná die speler-toets in
+  // init() (welkom.html stel HUIDIGE_SPELER_SLEUTEL voor dit hierheen stuur;
+  // sonder dit stuur init() self terug na welkom.html). Bestaande
+  // eenspeler-toestand onder die ou "sneeuluiperd_v1"-sleutel (van vóór
+  // hierdie kaart) bly 'n stil, ongebruikte oorblyfsel in localStorage --
+  // op die gebruiker se uitdruklike keuse begin al drie name vars.
+  const HUIDIGE_SPELER_SLEUTEL = 'sneeuluiperd_huidige_speler';
+  let STATE_KEY = null;
   const N_RUNGS = 30;
 
   const ZONE_MERCY = { moeras: 2, woud: 4, rotse: 6, sneeu: 10 };
@@ -744,6 +752,20 @@
   }
 
   function init() {
+    // Kaart 7-vervolg: geen speler gekies nie -- terug na die tuisblad
+    // (welkom.html stel HUIDIGE_SPELER_SLEUTEL). Voorkom enige verdere
+    // opstelwerk (bord, orakel-worker, ens.) as ons in elk geval gaan
+    // wegstuur.
+    const speler = localStorage.getItem(HUIDIGE_SPELER_SLEUTEL);
+    if (!speler) { window.location.href = 'welkom.html'; return; }
+    STATE_KEY = 'sneeuluiperd_' + speler + '_v1';
+    document.getElementById('spelerWaarde').textContent = speler;
+    document.getElementById('wisselSpelerSkakel').addEventListener('click', (ev) => {
+      ev.preventDefault();
+      localStorage.removeItem(HUIDIGE_SPELER_SLEUTEL);
+      window.location.href = 'welkom.html';
+    });
+
     state = laaiToestand();
     initBord();
     setBoodskap('', '');

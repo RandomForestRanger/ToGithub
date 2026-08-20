@@ -59,6 +59,9 @@ h1 { color: #f39c12; font-size: 20px; margin: 0 0 12px 0; }
 }
 #jorkaTeks { font-style: italic; color: #f4c542; min-height: 20px; padding-top: 3px; }
 #stilKnopLabel { display: flex; align-items: center; gap: 6px; font-size: 13px; color: #aaa; margin-top: 10px; }
+/* Kaart 7-vervolg: skakel terug na welkom.html (§ speler-keuse). */
+#wisselSpelerSkakel { display: block; margin-top: 10px; font-size: 13px; color: #f39c12; text-decoration: none; }
+#wisselSpelerSkakel:hover { text-decoration: underline; }
 
 #bordPaneel { align-self: flex-end; }
 #board { width: min(420px, calc(100vw - 60px)); margin: 0 auto; }

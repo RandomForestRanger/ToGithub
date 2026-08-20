@@ -7,6 +7,17 @@
   'use strict';
 
   const COACH_LINES = {
+    // Kaart 7-vervolg (2026-08-21): die tuisblad se groet (welkom.html, vóór
+    // 'n speler gekies is) -- nie dieselfde as "welkom" hierbo nie (dié is
+    // per-sone, ná 'n speler klaar gekies het en klim). 'n Reisiger wat nog
+    // nie 'n naam gekies het nie, kry hierdie in plaas daarvan.
+    tuisblad: [
+      "Nog 'n reisiger. Sê my jou naam, dan begin ons klim.",
+      'Die berg wag nie, maar ek wag graag. Kies wie jy is.',
+      "Elke klim begin met 'n naam. Wat is joune?",
+      'Ek het gewag. Kies jou naam, en ons vertrek.',
+    ],
+
     welkom: {
       moeras: [
         'Die moeras lieg mooi. Kyk waar jy trap.',
