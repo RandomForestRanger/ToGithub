@@ -1,0 +1,451 @@
+# Leer die Philidor & Ou-Indiër Speel — Project Spec
+
+> **Visual theme superseded (see §12):** the app originally shipped with the Minecraft-inspired
+> theme described in §2 below. As of the 2026-08-20 build it has been fully re-skinned to a
+> "Sunset T20" cricket-stadium theme under an invented franchise identity, **D6 Dynamos** — no
+> real IPL team names, logos, or wordmarks. §2 is kept as historical record of the original
+> design; §12 documents what actually ships today. All gameplay/scoring logic, badge conditions,
+> and opening theory content are unchanged by the reskin.
+
+A web trainer that teaches a young chess player (Black) to meet **1.e4 with the
+Philidor Defence** and **1.d4/1.c4/1.Nf3 with the Old Indian Defence** — using a single unifying
+idea: **1...d6 opens both doors.**
+
+This is a **30-move game** (not just an opening drill) — the first 6 moves are the guided theory
+phase (Lichess-popularity pool, hints available), and moves 7–30 hand White over to pure Stockfish
+so the session runs on into real middlegame play. Scope is deliberately "opening into early
+middlegame," not just "first ten moves."
+
+This spec mirrors the architecture, scoring engine, and API stack of the existing Bird Opening
+trainer (`Leer die Bird Speel`), with colours swapped (the computer plays White, the student plays
+Black) and the theming rebuilt around Minecraft.
+
+---
+
+## 1. Historical Background (for in-app "wisdom" flavour text, README, or an optional "Oor die
+Opening" info panel)
+
+**Philidor Defence (1.e4 e5 2.Nf3 d6)** — Named for François-André Danican Philidor
+(1726–1795), a Frenchman who was simultaneously Europe's strongest chess player and a celebrated
+opera composer. His 1749 book *Analyse du jeu des Échecs* was the first serious treatise on pawn
+play and positional strategy — his most famous line, loosely paraphrased, is that pawns are the
+soul of chess. Philidor himself favoured the sharp ...f5 push in this defence; modern theory
+prefers the calmer **Hanham setup** (...Nd7, ...Ngf6, ...Be7, ...0-0), named after American
+master James Moore Hanham. The opening also appears in the famous 1858 "Opera Game," where Paul
+Morphy demolished the Duke of Brunswick and Count Isouard at the Paris Opera after they chose the
+adventurous ...Bg4 continuation instead.
+
+**Old Indian Defence (1.d4 Nf6 2.c4 d6)** — Part of the broader "Indian" family of openings, a
+name that traces back to Moheschunder Bannerjee, a Brahmin player from Calcutta who played
+fianchetto- and ...d6-based setups against the Scottish master John Cochrane in the 1850s —
+decades before European "hypermodern" players got credit for similar ideas. Savielly Tartakower
+proposed the "Indian" name in the 1920s specifically to honour Bannerjee. The Old Indian itself
+was later developed by Mikhail Chigorin and differs from its flashier cousin, the King's Indian,
+mainly in that Black develops the bishop to e7 rather than fianchettoing it to g7.
+
+**The pedagogical hook:** in both openings, Black's very first useful move is the same pawn push —
+**...d6**. It's flexible, doesn't commit to a structure too early, and quietly prepares ...e5 (or
+...Nf6/...g6) depending on what White does. One block, many builds.
+
+---
+
+## 2. Visual Theme — "Minecraft-inspired," not Minecraft-branded
+
+Build a **blocky, pixel-art aesthetic evocative of Minecraft** — grass/dirt/stone palette, chunky
+pixel borders, a retro pixel font — using **original CSS and free-licensed assets only**. Do not
+use Minecraft's actual textures, logo, or trademarked font; recreate the *feel* with:
+
+- **Font:** Google Fonts `"Press Start 2P"` (free, pixel-style) for headers/labels; a clean
+  sans-serif for body text/history so it stays readable.
+- **Palette:**
+  - Grass green `#5D9C43` / dark grass `#3F6E2E` — primary accents, headers
+  - Dirt brown `#8B5A2B` / dark brown `#5C3A1E` — panel backgrounds, borders
+  - Stone grey `#7D7D7D` / cobblestone grey `#5A5A5A` — buttons, board frame
+  - Diamond blue `#5DCFE0` — highlights, "engine best move"
+  - Gold `#FFD700` — score, high score, achievement flashes
+  - Redstone red `#C13B2A` — errors/warnings
+  - Obsidian `#1A1A1E` / near-black — dark background base
+- **Borders:** 3–4px **stepped/pixelated borders** (no border-radius; use `box-shadow` layering or
+  `clip-path` steps to fake a blocky outline) on all panels, buttons, and the board frame.
+- **Buttons:** stone-textured gradient (`linear-gradient` grey tones), chunky pixel border,
+  slight "press down" effect (`translateY(2px)` + shadow shrink) on `:active`.
+- **Badge/achievement popups:** styled like a game "achievement toast" — dark translucent banner,
+  diagonal accent stripe, pixel icon + gold text, sliding in from a corner. (This is a *style*
+  homage, not a copy of any specific game's exact asset.)
+- **Board:** keep `chessboard.js` standard piece set (Wikipedia theme, same as Bird game) for
+  clarity — wrap it in a chunky cobblestone-style frame rather than reskinning the pieces
+  themselves, so the chess remains legible for a learner.
+
+---
+
+## 3. Tech Stack (identical to Bird Opening trainer)
+
+- `chess.js` 0.10.3 — move validation, FEN/PGN state
+- `chessboard.js` 1.0.0 (`@chrisoakman` build) — board rendering, drag-free (tap-to-move, per Bird
+  game's touch-friendly pattern)
+- `jQuery` 3.7.1 — DOM/board glue
+- **Stockfish.js** 10.0.2, loaded via `fetch` → `Blob` → `Worker` (avoids CORS issues), UCI
+  protocol, `MultiPV` queries for top-2/top-5 lines
+- **Lichess Cloud Eval API** (`lichess.org/api/cloud-eval`) — primary eval source, fast/cached
+- **Lichess Opening Explorer** (`explorer.lichess.ovh/lichess`) — popularity data,
+  `ratings=1600,1800,2000,2200,2500&speeds=rapid,classical`, same as Bird game
+- Plain HTML/CSS/JS, no build step, `localStorage` for persistence — same as Bird game
+
+---
+
+## 4. Game Flow — White and Black roles are swapped from the Bird game
+
+**The computer plays White. The student plays Black.** 30 rounds (Black moves 1–30) — longer than
+Bird's 10-move arc by design, since this version is meant to carry the lesson from opening theory
+into real middlegame decision-making.
+
+### Move 1 (forced, mirrors Bird's forced `1.f4`)
+- White's first move is drawn from a weighted pool: `e4` (45%), `d4` (40%), `c4` (10%), `Nf3` (5%).
+- **Black's first move is always forced to `d6`**, regardless of what White played. If the
+  student tries anything else, undo and show: *"Speel d6 — dit werk teen amper alles!"*
+  ("Play d6 — it works against almost everything!")
+- Store which "branch" the game is in based on White's move 1 (and re-check on move 2/3 in case
+  of transposition — e.g. 1.Nf3 d6 2.e4 still becomes a Philidor branch):
+  - `e4` present in history → **Philidor branch**
+  - `d4`/`c4` present without `e4` → **Old Indian branch**
+
+### Moves 2–30
+- White's replies come from the same **Lichess popularity pool → Stockfish handoff** pattern as
+  Bird's Black-move engine: a shrinking `WHITE_POOL_SIZES` array covering the opening-theory phase
+  only — `[20, 16, 8, 4, 2, 2]` for moves 1–6 — then **pure Stockfish for White from move 7
+  onward** (moves 7–30, i.e. 24 moves of genuine engine middlegame play). This is a bigger jump
+  than Bird's version, where the engine-only phase was just moves 7–10; here it's the bulk of the
+  game, which is the point — theory gets the student into a healthy position, then he has to
+  actually play chess against a strong opponent for 24 more moves.
+- Black's moves (the student's) are scored via the **identical unified scoring function** from the
+  Bird game (see §5) — just run for Black-to-move positions instead of White-to-move ones.
+- Keep Bird's UX rhythm: play move → 2s pause showing engine/popularity comparison → highlight →
+  computer replies → eval updates → badge checks.
+- **Hints stay restricted to moves 3–6** (the guided theory window), same as Bird — moves 1–2 are
+  forced/too obvious, and moves 7–30 are deliberately hint-free so the student is practising real
+  decision-making, not looking up answers for two-thirds of a 30-move game.
+
+### Suggested flavour-boost overrides (optional, mirrors Bird's From's Gambit/Polar Bear boosts)
+- After `1.e4 d6`, boost White's `2.d4` to ~60% (so most games reach real main-line Philidor
+  territory quickly).
+- After `1.d4 d6`, boost White's `2.c4` to ~55% (steers toward genuine Old Indian rather than
+  stalling).
+
+---
+
+## 5. Scoring System — identical formula to Bird game, roles reversed
+
+Reuse `scoreMove(fen, move)` exactly as built for Bird, with one **critical sign-convention
+check**: Stockfish/Lichess cloud-eval `cp` values are relative to the **side to move**. In the
+Bird game (White to move, scoring White) this was used directly. Here, when scoring **Black's**
+move, make sure eval comparisons and the "Dominant" badge threshold are read as
+**Black-favourable when negative from White's frame**, or simply keep evals relative to side-to-
+move consistently — audit this carefully when porting, it's the one place transposing colours can
+silently break scoring.
+
+- 5 pts: move is top-2 by Lichess popularity **or** top-2 by Stockfish
+- 4 pts: 3rd–4th in either
+- 3 pts: 5th in either
+- 2 pts: 6th in either
+- 1 pt: anything else
+- `< 20` games in the Lichess pool → fall back to pure Stockfish ranking/centipawn-loss scoring
+  (same fallback logic as Bird)
+
+`TARGET_SCORE = 150`, `MAX_MOVES = 30` (scaled up from Bird's 50/10 — same 5-points-per-move
+ceiling, just over three times the moves).
+
+---
+
+## 6. UI Layout (Afrikaans strings) — mirrors Bird's structure
+
+### Header
+```
+⛏️🟩 Leer die Philidor & Ou-Indiër Speel 🟩⛏️
+Bemeester d6-verdedigings teen 1.e4 en 1.d4 — 30 skuiwe van teorie tot middelspel
+```
+
+### Stats panel (same fields as Bird, same order)
+- **Speler** — player `<select>` dropdown: Debora, Jack, Jacobus, Sammy, Thomas, Martin, Coach
+  Corno, Birdman (unchanged list)
+- **Skuif** — `1/30` move counter
+- **Punte** — `0/150` score
+- **Hoogste Punt** — high score (per player, `localStorage`)
+- **Evaluasie** — engine eval, remember the Black-perspective sign convention from §5
+- Progress bar underneath
+
+### Left panel: **Prestasies** (Achievements — Minecraft-flavoured rename of "Kentekens")
+Hover tooltip area that shows either a random "wisdom" quote or, on badge hover, that badge's
+unlock condition — identical interaction pattern to Bird's badge panel.
+
+### Centre column
+- Board (cobblestone-framed, per §2)
+- Message box (status text — "Wit dink...", errors, hints)
+- Info row: **"Wit reageer uit:"** (mirrors Bird's "Swart reageer uit:") showing pool size /
+  "Beste enjin skuif" from round 7, plus **Puntelling: Gekombineerd**
+- Move-score flash (`+5`/`+4`/etc., same colour-coded scale as Bird)
+- Move history list
+- Controls: **Nuwe Spel**, **Wys Beste Skuif** (hint button, same move-3–6-only restriction as
+  Bird)
+
+### Right panel (live game): **Skuif Analise**
+- 🖥️ Rekenaar Beste (Stockfish top-2, with eval)
+- 📊 Lichess Gewildste (top-2 popularity, with game counts/win rate)
+- 🎯 Jou Skuif (comparison verdict, same four-tier messaging as Bird: top-2-both / engine-only /
+  popular-only / weak)
+
+### Right panel (after game): **Hersien Jou Spel**
+Same back/forward review stepper, same best-moves-per-position lookup via Lichess Explorer.
+
+### Achievement/badge notification
+Slide-in toast (see §2 styling), icon + `"{Naam} Ontsluit!"`.
+
+### Game-over modal
+Score, rating message (reuse Bird's percentage-tier Afrikaans messages, reworded slightly if
+desired), new-high-score flag, badges-earned strip, **Hersien Spel** / **Speel Weer** buttons.
+
+---
+
+## 7. Achievements ("Prestasies") — Minecraft icons, real opening theory underneath
+
+| id | icon | naam | voorwaarde |
+|---|---|---|---|
+| `d6-boumeester` | ⛏️ | d6-Boumeester | Perfekte 150/150 punte in een spel |
+| `philidor-verdediger` | 🛡️ | Philidor Verdediger | Voltooi 'n spel in die Philidor-tak (Wit het e4 gespeel) |
+| `ou-indier-boumeester` | 🧱 | Ou-Indiër Boumeester | Voltooi 'n spel in die Ou-Indiër-tak (Wit het d4/c4 gespeel) |
+| `hanham-vesting` | 🏰 | Hanham Vesting | Bereik die Hanham-opstelling: ...Nd7, ...Ngf6, ...Be7, ...0-0 |
+| `antoshin-blok` | 🟫 | Antoshin Blok | Speel ...exd4 en bereik ...Be7 + ...0-0 daarna |
+| `philidors-eie-keuse` | ⚔️ | Philidor se Eie Keuse | Speel die gewaagde ...f5-stoot (Philidor se eie aanbeveling) |
+| `opera-spook` | 🎭 | Opera-spook | Speel ...Bg4 in die Philidor-tak — die Hertog van Brunswick se lyn teen Morphy |
+| `chigorin-hoofline` | ♞ | Chigorin Hoofline | Bereik die Ou-Indiër hoofline: ...Nbd7, ...e5, met Wit se pion op e4 |
+| `janowski-blok` | 💎 | Janowski Blok | Speel ...Bf5 in die Ou-Indiër-tak voor die pion e6/e5 die loper toemaak |
+| `tsjeggiese-fondament` | 🧱 | Tsjeggiese Fondament | Speel ...c6 in die Ou-Indiër-tak |
+| `tartakower-indier` | 📖 | Tartakower-Indiër | Speel ...Bg4 in die Ou-Indiër-tak |
+| `koning-indier-oorgang` | 👑 | Koning-Indiër Oorgang | Fianchetto met ...g6 + ...Bg7 i.p.v. ...Be7 |
+| `koningin-jagter` | ♛ | Koningin Jagter | Vang Wit se koningin |
+| `teoretikus` | 📚 | Teoretikus | 15+ perfekte skuiwe (5 punte elk) in een spel |
+| `grootmeester` | 🏆 | Grootmeester | 21+ perfekte skuiwe in een spel |
+| `oorheersend` | 🔥 | Oorheersend | Eindig die spel met 'n evaluasie van -2.0 of beter (in Swart se guns) |
+
+Badge-detection pattern: reuse Bird's two approaches — (a) exact `history()` sequence matching for
+opening-order badges (`philidors-eie-keuse`, `opera-spook`, `janowski-blok`, `tsjeggiese-
+fondament`, `tartakower-indier`), and (b) live `game.board()` piece-position checks for structural
+badges (`hanham-vesting`, `chigorin-hoofline`, `koning-indier-oorgang`, `antoshin-blok`) — same as
+Bird's `checkPolarBearSetup()`/`checkLeningradSetup()` pattern.
+
+---
+
+## 8. Wisdom Quotes (Afrikaans, random display in the achievements panel — original composition)
+
+1. "...d6 is die sleutel wat amper elke deur oopsluit — teen e4 sowel as d4."
+2. "Philidor het gesê pionne is die siel van skaak; d6 is waar daardie siel begin."
+3. "Bou jou pionnestruktuur soos 'n fondament — blok vir blok, nie haastig nie."
+4. "Die Hanham-opstelling is stadig maar staalvas: Nd7, Ngf6, Be7, dan rokade."
+5. "In die Ou-Indiër ontwikkel jou loper na e7 — beskeie, maar betroubaar."
+6. "Moheschunder Bannerjee het hierdie idees in Calcutta gespeel lank voor Europa dit 'hipermodern' genoem het."
+7. "Tartakower het die naam 'Indiër' voorgestel uit respek vir daardie vroeë Indiese spelers."
+8. "Chigorin het die Ou-Indiër ontwikkel as 'n soliede alternatief vir die Koning-Indiër."
+9. "'n Fianchetto na g7 verander jou Ou-Indiër in 'n Koning-Indiër — weet watter pad jy kies."
+10. "Philidor self was aggressief: hy het ...f5 aanbeveel, nie net verdedig nie."
+11. "Morphy se opponente in die Opera-spel het ...Bg4 gespeel — en betaal daarvoor."
+12. "Geduld bou vestings; haas bou net puinhope."
+13. "'n Perd op d7 lyk passief, maar hou al die belangrike velde in die oog."
+14. "Speel nooit ...e5 voor jou ontwikkeling reg is nie — bou eers, val dan aan."
+15. "Die Tsjeggiese Variasie (...c6) is stil, maar dit laat geen skeure in jou fondament nie."
+16. "Janowski het ...Bf5 gespeel om sy loper uit te kry voor die deur toeslaan."
+17. "Elke groot vesting begin met een blok wat reg geplaas is."
+18. "'n Koningin gevang is 'n groot prys — maar 'n goeie fondament wen die meeste speletjies."
+
+---
+
+## 9. Persistence (localStorage keys)
+
+- High score: `philidorOldIndian_{player}_highScore`
+- Badges: `philidorOldIndian_{player}_badges`
+- Badge-version reset flag: `philidorOldIndian_badgeVersion` (bump to force a badge reset after
+  design changes, same pattern as Bird's `birdOpening_badgeVersion`)
+
+Player list (unchanged from Bird game): Debora, Jack, Jacobus, Sammy, Thomas, Martin, Coach Corno,
+Birdman.
+
+---
+
+## 10. Open Assumptions to Confirm Before Build
+
+- Forced `1...d6` for every game (rather than sometimes forcing `1...Nf6` first) — chosen for a
+  clean, memorable pedagogical rule. Flag if you'd rather branch the forced first move by what
+  White plays.
+- Branch-completion badges (`philidor-verdediger`, `ou-indier-boumeester`) are new additions with
+  no Bird equivalent — included so both halves of the lesson get celebrated even on games where no
+  fancier variation badge triggers.
+- Eval sign convention (§5) needs careful porting — worth a specific test pass once built, since
+  it's the one part of "just reverse the colours" that can silently misscore.
+- **30-move session length:** each Black move triggers a Lichess + Stockfish lookup (scoring), and
+  each White move from round 7 on triggers a full Stockfish search — that's up to ~48 API/engine
+  calls per game, plus the 2-second pause built into the UX rhythm after each move. A full game
+  will likely run 15–25 minutes depending on engine depth/network latency. Worth deciding with
+  Claude Code whether to keep `depth 10–12` (Bird's setting) throughout, or taper it down for
+  moves deep in the middlegame to keep pacing reasonable for a young player's attention span.
+
+---
+
+## 11. Implementation Notes (changes from spec — recorded during build sessions)
+
+### Visual theme — Minecraft pixel-art textures
+Six 16×16 SVG pixel-art textures are embedded as CSS `data:image/svg+xml` URIs in `styles.css`
+and applied as tiled `background-image` with a semi-transparent dark overlay for readability.
+`image-rendering: pixelated` is set on all textured containers. Each panel uses a different block:
+- **Background** — obsidian-dark gradient (no tile; CSS only)
+- **Stats panel** — grass block top
+- **Badge panel** — mossy cobblestone
+- **Board frame** — cobblestone/stone bricks
+- **Info panel** — stone bricks
+- **Move history** — dirt
+- **Controls** — oak planks
+- **Achievement toast** — oak planks
+- **Analysis / review panels** — quartz block
+
+### Board squares
+chessboard.js square classes are overridden with Minecraft colours:
+- Light squares (`.white-1e1d7`): `#c8ccb2` — quartz off-white
+- Dark squares (`.black-3c85d`): `#4a6b32` — mossy cobblestone green
+Chess pieces (`#board img`) explicitly set `image-rendering: auto` to keep them smooth
+(Wikipedia piece set — same as Bird Opening trainer).
+
+### Badge list background
+`.badge-list` has a flat `rgba(0,0,0,0.62)` background so individual badge slots remain
+legible against the mossy cobblestone panel behind them.
+
+### Engine-transition popup
+An `#engine-popup` div (positioned fixed, centred) is shown once when `makeWhiteMove()` is
+called with `currentMoveNumber === 7` — the first move White uses Stockfish instead of the
+opening-popularity pool. Message: *"🤔 Nou moet ek begin dink!"* Auto-fades after 3.5 s.
+
+### Stockfish depth for White's moves
+`makeWhiteStockfishMove()` calls `fetchStockfishEval(fen, 5)` — depth 5 only. This keeps
+White's engine moves fast and age-appropriate (depth 12 was unnecessary for a young-player
+trainer and caused long waits in the 24-move middlegame stretch). Black's scoring evals still
+use the default depth waterfall (Lichess Cloud Eval → stockfish.online → local worker).
+
+### Hint / arrow availability
+Hints (canvas arrows + "Wys Beste Skuif" button) are restricted to moves **3–6** only
+(guided theory window). No hints on moves 1–2 (forced / obvious) or 7–30 (deliberate
+practice — student must think for themselves for the whole middlegame).
+`fetchBestMove()` skips its API calls outside moves 3–6 to save resources.
+
+### Language fixes
+- Stat label: **"Hoogste Punt"** (was "Hoogtepunt")
+- Branch/variation label: **"Lyn:"** (was "Tak:")
+- Badge name: **"Chigorin Hooflyn"** (was "Chigorin Hoofline")
+
+### Target position tracker ("Doelwit" row)
+A row below the message box shows five target-piece chips (♟ d6, ♞ f6, ♞ e5, ♝ e7, ♚ g8)
+that turn green as Black achieves each element of the ideal Hanham/Old-Indian setup.
+Detection uses `game.board()` array indexing (row 0 = rank 8, row 7 = rank 1; col 0 = file a).
+
+### Canvas arrow system
+`<canvas id="board-arrows">` is absolutely positioned over the board inside `.board-wrapper`.
+`drawArrow(from, to, color)` uses Canvas 2D API with flipped-board coordinates
+(`x = (7-file)*size + size/2`, `y = (rank-1)*size + size/2`).
+Auto-hints (popularity + engine best move shown as coloured arrows) run only on
+hint-eligible moves; the hint button draws a diamond-blue arrow for the top suggestion.
+
+---
+
+## 12. Cricket Redesign — "Sunset T20" (2026-08-20)
+
+A complete visual/copy overhaul, agreed with the user via a design-canvas mockup review
+before implementation. **Scope: full reskin including flavour text** (wisdom quotes,
+achievement-toast copy, move-score flash labels, end-game rating messages) — badge IDs,
+unlock conditions, scoring logic, `MAX_MOVES`/`TARGET_SCORE` (stayed 30/150 — see below),
+and all historical/opening-theory content are untouched.
+
+### Franchise identity
+**D6 Dynamos** — an invented team name, not a real IPL franchise. Chosen over two runner-up
+alternates ("Fianchetto Strikers", "Powerplay Titans") for its direct tie to the trainer's one
+pedagogical rule: *"...d6 is die sleutel wat amper elke deur oopsluit."*
+
+### Why the move count stayed at 30 (not 20 or 40)
+Considered shortening to 20 for a literal "T20" echo. Rejected: the ball-count framing was
+always stylized (a real T20 innings is 120 balls, not 30), so 20 wouldn't make the simulation
+more accurate — it would only shrink the post-theory middlegame stretch (moves 7–30) from 24
+moves down to 14, undoing the trainer's core differentiator from the Bird game (see intro).
+40 was rejected too: no widely-recognised cricket format uses 40, so it buys no thematic
+payoff while worsening the session-length/attention-span concern already flagged in §10.
+Cricket flavour comes from **doodsbeurte** ("death overs") instead — see below.
+
+### Doodsbeurte (death overs) — final-stretch phase pill
+`updatePhaseInfo()` toggles a `.show` class on `#phase-pill` ("🔥 Doodsbeurte") whenever
+`currentMoveNumber >= 26` and the game isn't over — the last 5 of 30 moves. Purely a mood
+cue in the info row; White's move-selection logic (pure Stockfish from move 7 either way) is
+unaffected. Called alongside `updateBranchInfo()`/`updateWhitePoolInfo()` in `makeWhiteMove()`,
+and explicitly cleared in `newGame()`.
+
+### Palette, typography, textures
+- Fonts: **Rajdhani** (headers/labels/scoreboard, weights 500–800), **Mukta** (body/badge
+  descriptions), **Share Tech Mono** (numeric stat values — LED-scoreboard feel). All three are
+  Google Fonts; Rajdhani and Mukta are both Indian Type Foundry families, a deliberate nod to
+  the Old Indian's own Calcutta origin (§1) rather than a generic sports-app font pick.
+- Palette (CSS custom properties in `styles.css`): dusk-stadium navy/brown gradient background,
+  `--accent` sunset orange `#FF7A18`, `--gold` trophy gold `#FFC94A`, `--teal` floodlight teal
+  `#2EC4B6` (good moves/hints/links), `--red` ball red `#E63946` (errors/danger/doodsbeurte).
+  Replaces the old beveled-pixel-border technique with glass panels
+  (`background: rgba(28,42,74,0.62); backdrop-filter: blur(6px)`).
+- The six Minecraft SVG data-URI textures are gone; no new tiled textures were added — the
+  stadium-night feel comes from the body's `radial-gradient` background alone.
+
+### Board
+`.white-1e1d7`/`.black-3c85d` recoloured to pitch cream (`#EFE6CF`) / pitch green (`#285C34`).
+`.board-container` is now a boundary-rope frame (`repeating-linear-gradient(135deg, cream 0 12px,
+red 12px 24px)`); a new `.hoarding` row below the board (added to `index.html`, three `.ad-plate`
+spans) shows invented placeholder sponsor plates — "d6 BANK", "FONDAMENT MOTORS", "OU-INDIËR
+OLIE" — no real brands. Chess pieces stay the Wikipedia set, unchanged, per the original spec's
+"don't reskin the pieces" rule (§2) — that rule carried forward into the cricket theme too.
+
+### Hawk-Eye hint arrows
+`drawArrow()` in `app.js` no longer draws a solid arrowhead — it draws a **dotted trajectory**
+(`ctx.setLineDash(...)`) ending in a small filled circle ("ball") with a curved seam mark, at
+the same colour-coded scheme as before (teal = popularity, ball-red = engine, gold = both
+agree). Purely visual; the underlying `squareToXY()` coordinate math is untouched.
+
+### Achievement toast → "Trofee Uitgereik!"
+Restyled as a spotlight card (dark gradient + gold border), header text changed from
+"⚒ Prestasie Behaal!" to "🏆 Trofee Uitgereik!". Badge **names and unlock conditions are
+unchanged** — only six of sixteen badge icons were swapped (the clearly Minecraft-specific
+ones: pickaxe, brick×2, brown square) for cricket-neutral or cricket-flavoured equivalents;
+the other ten (shield, castle, swords, masks, knight, diamond, crane, book, crown, queen,
+books, fire) were kept as-is since they read fine in either theme.
+
+### Move-score flash → boundary-burst language
+`updateDisplay()`'s score labels changed from generic praise ("Uitstekend!", "Redelik", …) to
+cricket run-values: 5→**SES!**, 4→**VIER!**, 3→**Drie lopies!**, 2→**Twee lopies**,
+1→**Enkelloop**. `.move-score` gained a radial-burst `::before` pseudo-element. Move-1's
+hardcoded score of 5 (forced `d6`) still always shows "SES! (+5)".
+
+### Stat labels renamed
+Speler→**Kolwer**, Skuif→**Bal**, Punte→**Lopies**, Hoogste Punt→**Beste Telling**,
+Evaluasie→**Momentum**. "Skuif" itself (the chess-move noun) was deliberately left alone
+everywhere else — "Wit speel uit: Top X skuiwe", "Skuif Analise", review-mode's "Skuif 30"
+label — since it's correct chess terminology, not a cricket-renameable concept; only the
+per-move *counter* stat became "Bal".
+
+### Buttons & modal
+"Nuwe Spel"→"Nuwe Wedstryd", "Hersien Spel"→"Hersien Wedstryd" ("Wys Beste Skuif" and "Speel
+Weer" kept, for functional clarity). Game-over modal: "Spel Voltooi!"→"Wedstryd Verby!",
+score unit "punte"→"lopies", "NUWE HOOGTEPUNT!"→"NUWE BESTE TELLING!", "Prestasies
+Verdien:"→"Trofeë Verdien:". `getEndMessage()`'s eight rating tiers were all rewritten with
+cricket-innings metaphors (kept the same percentage thresholds).
+
+### Wisdom quotes
+All 18 entries in `WISDOM_QUOTES` were rewritten to layer a cricket metaphor onto the existing
+chess-history fact rather than replace it — e.g. Philidor's pawn-play quote now closes on
+*"d6 is die eerste bal van daardie innings"*; the Bannerjee/Calcutta quote now notes Calcutta's
+own 200-year cricket history (Eden Gardens) as a genuine historical tie-in, not an invented one.
+
+### Design process
+Built via a design-canvas mockup (three artboards: full live-game screen, a "key moments" sheet
+covering the boundary bursts/toast/Powerplay-popup/Hawk-Eye close-up, and the game-over modal)
+reviewed and approved by the user before any implementation — see chat history for the
+published artifact. Verified post-implementation with the same Playwright smoke-test pattern
+used for the eval-sign bug fix: local `python3 -m http.server`, headless Chromium driving a
+real game through moves 1–2, confirming scoring/analysis logic is byte-for-byte unchanged and
+no new console errors were introduced by the reskin.

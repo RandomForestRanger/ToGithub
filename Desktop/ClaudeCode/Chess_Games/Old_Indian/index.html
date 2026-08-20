@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="af">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🏏 D6 Dynamos — Philidor & Ou-Indiër</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700;800&family=Mukta:wght@400;500;600&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/@chrisoakman/chessboardjs@1.0.0/dist/chessboard-1.0.0.min.css">
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://unpkg.com/@chrisoakman/chessboardjs@1.0.0/dist/chessboard-1.0.0.min.js"></script>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🏏 D6 Dynamos 🏆</h1>
+            <p class="subtitle">Bemeester d6-verdedigings teen 1.e4 en 1.d4 — van Powerplay tot doodsbeurte</p>
+        </header>
+
+        <div class="stats-panel">
+            <div class="stat-box player-box">
+                <span class="stat-label">Kolwer</span>
+                <select id="player-select" class="player-select">
+                    <option value="Debora">Debora</option>
+                    <option value="Jack">Jack</option>
+                    <option value="Jacobus">Jacobus</option>
+                    <option value="Sammy">Sammy</option>
+                    <option value="Thomas">Thomas</option>
+                    <option value="Martin">Martin</option>
+                    <option value="Coach Corno">Coach Corno</option>
+                    <option value="Birdman">Birdman</option>
+                </select>
+            </div>
+            <div class="stat-box">
+                <span class="stat-label">Bal</span>
+                <span class="stat-value" id="move-counter">1/30</span>
+            </div>
+            <div class="stat-box score-box">
+                <span class="stat-label">Lopies</span>
+                <span class="stat-value" id="score">0/150</span>
+            </div>
+            <div class="stat-box highscore-box">
+                <span class="stat-label">Beste Telling</span>
+                <span class="stat-value" id="highscore">0</span>
+            </div>
+            <div class="stat-box eval-box">
+                <span class="stat-label">Momentum</span>
+                <span class="stat-value" id="position-eval">0.0</span>
+            </div>
+            <div class="xp-bar-wrap">
+                <div class="xp-bar" id="progress-fill"></div>
+            </div>
+        </div>
+
+        <div class="main-layout">
+
+            <!-- LEFT: Achievements Panel -->
+            <div class="badge-panel" id="badge-panel">
+                <h3>🏆 Trofeekas</h3>
+                <div class="badge-tooltip" id="badge-tooltip">
+                    <p id="tooltip-text">...d6 is die sleutel wat amper elke deur oopsluit.</p>
+                </div>
+                <div class="badge-list">
+                    <div class="badge-item locked" id="badge-d6-boumeester" data-badge="d6-boumeester">
+                        <span class="badge-icon">🏆</span>
+                        <div class="badge-info">
+                            <span class="badge-name">d6-Boumeester</span>
+                            <span class="badge-desc">Perfekte 150/150</span>
+                        </div>
+                    </div>
+                    <div class="badge-item locked" id="badge-philidor-verdediger" data-badge="philidor-verdediger">
+                        <span class="badge-icon">🛡️</span>
+                        <div class="badge-info">
+                            <span class="badge-name">Philidor Verdediger</span>
+                            <span class="badge-desc">Voltooi Philidor-tak</span>
+                        </div>
+                    </div>
+                    <div class="badge-item locked" id="badge-ou-indier-boumeester" data-badge="ou-indier-boumeester">
+                        <span class="badge-icon">🏟️</span>
+                        <div class="badge-info">
+                            <span class="badge-name">Ou-Indiër Boumeester</span>
+                            <span class="badge-desc">Voltooi Ou-Indiër-tak</span>
+                        </div>
+                    </div>
+                    <div class="badge-item locked" id="badge-hanham-vesting" data-badge="hanham-vesting">
+                        <span class="badge-icon">🏰</span>
+                        <div class="badge-info">
+                            <span class="badge-name">Hanham Vesting</span>
+                            <span class="badge-desc">Nd7, Ngf6, Be7, 0-0</span>
+                        </div>
+                    </div>
+                    <div class="badge-item locked" id="badge-antoshin-blok" data-badge="antoshin-blok">
+                        <span class="badge-icon">🧱</span>
+                        <div class="badge-info">
+                            <span class="badge-name">Antoshin Blok</span>
+                            <span class="badge-desc">...exd4, Be7, 0-0</span>
+                        </div>
+                    </div>
+                    <div class="badge-item locked" id="badge-philidors-eie-keuse" data-badge="philidors-eie-keuse">
+                        <span class="badge-icon">⚔️</span>
+                        <div class="badge-info">
+                            <span class="badge-name">Philidor se Eie Keuse</span>
+                            <span class="badge-desc">...f5 in Philidor-tak</span>
+                        </div>
+                    </div>
+                    <div class="badge-item locked" id="badge-opera-spook" data-badge="opera-spook">
+                        <span class="badge-icon">🎭</span>
+                        <div class="badge-info">
+                            <span class="badge-name">Opera-spook</span>
+                            <span class="badge-desc">...Bg4 in Philidor</span>
+                        </div>
+                    </div>
+                    <div class="badge-item locked" id="badge-chigorin-hoofline" data-badge="chigorin-hoofline">
+                        <span class="badge-icon">♞</span>
+                        <div class="badge-info">
+                            <span class="badge-name">Chigorin Hooflyn</span>
+                            <span class="badge-desc">...Nbd7, e5 teen e4</span>
+                        </div>
+                    </div>
+                    <div class="badge-item locked" id="badge-janowski-blok" data-badge="janowski-blok">
+                        <span class="badge-icon">💎</span>
+                        <div class="badge-info">
+                            <span class="badge-name">Janowski Blok</span>
+                            <span class="badge-desc">...Bf5 in Ou-Indiër</span>
+                        </div>
+                    </div>
+                    <div class="badge-item locked" id="badge-tsjeggiese-fondament" data-badge="tsjeggiese-fondament">
+                        <span class="badge-icon">🏗️</span>
+                        <div class="badge-info">
+                            <span class="badge-name">Tsjeggiese Fondament</span>
+                            <span class="badge-desc">...c6 in Ou-Indiër</span>
+                        </div>
+                    </div>
+                    <div class="badge-item locked" id="badge-tartakower-indier" data-badge="tartakower-indier">
+                        <span class="badge-icon">📖</span>
+                        <div class="badge-info">
+                            <span class="badge-name">Tartakower-Indiër</span>
+                            <span class="badge-desc">...Bg4 in Ou-Indiër</span>
+                        </div>
+                    </div>
+                    <div class="badge-item locked" id="badge-koning-indier-oorgang" data-badge="koning-indier-oorgang">
+                        <span class="badge-icon">👑</span>
+                        <div class="badge-info">
+                            <span class="badge-name">Koning-Indiër Oorgang</span>
+                            <span class="badge-desc">...g6 + ...Bg7</span>
+                        </div>
+                    </div>
+                    <div class="badge-item locked" id="badge-koningin-jagter" data-badge="koningin-jagter">
+                        <span class="badge-icon">♛</span>
+                        <div class="badge-info">
+                            <span class="badge-name">Koningin Jagter</span>
+                            <span class="badge-desc">Vang Wit se koningin</span>
+                        </div>
+                    </div>
+                    <div class="badge-item locked" id="badge-teoretikus" data-badge="teoretikus">
+                        <span class="badge-icon">📚</span>
+                        <div class="badge-info">
+                            <span class="badge-name">Teoretikus</span>
+                            <span class="badge-desc">15+ perfekte skuiwe</span>
+                        </div>
+                    </div>
+                    <div class="badge-item locked" id="badge-grootmeester" data-badge="grootmeester">
+                        <span class="badge-icon">🥇</span>
+                        <div class="badge-info">
+                            <span class="badge-name">Grootmeester</span>
+                            <span class="badge-desc">21+ perfekte skuiwe</span>
+                        </div>
+                    </div>
+                    <div class="badge-item locked" id="badge-oorheersend" data-badge="oorheersend">
+                        <span class="badge-icon">🔥</span>
+                        <div class="badge-info">
+                            <span class="badge-name">Oorheersend</span>
+                            <span class="badge-desc">Eval -2.0 vir Swart</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- CENTER: Board and info -->
+            <div class="center-column">
+
+                <!-- Board with canvas arrow overlay -->
+                <div class="board-container">
+                    <div class="board-wrapper">
+                        <div id="board" style="width: min(480px, calc(100vw - 60px))"></div>
+                        <canvas id="board-arrows"></canvas>
+                    </div>
+                    <div class="hoarding">
+                        <span class="ad-plate">d6 BANK</span>
+                        <span class="ad-plate alt">FONDAMENT MOTORS</span>
+                        <span class="ad-plate alt2">OU-INDIËR OLIE</span>
+                    </div>
+                </div>
+
+                <!-- Status & info -->
+                <div class="info-panel">
+                    <div class="message-box">
+                        <p id="game-message">Wag — Wit speel eerste...</p>
+                    </div>
+
+                    <!-- Target position tracker -->
+                    <div class="target-row">
+                        <span class="target-label">Doelwit:</span>
+                        <span class="target-piece" id="target-d6" title="Pion op d6">♟ d6</span>
+                        <span class="target-piece" id="target-f6" title="Perd op f6">♞ f6</span>
+                        <span class="target-piece" id="target-e5" title="Perd op e5">♞ e5</span>
+                        <span class="target-piece" id="target-e7" title="Loper op e7">♝ e7</span>
+                        <span class="target-piece" id="target-g8" title="Rokade">♚ g8</span>
+                    </div>
+
+                    <div class="info-row">
+                        <div class="white-info">
+                            <span class="info-label">Wit speel uit:</span>
+                            <span class="info-value" id="white-pool">Top 20 skuiwe</span>
+                        </div>
+                        <div class="scoring-info">
+                            <span class="info-label">Puntelling:</span>
+                            <span class="info-value" id="scoring-method">Gekombineerd</span>
+                        </div>
+                    </div>
+                    <div class="branch-row" id="branch-row" style="display:none;">
+                        <span class="info-label">Lyn:</span>
+                        <span class="info-value" id="branch-label">—</span>
+                    </div>
+                    <span class="phase-pill" id="phase-pill">🔥 Doodsbeurte</span>
+                    <div class="move-score" id="move-score-display" style="display: none;">
+                        <span id="last-move-score"></span>
+                    </div>
+                </div>
+
+                <div class="move-history">
+                    <h3>🏏 Bal-vir-Bal</h3>
+                    <div id="history-list"></div>
+                </div>
+
+                <div class="controls">
+                    <button id="new-game-btn" class="btn btn-primary">Nuwe Wedstryd</button>
+                    <button id="hint-btn" class="btn btn-secondary">Wys Beste Skuif</button>
+                </div>
+            </div>
+
+            <!-- RIGHT: Analysis (during game) -->
+            <div class="analysis-panel" id="analysis-panel">
+                <h3>Skuif Analise</h3>
+                <div class="analysis-section">
+                    <h4>🖥️ Rekenaar Beste:</h4>
+                    <div id="stockfish-moves" class="analysis-moves">
+                        <p class="analysis-placeholder">Wag vir jou skuif...</p>
+                    </div>
+                </div>
+                <div class="analysis-section">
+                    <h4>📊 Lichess Gewildste:</h4>
+                    <div id="lichess-moves" class="analysis-moves">
+                        <p class="analysis-placeholder">Wag vir jou skuif...</p>
+                    </div>
+                </div>
+                <div class="your-move-section" id="your-move-section" style="display: none;">
+                    <h4>🎯 Jou Skuif:</h4>
+                    <div id="your-move-info"></div>
+                </div>
+            </div>
+
+            <!-- RIGHT: Review (after game) -->
+            <div class="review-panel" id="review-panel" style="display: none;">
+                <h3>Hersien Jou Wedstryd</h3>
+                <div class="review-controls">
+                    <button id="review-back-btn" class="btn btn-review">← Terug</button>
+                    <span id="review-position">Skuif 30</span>
+                    <button id="review-forward-btn" class="btn btn-review">Vorentoe →</button>
+                </div>
+                <div class="best-moves-panel">
+                    <h4>Beste Skuiwe Hier:</h4>
+                    <div id="best-moves-list"></div>
+                </div>
+                <button id="exit-review-btn" class="btn btn-secondary btn-small">Verlaat Hersiening</button>
+            </div>
+
+        </div><!-- end main-layout -->
+
+        <!-- Engine-transition popup — shown once when White leaves the opening book -->
+        <div class="engine-popup" id="engine-popup" style="display:none;">
+            ⚡ Powerplay verby — nou raak dit ernstig!
+        </div>
+
+        <!-- Achievement toast — spotlight card, top-right -->
+        <div class="badge-notification" id="badge-notification">
+            <div class="notif-header">🏆 Trofee Uitgereik!</div>
+            <div class="notif-body">
+                <span class="notif-icon" id="notif-icon"></span>
+                <span class="notif-text" id="notif-text"></span>
+            </div>
+        </div>
+
+        <!-- Game Over Modal -->
+        <div class="modal" id="game-over-modal">
+            <div class="modal-content">
+                <h2 id="modal-title">Wedstryd Verby!</h2>
+                <p id="modal-score"></p>
+                <p id="modal-rating"></p>
+                <p id="modal-highscore-msg" style="display: none;"></p>
+                <div id="modal-badges-earned" style="display: none;">
+                    <p class="badges-earned-title">Trofeë Verdien:</p>
+                    <div id="badges-earned-list"></div>
+                </div>
+                <div class="modal-buttons">
+                    <button id="modal-review" class="btn btn-secondary">Hersien Wedstryd</button>
+                    <button id="modal-new-game" class="btn btn-primary">Speel Weer</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>

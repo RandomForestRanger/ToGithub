@@ -1,0 +1,641 @@
+@import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700;800&family=Mukta:wght@400;500;600&family=Share+Tech+Mono&display=swap');
+
+/* ============================================================
+   SUNSET T20 — cricket-stadium theme
+   Original, invented "D6 Dynamos" franchise identity — no real
+   IPL team names, logos, or wordmarks. Dusk stadium palette,
+   Rajdhani (headers/scoreboard labels) + Mukta (body copy) +
+   Share Tech Mono (LED-style numerals), all Google Fonts.
+   Glass panels replace the old beveled-pixel borders; the board
+   gets a boundary-rope frame + advertising-hoarding strip.
+   ============================================================ */
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+    --bg-top:    #24406b;
+    --bg-mid:    #1B2A4A;
+    --bg-bottom: #3A1F0F;
+    --panel:     rgba(28, 42, 74, 0.62);
+    --panel-bd:  rgba(255, 255, 255, 0.10);
+    --accent:    #FF7A18;   /* sunset orange — primary accent */
+    --accent-lt: #FF9B4D;   /* light orange — labels */
+    --gold:      #FFC94A;   /* trophy gold — score, high score, bursts */
+    --teal:      #2EC4B6;   /* floodlight teal — good moves, hints, links */
+    --red:       #E63946;   /* ball red — danger, errors, death overs */
+    --white:     #F4EDE4;
+    --muted:     #B9AFA0;
+}
+
+/* ── Stadium-night body background ────────────────────────── */
+body {
+    font-family: 'Mukta', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    color: var(--white);
+    min-height: 100vh;
+    overflow-x: hidden;
+    background-color: var(--bg-mid);
+    background-image: radial-gradient(ellipse 120% 70% at 50% -10%, var(--bg-top) 0%, var(--bg-mid) 45%, var(--bg-bottom) 100%);
+    background-attachment: fixed;
+}
+
+.container { max-width: 1400px; margin: 0 auto; padding: 12px; overflow-x: hidden; }
+
+/* ── Header — franchise banner ────────────────────────────── */
+header {
+    text-align: center;
+    margin-bottom: 10px;
+    padding: 18px 12px 16px;
+    position: relative;
+    overflow: hidden;
+    background: linear-gradient(180deg, rgba(255,122,24,0.16), rgba(20,30,55,0.35));
+    border: 1px solid rgba(255,196,74,0.32);
+    border-radius: 10px;
+}
+header::before {
+    content: '';
+    position: absolute; inset: -50% -10% auto -10%; height: 150%;
+    background: radial-gradient(ellipse 60% 100% at 50% 0%, rgba(255,201,74,0.30), transparent 70%);
+    pointer-events: none;
+}
+
+header h1 {
+    position: relative;
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 800;
+    font-size: 2rem;
+    letter-spacing: 2.5px;
+    text-transform: uppercase;
+    color: var(--gold);
+    text-shadow: 0 0 16px rgba(255,201,74,0.5), 0 2px 0 rgba(0,0,0,0.35);
+    margin-bottom: 6px;
+}
+.subtitle { position: relative; color: #E7D9C6; font-size: 0.86rem; letter-spacing: 0.2px; }
+
+/* ── Stats bar — scoreboard ────────────────────────────────── */
+.stats-panel {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    justify-content: center;
+    padding: 10px 16px;
+    margin-bottom: 10px;
+    flex-wrap: wrap;
+    background: var(--panel);
+    border: 1px solid var(--panel-bd);
+    border-radius: 8px;
+    backdrop-filter: blur(6px);
+}
+
+.stat-box {
+    background: rgba(10,16,30,0.35);
+    border: 1px solid var(--panel-bd);
+    border-radius: 6px;
+    padding: 6px 12px;
+    text-align: center;
+    min-width: 72px;
+}
+
+.stat-label {
+    display: block;
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 700;
+    font-size: 0.62rem;
+    color: var(--accent-lt);
+    text-transform: uppercase;
+    letter-spacing: 1.4px;
+    margin-bottom: 3px;
+}
+.stat-value {
+    display: block;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 1.05rem;
+    color: var(--white);
+}
+
+.score-box .stat-value     { color: var(--gold); text-shadow: 0 0 10px rgba(255,201,74,0.4); }
+.highscore-box .stat-value { color: var(--gold); }
+.eval-box .stat-value      { font-family: 'Share Tech Mono', monospace; font-size: 1.05rem; }
+.eval-box .stat-value.eval-winning { color: var(--teal); }
+.eval-box .stat-value.eval-equal   { color: var(--gold); }
+.eval-box .stat-value.eval-losing  { color: var(--red); }
+
+.player-box { min-width: 120px; }
+
+.player-select {
+    background: rgba(10,16,30,0.5);
+    border: 1px solid var(--panel-bd);
+    border-radius: 4px;
+    color: var(--white);
+    padding: 4px 8px;
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 600;
+    font-size: 0.88rem;
+    cursor: pointer;
+    width: 100%;
+}
+.player-select:focus { outline: none; border-color: var(--teal); }
+.player-select option { background: #142035; }
+
+.xp-bar-wrap {
+    width: 130px; height: 8px;
+    background: rgba(0,0,0,0.4);
+    border-radius: 4px;
+    overflow: hidden;
+}
+.xp-bar {
+    height: 100%; width: 0%;
+    background: linear-gradient(90deg, #FF7A18, #FFC94A);
+    transition: width 0.4s;
+}
+
+.highscore-box.new-record .stat-value { color: var(--red); animation: pulse 0.5s ease-in-out 3; }
+@keyframes pulse { 0%,100%{opacity:1}50%{opacity:0.4} }
+
+/* ── Three-column layout ──────────────────────────────────── */
+.main-layout {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+    justify-content: center;
+    max-width: 100%;
+}
+
+/* ── Trofeekas (trophy cabinet) ────────────────────────────── */
+.badge-panel {
+    width: 310px;
+    flex-shrink: 0;
+    padding: 14px;
+    background: var(--panel);
+    border: 1px solid var(--panel-bd);
+    border-radius: 10px;
+    backdrop-filter: blur(6px);
+}
+
+.badge-panel h3 {
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 700;
+    color: var(--teal);
+    font-size: 1rem;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    text-align: center;
+    margin-bottom: 10px;
+}
+
+/* Wisdom / badge-description banner */
+.badge-tooltip {
+    background: rgba(255,122,24,0.12);
+    border: 1px solid rgba(255,122,24,0.35);
+    border-radius: 8px;
+    padding: 9px 11px;
+    margin-bottom: 10px;
+    min-height: 60px;
+    display: flex;
+    align-items: center;
+}
+.badge-tooltip p {
+    color: #F0E4D3; font-size: 0.82rem; line-height: 1.45;
+    margin: 0; font-style: italic;
+}
+.badge-tooltip.badge-hover { border-color: rgba(46,196,182,0.5); background: rgba(46,196,182,0.10); }
+.badge-tooltip.badge-hover p { font-style: normal; color: var(--white); }
+
+/* Trophy grid */
+.badge-list {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+    background: rgba(10,16,30,0.35);
+    border-radius: 6px;
+    padding: 6px;
+}
+
+.badge-item {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    padding: 6px 7px;
+    background: rgba(10,16,30,0.4);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 6px;
+    min-height: 42px;
+    cursor: default;
+    transition: all 0.15s;
+}
+.badge-item.locked   { opacity: 0.42; filter: grayscale(1); }
+.badge-item.unlocked {
+    opacity: 1; filter: none;
+    background: rgba(255,201,74,0.10);
+    border-color: rgba(255,201,74,0.55);
+    box-shadow: 0 0 10px rgba(255,201,74,0.25), inset 0 0 16px rgba(255,201,74,0.06);
+}
+.badge-item.just-unlocked { animation: badgeUnlock 0.5s ease-out; }
+@keyframes badgeUnlock { 0%{background:rgba(255,201,74,0.55); transform:scale(1.06)} 100%{background:rgba(255,201,74,0.10); transform:scale(1)} }
+
+.badge-icon { font-size: 1.15rem; flex-shrink: 0; }
+.badge-info { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.badge-name {
+    font-family: 'Rajdhani', sans-serif; font-weight: 600; font-size: 0.72rem; color: var(--white);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.badge-desc { font-size: 0.66rem; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* ── Center column ────────────────────────────────────────── */
+.center-column { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+
+/* ── Board — boundary-rope frame + hoarding ───────────────── */
+.board-container {
+    background: repeating-linear-gradient(135deg, #F4EFDD 0 12px, var(--red) 12px 24px);
+    padding: 10px;
+    border-radius: 10px;
+    box-shadow: 0 10px 26px rgba(0,0,0,0.45);
+}
+
+.board-wrapper {
+    position: relative; display: inline-block; line-height: 0;
+    border: 3px solid #16241a;
+    border-radius: 4px;
+    overflow: hidden;
+}
+#board-arrows  { position: absolute; top: 0; left: 0; pointer-events: none; }
+
+/* Pitch-green board squares */
+.white-1e1d7 { background-color: #EFE6CF !important; }
+.black-3c85d { background-color: #285C34 !important; }
+
+/* Keep chess pieces smooth (Wikipedia piece set, unchanged) */
+#board img { image-rendering: auto !important; }
+
+/* Advertising hoarding — invented placeholder sponsors, no real brands */
+.hoarding {
+    display: flex; gap: 6px; justify-content: center; flex-wrap: wrap;
+    margin-top: 8px;
+}
+.ad-plate {
+    font-family: 'Rajdhani', sans-serif; font-weight: 700; font-size: 0.62rem;
+    letter-spacing: 0.5px; padding: 3px 10px; border-radius: 4px; color: #142035;
+    background: linear-gradient(180deg,#FFC94A,#FF9B4D);
+}
+.ad-plate.alt  { background: linear-gradient(180deg,#7fe0d6,#2EC4B6); }
+.ad-plate.alt2 { background: linear-gradient(180deg,#f3ded0,#cbb79c); }
+
+/* Powerplay-transition popup — shown once when White leaves the opening book */
+.engine-popup {
+    position: fixed; top: 44%; left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(23,35,63,0.94);
+    border: 1px solid rgba(46,196,182,0.5);
+    border-radius: 10px;
+    box-shadow: 0 14px 34px rgba(0,0,0,0.5);
+    padding: 22px 34px;
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 700;
+    font-size: 1.1rem;
+    color: var(--teal);
+    text-align: center;
+    line-height: 1.6;
+    z-index: 995;
+    min-width: 260px;
+    max-width: 360px;
+    transition: opacity 0.6s ease;
+    pointer-events: none;
+}
+
+/* ── Info panel ────────────────────────────────────────────── */
+.info-panel {
+    width: 100%; max-width: 510px; padding: 12px 16px;
+    background: var(--panel);
+    border: 1px solid var(--panel-bd);
+    border-radius: 10px;
+    backdrop-filter: blur(6px);
+}
+
+.message-box { margin-bottom: 8px; }
+#game-message {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 1.02rem; font-weight: 600; color: var(--teal);
+}
+
+.target-row {
+    display: flex; align-items: center; gap: 6px;
+    background: rgba(10,16,30,0.35);
+    border-radius: 6px;
+    padding: 5px 9px; margin-bottom: 8px; flex-wrap: wrap;
+}
+.target-label {
+    font-family: 'Rajdhani', sans-serif; font-weight: 700; font-size: 0.68rem;
+    color: var(--accent-lt); text-transform: uppercase; letter-spacing: 1px;
+    margin-right: 3px;
+}
+.target-piece {
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 10px;
+    padding: 2px 8px; font-size: 0.78rem; color: #7c8aa8;
+    font-family: 'Share Tech Mono', monospace; transition: all 0.35s; cursor: default;
+}
+.target-piece.achieved {
+    background: rgba(46,196,182,0.20);
+    border-color: rgba(46,196,182,0.55);
+    color: #a9f0e6; font-weight: bold;
+    text-shadow: 0 0 6px rgba(46,196,182,0.4);
+}
+
+.info-row, .branch-row {
+    display: flex; justify-content: space-around; gap: 8px; margin-top: 6px; flex-wrap: wrap;
+}
+.branch-row { justify-content: center; align-items: center; }
+.white-info, .scoring-info {
+    background: rgba(255,255,255,0.05);
+    border-radius: 6px;
+    padding: 4px 10px;
+}
+.info-label  { color: var(--muted); margin-right: 4px; font-size: 0.78rem; }
+.info-value  { color: var(--teal); font-weight: bold; font-size: 0.78rem; }
+
+/* Match-phase pill — shown only in the final stretch (moves 26-30) */
+.phase-pill {
+    display: none;
+    align-items: center; gap: 5px;
+    font-family: 'Rajdhani', sans-serif; font-weight: 700; font-size: 0.74rem;
+    letter-spacing: 0.6px; color: #FFD3C4;
+    background: rgba(230,57,70,0.18);
+    border: 1px solid rgba(230,57,70,0.5);
+    border-radius: 6px;
+    padding: 4px 10px; margin-top: 6px;
+}
+.phase-pill.show { display: inline-flex; }
+
+.move-score {
+    position: relative;
+    margin-top: 9px; padding: 10px 8px; border-radius: 8px;
+    font-family: 'Rajdhani', sans-serif; font-size: 1.15rem; font-weight: 800;
+    letter-spacing: 1px; text-align: center; overflow: hidden;
+}
+.move-score::before {
+    content: '';
+    position: absolute; inset: 0; margin: auto; width: 200px; height: 200px;
+    background: repeating-conic-gradient(rgba(255,255,255,0.10) 0deg 8deg, transparent 8deg 20deg);
+    pointer-events: none;
+}
+.move-score span { position: relative; }
+.move-score.score-5 { background: rgba(255,201,74,0.18); border: 1px solid rgba(255,201,74,0.6); color: var(--gold); text-shadow: 0 0 16px rgba(255,201,74,0.6); }
+.move-score.score-4 { background: rgba(255,122,24,0.16); border: 1px solid rgba(255,122,24,0.55); color: var(--accent-lt); text-shadow: 0 0 12px rgba(255,122,24,0.5); }
+.move-score.score-3 { background: rgba(46,196,182,0.14);  border: 1px solid rgba(46,196,182,0.5);  color: var(--teal); }
+.move-score.score-2 { background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.16); color: #cfd6e6; }
+.move-score.score-1 { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.10); color: var(--muted); font-size: 1rem; }
+
+/* ── Bal-vir-Bal — move history scorecard ─────────────────── */
+.move-history {
+    width: 100%; max-width: 510px; padding: 12px;
+    background: var(--panel);
+    border: 1px solid var(--panel-bd);
+    border-radius: 10px;
+    backdrop-filter: blur(6px);
+}
+
+.move-history h3 {
+    font-family: 'Rajdhani', sans-serif; font-weight: 700; font-size: 0.86rem;
+    letter-spacing: 0.6px; text-transform: uppercase;
+    color: var(--accent-lt); margin-bottom: 8px;
+}
+
+#history-list {
+    display: flex; flex-wrap: wrap; gap: 5px;
+    max-height: 120px; overflow-y: auto;
+}
+#history-list::-webkit-scrollbar { width: 6px; }
+#history-list::-webkit-scrollbar-track { background: rgba(0,0,0,0.3); }
+#history-list::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 3px; }
+
+.history-item {
+    background: rgba(255,255,255,0.05);
+    border-radius: 5px;
+    padding: 4px 8px;
+    font-family: 'Share Tech Mono', monospace; font-size: 0.8rem;
+}
+.history-item .move-num   { color: var(--muted); margin-right: 3px; }
+.history-item .white-move { color: #b9c2d9; margin-right: 5px; }
+.history-item .black-move { color: var(--white); font-weight: bold; }
+.history-item .score-badge {
+    margin-left: 4px; padding: 1px 5px; border-radius: 3px;
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 0.62rem; font-weight: bold; color: #142035;
+}
+.score-badge.s5{background:var(--gold)}.score-badge.s4{background:var(--accent-lt)}
+.score-badge.s3{background:var(--teal)}.score-badge.s2{background:#cfd6e6}
+.score-badge.s1{background:#8a97b5}
+
+/* ── Controls ─────────────────────────────────────────────── */
+.controls { display: flex; gap: 8px; justify-content: center; }
+
+/* Cricket-bat cut-corner button */
+.btn {
+    padding: 11px 20px;
+    font-family: 'Rajdhani', sans-serif; font-weight: 700; font-size: 0.86rem;
+    letter-spacing: 0.8px; text-transform: uppercase;
+    border: none; cursor: pointer;
+    clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px);
+    transition: filter 0.15s, transform 0.1s;
+}
+
+.btn-primary {
+    color: #1a1206;
+    background: linear-gradient(180deg,#FF9B4D,#FF7A18);
+}
+.btn-primary:hover  { filter: brightness(1.08); }
+.btn-primary:active { transform: translateY(1px); filter: brightness(0.96); }
+
+.btn-secondary {
+    color: var(--white);
+    background: linear-gradient(180deg,#3a4d78,#23345c);
+    border: 1px solid rgba(255,255,255,0.15);
+}
+.btn-secondary:hover  { filter: brightness(1.15); }
+.btn-secondary:active { transform: translateY(1px); filter: brightness(0.94); }
+.btn-small { padding: 7px 14px; font-size: 0.74rem; }
+
+/* ── Skuif Analise panel ───────────────────────────────────── */
+.analysis-panel {
+    width: 290px; flex-shrink: 0; padding: 14px;
+    display: flex; flex-direction: column; gap: 10px;
+    background: var(--panel);
+    border: 1px solid var(--panel-bd);
+    border-radius: 10px;
+    backdrop-filter: blur(6px);
+}
+
+.analysis-panel h3 {
+    font-family: 'Rajdhani', sans-serif; font-weight: 700; color: var(--teal);
+    font-size: 1rem; letter-spacing: 1px; text-transform: uppercase; text-align: center;
+}
+.analysis-section {
+    background: rgba(10,16,30,0.35);
+    border-radius: 8px;
+    padding: 9px 10px;
+}
+.analysis-section h4 { font-family: 'Rajdhani', sans-serif; font-weight: 700; color: var(--accent-lt); font-size: 0.8rem; letter-spacing: 0.4px; margin-bottom: 7px; text-transform: uppercase; }
+.analysis-moves { display: flex; flex-direction: column; gap: 5px; }
+.analysis-placeholder { color: var(--muted); font-style: italic; font-size: 0.8rem; }
+
+.analysis-move-item {
+    display: flex; justify-content: space-between; align-items: center;
+    background: rgba(255,255,255,0.05);
+    border-radius: 6px;
+    padding: 5px 9px; font-size: 0.82rem;
+}
+.analysis-move-item.rank-1 { border-left: 3px solid var(--gold); }
+.analysis-move-item.rank-2 { border-left: 3px solid var(--muted); }
+.analysis-move-san  { font-family:'Share Tech Mono',monospace; font-weight:bold; color:var(--white); }
+.analysis-move-info { font-size:0.72rem; color:var(--muted); }
+
+.your-move-section { background: rgba(46,196,182,0.12); border: 1px solid rgba(46,196,182,0.4); border-radius: 8px; padding: 9px 10px; }
+.your-move-section h4 { font-family: 'Rajdhani', sans-serif; font-weight: 700; color: var(--teal); font-size: 0.8rem; letter-spacing: 0.4px; margin-bottom: 6px; text-transform: uppercase; }
+#your-move-info { font-size: 0.84rem; color: var(--white); }
+.your-move-good { color: var(--teal) !important; font-weight: bold; }
+.your-move-ok   { color: var(--gold) !important; }
+.your-move-weak { color: var(--red) !important; }
+
+/* ── Hersien-panel (review) ───────────────────────────────── */
+.review-panel {
+    width: 290px; flex-shrink: 0; padding: 14px;
+    display: flex; flex-direction: column; gap: 10px;
+    background: var(--panel);
+    border: 1px solid var(--panel-bd);
+    border-radius: 10px;
+    backdrop-filter: blur(6px);
+}
+
+.review-panel h3 { font-family:'Rajdhani',sans-serif; font-weight:700; color:var(--gold); font-size:1rem; letter-spacing:1px; text-transform:uppercase; text-align:center; }
+.review-controls { display:flex; justify-content:center; align-items:center; gap:8px; }
+
+.btn-review {
+    padding: 7px 12px; font-size: 0.78rem;
+    background: rgba(255,201,74,0.14); color: var(--white);
+    border: 1px solid rgba(255,201,74,0.45);
+    border-radius: 6px;
+    font-family: 'Rajdhani', sans-serif; font-weight: 700; cursor: pointer;
+}
+.btn-review:hover  { background: rgba(255,201,74,0.24); }
+.btn-review:active { transform: translateY(1px); }
+.btn-review:disabled { opacity:0.35; cursor:not-allowed; }
+
+#review-position { font-family: 'Share Tech Mono', monospace; font-size:0.82rem; color:var(--gold); min-width:100px; text-align:center; font-weight:bold; }
+
+.best-moves-panel {
+    background: rgba(10,16,30,0.35);
+    border-radius: 8px;
+    padding: 10px; flex-grow: 1;
+}
+.best-moves-panel h4 { font-family: 'Rajdhani', sans-serif; font-weight: 700; color:var(--teal); margin-bottom:8px; font-size:0.82rem; letter-spacing: 0.4px; text-transform: uppercase; }
+#best-moves-list { display:flex; flex-direction:column; gap:6px; }
+
+.best-move-item {
+    display: flex; flex-direction: column; gap: 3px;
+    background: rgba(255,255,255,0.05);
+    border-radius: 6px;
+    padding: 6px 9px;
+}
+.best-move-item.rank-1 { border-left:3px solid var(--gold); }
+.best-move-item.rank-2 { border-left:3px solid var(--muted); }
+.best-move-san   { font-family:'Share Tech Mono',monospace; font-size:0.9rem; font-weight:bold; color:var(--white); }
+.best-move-stats { font-size:0.72rem; color:var(--muted); }
+.your-move-indicator { background:rgba(46,196,182,0.2); border:1px solid var(--teal); border-radius: 3px; padding:1px 6px; font-size:0.66rem; color:var(--teal); margin-left:5px; }
+#exit-review-btn { margin-top:auto; }
+
+/* ── Trofee Uitgereik! — achievement toast ────────────────── */
+.badge-notification {
+    position: fixed; top: 20px; right: -380px; width: 340px;
+    background: linear-gradient(135deg, #17233f 0%, #2a1a10 100%);
+    border: 1px solid rgba(255,201,74,0.5);
+    border-radius: 10px;
+    box-shadow: 0 12px 32px rgba(0,0,0,0.5);
+    overflow: hidden;
+    transition: right 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    z-index: 1001;
+}
+.badge-notification.show { right: 20px; }
+
+.notif-header {
+    background: rgba(255,201,74,0.14);
+    border-bottom: 1px solid rgba(255,201,74,0.4);
+    padding: 6px 12px;
+    font-family: 'Rajdhani', sans-serif; font-weight: 700; font-size: 0.78rem;
+    letter-spacing: 0.6px; text-transform: uppercase;
+    color: var(--gold);
+}
+.notif-body  { display:flex; align-items:center; gap:10px; padding:10px 12px; }
+.notif-icon  { font-size:1.9rem; }
+.notif-text  { font-family:'Rajdhani',sans-serif; font-weight: 700; font-size:0.92rem; color:var(--white); line-height:1.4; }
+
+/* ── Wedstryd Verby! — game over modal ────────────────────── */
+.modal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(8,12,22,0.88); justify-content:center; align-items:center; z-index:1000; }
+.modal.show { display:flex; }
+
+.modal-content {
+    background: linear-gradient(180deg, rgba(35,52,92,0.94), rgba(20,28,50,0.97));
+    border: 1px solid rgba(255,201,74,0.4);
+    border-radius: 14px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.55);
+    padding: 28px; text-align: center;
+    max-width: 420px; width: calc(100% - 32px);
+}
+
+.modal-content h2 { font-family:'Rajdhani',sans-serif; font-weight: 800; font-size:1.7rem; letter-spacing: 1.5px; text-transform: uppercase; color:var(--gold); margin-bottom:12px; text-shadow: 0 0 16px rgba(255,201,74,0.4); }
+#modal-score { font-family:'Share Tech Mono',monospace; font-size:1.5rem; color:var(--gold); margin-bottom:8px; }
+#modal-rating { font-size:0.94rem; color:#cdeee9; margin-bottom:14px; line-height:1.55; }
+#modal-highscore-msg { font-family:'Rajdhani',sans-serif; font-weight: 700; color:var(--gold); font-size:0.88rem; letter-spacing: 1px; margin-bottom:10px; }
+#modal-badges-earned { margin-bottom:14px; }
+.badges-earned-title { font-family:'Rajdhani',sans-serif; font-weight: 700; letter-spacing: 0.6px; text-transform: uppercase; color:var(--accent-lt); font-size:0.78rem; margin-bottom:8px; }
+#badges-earned-list { display:flex; justify-content:center; gap:8px; flex-wrap:wrap; }
+#badges-earned-list .earned-badge {
+    font-size:1.5rem; padding: 7px; border-radius: 8px;
+    background: rgba(255,201,74,0.12); border: 1px solid rgba(255,201,74,0.5);
+    box-shadow: 0 0 10px rgba(255,201,74,0.25);
+}
+.modal-buttons { display:flex; gap:10px; justify-content:center; }
+
+/* ── Tap-to-move highlights ───────────────────────────────── */
+.highlight-selected   { box-shadow: inset 0 0 0 4px #FFC94A !important; }
+.highlight-legal-move { position: relative !important; }
+.highlight-legal-move::after {
+    content: ''; position: absolute;
+    top: 50%; left: 50%; transform: translate(-50%,-50%);
+    width: 26%; height: 26%; background: rgba(0,0,0,0.42);
+    border-radius: 50%; pointer-events: none;
+}
+
+/* ── Loading spinner ──────────────────────────────────────── */
+.loading { display:inline-block; width:13px; height:13px; border:2px solid rgba(255,255,255,0.15); border-radius:50%; border-top-color:var(--teal); animation:spin 0.7s linear infinite; }
+@keyframes spin { to{transform:rotate(360deg)} }
+
+/* ── Responsive ───────────────────────────────────────────── */
+@media (max-width: 1200px) {
+    .main-layout    { flex-wrap: wrap; }
+    .badge-panel    { order:2; width:100%; max-width:510px; }
+    .badge-list     { grid-template-columns: repeat(4,1fr); }
+    .center-column  { order:1; width:100%; min-width:0; }
+    .analysis-panel { order:3; width:100%; max-width:510px; }
+    .review-panel   { order:4; width:100%; max-width:510px; }
+}
+
+@media (max-width: 600px) {
+    header h1           { font-size:1.3rem; }
+    .container          { padding:7px; }
+    .stats-panel        { gap:5px; padding:7px 8px; }
+    .stat-value         { font-size:0.86rem; }
+    .xp-bar-wrap        { width:100%; }
+    #board              { width:calc(100vw - 40px)!important; }
+    .board-container    { padding:6px; width:100%; }
+    .center-column      { width:100%; min-width:0; }
+    .info-panel,.move-history { max-width:100%; }
+    .info-row           { flex-direction:column; gap:5px; }
+    .badge-panel        { width:100%; max-width:100%; }
+    .badge-list         { grid-template-columns:repeat(2,1fr); }
+    .analysis-panel,.review-panel { width:100%; max-width:100%; }
+    .controls           { flex-wrap:wrap; }
+    .modal-buttons      { flex-direction:column; }
+    .modal-content      { padding:18px 14px; }
+    .badge-notification { width:calc(100vw - 20px); right:-110vw; }
+    .badge-notification.show { right:10px; }
+}

@@ -140,6 +140,8 @@ function squareToXY(square) {
     };
 }
 
+// Hawk-Eye-style hint: a dotted trajectory ending in a small seamed "ball"
+// on the target square, instead of a plain arrowhead.
 function drawArrow(from, to, color) {
     if (!arrowCtx || !arrowCanvas) return;
     const squareSize = arrowCanvas.width / 8;
@@ -150,40 +152,41 @@ function drawArrow(from, to, color) {
     const dy    = tp.y - fp.y;
     const angle = Math.atan2(dy, dx);
 
-    const headLen   = squareSize * 0.40;
-    const lineWidth = squareSize * 0.13;
-    const startOff  = squareSize * 0.20; // offset from source centre
+    const ballRadius = squareSize * 0.16;
+    const lineWidth   = squareSize * 0.085;
+    const startOff    = squareSize * 0.20; // offset from source centre
+    const endOff      = ballRadius * 1.35;
 
     const sx = fp.x + Math.cos(angle) * startOff;
     const sy = fp.y + Math.sin(angle) * startOff;
-
-    // Body end: pull back so arrowhead sits cleanly
-    const bx = tp.x - Math.cos(angle) * headLen * 0.55;
-    const by = tp.y - Math.sin(angle) * headLen * 0.55;
+    const ex = tp.x - Math.cos(angle) * endOff;
+    const ey = tp.y - Math.sin(angle) * endOff;
 
     arrowCtx.save();
-    arrowCtx.globalAlpha = 0.84;
+    arrowCtx.globalAlpha = 0.88;
     arrowCtx.strokeStyle = color;
     arrowCtx.fillStyle   = color;
     arrowCtx.lineWidth   = lineWidth;
     arrowCtx.lineCap     = 'round';
+    arrowCtx.setLineDash([lineWidth * 0.4, lineWidth * 2.1]);
 
-    // Shaft
+    // Dotted trajectory
     arrowCtx.beginPath();
     arrowCtx.moveTo(sx, sy);
-    arrowCtx.lineTo(bx, by);
+    arrowCtx.lineTo(ex, ey);
     arrowCtx.stroke();
+    arrowCtx.setLineDash([]);
 
-    // Arrowhead (filled triangle)
-    const spread = Math.PI / 5.5;
+    // Ball at the target square, with a small seam mark
     arrowCtx.beginPath();
-    arrowCtx.moveTo(tp.x, tp.y);
-    arrowCtx.lineTo(tp.x - headLen * Math.cos(angle - spread),
-                    tp.y - headLen * Math.sin(angle - spread));
-    arrowCtx.lineTo(tp.x - headLen * Math.cos(angle + spread),
-                    tp.y - headLen * Math.sin(angle + spread));
-    arrowCtx.closePath();
+    arrowCtx.arc(tp.x, tp.y, ballRadius, 0, Math.PI * 2);
     arrowCtx.fill();
+    arrowCtx.strokeStyle = 'rgba(10,10,10,0.55)';
+    arrowCtx.lineWidth   = ballRadius * 0.22;
+    arrowCtx.beginPath();
+    arrowCtx.moveTo(tp.x - ballRadius * 0.55, tp.y - ballRadius * 0.35);
+    arrowCtx.quadraticCurveTo(tp.x, tp.y, tp.x - ballRadius * 0.55, tp.y + ballRadius * 0.35);
+    arrowCtx.stroke();
 
     arrowCtx.restore();
 }
@@ -233,28 +236,28 @@ function getBadgesKey()    { return `philidorOldIndian_${currentPlayer}_badges`;
 // ==================== WISDOM & BADGE DATA ====================
 
 const WISDOM_QUOTES = [
-    "...d6 is die sleutel wat amper elke deur oopsluit — teen e4 sowel as d4.",
-    "Philidor het gesê pionne is die siel van skaak; d6 is waar daardie siel begin.",
-    "Bou jou pionnestruktuur soos 'n fondament — blok vir blok, nie haastig nie.",
-    "Die Hanham-opstelling is stadig maar staalvas: Nd7, Ngf6, Be7, dan rokade.",
-    "In die Ou-Indiër ontwikkel jou loper na e7 — beskeie, maar betroubaar.",
-    "Moheschunder Bannerjee het hierdie idees in Calcutta gespeel lank voor Europa dit 'hipermodern' genoem het.",
-    "Tartakower het die naam 'Indiër' voorgestel uit respek vir daardie vroeë Indiese spelers.",
-    "Chigorin het die Ou-Indiër ontwikkel as 'n soliede alternatief vir die Koning-Indiër.",
-    "'n Fianchetto na g7 verander jou Ou-Indiër in 'n Koning-Indiër — weet watter pad jy kies.",
-    "Philidor self was aggressief: hy het ...f5 aanbeveel, nie net verdedig nie.",
-    "Morphy se opponente in die Opera-spel het ...Bg4 gespeel — en betaal daarvoor.",
-    "Geduld bou vestings; haas bou net puinhope.",
-    "'n Perd op d7 lyk passief, maar hou al die belangrike velde in die oog.",
-    "Speel nooit ...e5 voor jou ontwikkeling reg is nie — bou eers, val dan aan.",
-    "Die Tsjeggiese Variasie (...c6) is stil, maar dit laat geen skeure in jou fondament nie.",
-    "Janowski het ...Bf5 gespeel om sy loper uit te kry voor die deur toeslaan.",
-    "Elke groot vesting begin met een blok wat reg geplaas is.",
-    "'n Koningin gevang is 'n groot prys — maar 'n goeie fondament wen die meeste speletjies."
+    "...d6 is soos 'n vertroude verdedigende bal — dit werk teen vinnige boulwerk (e4) én stadige spin (d4).",
+    "Philidor het gesê pionne is die siel van skaak — d6 is die eerste bal van daardie innings.",
+    "Bou jou posisie soos 'n goeie innings — lopie vir lopie, nie roekeloos nie.",
+    "Die Hanham-opstelling speel soos 'n verdedigende kolwer: Nd7, Ngf6, Be7, dan rokade — wikets in die hand.",
+    "In die Ou-Indiër ontwikkel jou loper na e7 — nie 'n groot slag nie, maar 'n betroubare enkelloop.",
+    "Moheschunder Bannerjee het hierdie idees in Calcutta gespeel — dieselfde stad waar krieket-koors al vir 200 jaar brand.",
+    "Tartakower het die naam 'Indiër' voorgestel uit respek — 'n eerbewys, soos 'n gehoor wat vir 'n goeie kolwer opstaan.",
+    "Chigorin het die Ou-Indiër ontwikkel — soliede tegniek bo flambojante slae.",
+    "'n Fianchetto na g7 verander jou hele innings-plan — weet watter pad jy kies voor jy swaai.",
+    "Philidor self was aggressief: hy het ...f5 aanbeveel — soms moet jy vir die grens slaan, nie net verdedig nie.",
+    "Morphy se opponente in die Opera-spel het roekeloos ...Bg4 gespeel — 'n wanhopige slag wat 'n wiket gekos het.",
+    "Geduld bou 'n groot telling; haas bou net 'n vroeë wiket.",
+    "'n Perd op d7 lyk passief, maar soos 'n goeie veldwagter hou dit al die belangrike velde dop.",
+    "Speel nooit vir die grens voor jou ontwikkeling reg is nie — bou eers jou innings, val dan aan.",
+    "Die Tsjeggiese Variasie (...c6) is 'n stil enkelloop — geen groot slag nie, maar geen fout ook nie.",
+    "Janowski het ...Bf5 gespeel om sy loper betyds uit te kry — soos 'n kolwer wat vroeg sy skoot kies.",
+    "Elke groot innings begin met een bal wat reg gespeel is.",
+    "'n Koningin gevang is soos 'n groot wiket — maar 'n goeie innings wen die meeste wedstryde."
 ];
 
 const BADGE_DESCRIPTIONS = {
-    'd6-boumeester':          "Behaal 'n perfekte 150/150 punte in een spel. Speel al 30 skuiwe optimaal!",
+    'd6-boumeester':          "Behaal 'n perfekte 150/150 lopies in een spel. Speel al 30 skuiwe optimaal!",
     'philidor-verdediger':    "Voltooi 'n spel in die Philidor-tak (1.e4 was Wit se eerste skuif).",
     'ou-indier-boumeester':   "Voltooi 'n spel in die Ou-Indiër-tak (1.d4 of 1.c4 was Wit se eerste skuif).",
     'hanham-vesting':         "Bereik die Hanham-opstelling: Nd7, Ngf6 (of Nf6), Be7, en rokade op g8.",
@@ -267,17 +270,17 @@ const BADGE_DESCRIPTIONS = {
     'tartakower-indier':      "Speel ...Bg4 in die Ou-Indiër-tak — die Tartakower-stelsel.",
     'koning-indier-oorgang':  "Fianchetto met ...g6 + ...Bg7 i.p.v. ...Be7 — oorgang na Koning-Indiër idees.",
     'koningin-jagter':        "Vang Wit se koningin tydens die spel. 'n Seldsame en groot trofee!",
-    'teoretikus':             "Bereik 15 of meer perfekte skuiwe (5 punte elk) in een spel.",
-    'grootmeester':           "Bereik 21 of meer perfekte skuiwe (5 punte elk) in een spel.",
+    'teoretikus':             "Bereik 15 of meer perfekte skuiwe (5 lopies elk) in een spel.",
+    'grootmeester':           "Bereik 21 of meer perfekte skuiwe (5 lopies elk) in een spel.",
     'oorheersend':            "Eindig die spel met 'n evaluasie van -2.0 of beter (in Swart se guns)."
 };
 
 const BADGES = {
-    'd6-boumeester':          { icon: '⛏️',  name: 'd6-Boumeester' },
+    'd6-boumeester':          { icon: '🏆',  name: 'd6-Boumeester' },
     'philidor-verdediger':    { icon: '🛡️',  name: 'Philidor Verdediger' },
-    'ou-indier-boumeester':   { icon: '🧱',  name: 'Ou-Indiër Boumeester' },
+    'ou-indier-boumeester':   { icon: '🏟️',  name: 'Ou-Indiër Boumeester' },
     'hanham-vesting':         { icon: '🏰',  name: 'Hanham Vesting' },
-    'antoshin-blok':          { icon: '🟫',  name: 'Antoshin Blok' },
+    'antoshin-blok':          { icon: '🧱',  name: 'Antoshin Blok' },
     'philidors-eie-keuse':    { icon: '⚔️',  name: "Philidor se Eie Keuse" },
     'opera-spook':            { icon: '🎭',  name: 'Opera-spook' },
     'chigorin-hoofline':      { icon: '♞',   name: 'Chigorin Hooflyn' },
@@ -287,7 +290,7 @@ const BADGES = {
     'koning-indier-oorgang':  { icon: '👑',  name: 'Koning-Indiër Oorgang' },
     'koningin-jagter':        { icon: '♛',   name: 'Koningin Jagter' },
     'teoretikus':             { icon: '📚',  name: 'Teoretikus' },
-    'grootmeester':           { icon: '🏆',  name: 'Grootmeester' },
+    'grootmeester':           { icon: '🥇',  name: 'Grootmeester' },
     'oorheersend':            { icon: '🔥',  name: 'Oorheersend' }
 };
 
@@ -559,7 +562,7 @@ async function makeWhiteMove() {
     // First Stockfish move — announce the transition out of the book
     if (currentMoveNumber === 7) {
         showEngineTransitionPopup();
-        showMessage("Wit is buite die boek — nou begin ek dink!", "thinking");
+        showMessage("Powerplay verby — nou raak dit ernstig!", "thinking");
         await new Promise(r => setTimeout(r, 1200));
     } else {
         showMessage("Wit dink...", "thinking");
@@ -583,6 +586,7 @@ async function makeWhiteMove() {
     updateBranchInfo();
     updateMoveCounter();
     updateWhitePoolInfo();
+    updatePhaseInfo();
     updateTargetDisplay();
 
     await showAutoHints();
@@ -878,7 +882,7 @@ function showHint() {
 
     clearArrows();
     if (bestMove.from && bestMove.to) {
-        drawArrow(bestMove.from, bestMove.to, 'rgba(93,207,224,0.92)'); // diamond blue
+        drawArrow(bestMove.from, bestMove.to, 'rgba(46,196,182,0.92)'); // floodlight teal
     }
     showMessage(`Wenk: ${bestMove.san}`, "hint");
     setTimeout(() => clearArrows(), 4000);
@@ -922,12 +926,12 @@ async function showAutoHints() {
     } catch (e) { /* ignore */ }
 
     if (popMove && engineMove && popMove.from === engineMove.from && popMove.to === engineMove.to) {
-        // Both agree → green arrow
-        drawArrow(popMove.from, popMove.to, 'rgba(85, 204, 51, 0.90)');
+        // Both agree → trophy gold
+        drawArrow(popMove.from, popMove.to, 'rgba(255,201,74,0.92)');
     } else {
-        // Diamond blue for popularity, red for engine
-        if (popMove)    drawArrow(popMove.from,    popMove.to,    'rgba(93,207,224,0.88)');
-        if (engineMove) drawArrow(engineMove.from, engineMove.to, 'rgba(193,59,42,0.88)');
+        // Floodlight teal for popularity, ball red for engine
+        if (popMove)    drawArrow(popMove.from,    popMove.to,    'rgba(46,196,182,0.88)');
+        if (engineMove) drawArrow(engineMove.from, engineMove.to, 'rgba(230,57,70,0.88)');
     }
 }
 
@@ -1116,8 +1120,8 @@ function updateDisplay(lastScore) {
     if (lastScore !== undefined) {
         scoreDisplay.style.display = 'block';
         scoreDisplay.className     = `move-score score-${lastScore}`;
-        const labels = { 5:'Uitstekend! (+5)', 4:'Goeie skuif! (+4)',
-                         3:'Redelik (+3)', 2:'Swakker (+2)', 1:'Probeer beter (+1)' };
+        const labels = { 5:'SES! (+5)', 4:'VIER! (+4)',
+                         3:'Drie lopies! (+3)', 2:'Twee lopies (+2)', 1:'Enkelloop (+1)' };
         scoreText.textContent = labels[lastScore] || `+${lastScore}`;
     }
 }
@@ -1130,12 +1134,21 @@ function updateWhitePoolInfo() {
     const el = document.getElementById('white-pool');
     if (currentMoveNumber >= 7) {
         el.textContent = 'Beste enjin skuif';
-        el.style.color = '#9B59B6';
+        el.style.color = '#FF9B4D';
     } else {
         const size = WHITE_POOL_SIZES[currentMoveNumber - 1] || 2;
         el.textContent = `Top ${size} skuiwe`;
-        el.style.color = '#5DCFE0';
+        el.style.color = '#2EC4B6';
     }
+}
+
+// Doodsbeurte ("death overs") — a hot-red pill for the final stretch of the
+// innings (moves 26-30), mirroring T20's tense final overs. Purely a mood
+// cue: White's move-selection logic is unaffected.
+function updatePhaseInfo() {
+    const el = document.getElementById('phase-pill');
+    if (!el) return;
+    el.classList.toggle('show', currentMoveNumber >= 26 && !gameOver);
 }
 
 function updateBranchInfo() {
@@ -1146,7 +1159,7 @@ function updateBranchInfo() {
     row.style.display = 'flex';
     label.textContent = branch === 'philidor'
         ? '🛡️ Philidor-verdediging'
-        : '🧱 Ou-Indiër-verdediging';
+        : '🏟️ Ou-Indiër-verdediging';
 }
 
 function updateHistory() {
@@ -1171,10 +1184,10 @@ function showMessage(text, type) {
     const el = document.getElementById('game-message');
     el.textContent = text;
     switch (type) {
-        case 'error':    el.style.color = '#C13B2A'; break;
-        case 'thinking': el.style.color = '#5DCFE0'; break;
-        case 'hint':     el.style.color = '#9B59B6'; break;
-        default:         el.style.color = '#5D9C43';
+        case 'error':    el.style.color = '#E63946'; break;
+        case 'thinking': el.style.color = '#2EC4B6'; break;
+        case 'hint':     el.style.color = '#FFC94A'; break;
+        default:         el.style.color = '#2EC4B6';
     }
 }
 
@@ -1188,14 +1201,14 @@ function selectWeightedMove(moves) {
 // ==================== GAME END ====================
 
 function getEndMessage(pct) {
-    if (pct >= 97) return "Perfek! Jy het die d6-verdedigings bemeester!";
-    if (pct >= 90) return "Uitstekend! Jy ken die verdedigings baie goed.";
-    if (pct >= 80) return "Baie goed gespeel! Jy vorder mooi.";
-    if (pct >= 70) return "Goeie werk! Bly oefen vir die fynere punte.";
-    if (pct >= 60) return "Nie sleg nie! Elke spel leer jou meer.";
-    if (pct >= 50) return "Mooi probeer! Die d6-stelsel verg oefening.";
-    if (pct >= 40) return "Hou aan oefen — jy verbeter elke keer!";
-    return "Moenie moed verloor nie — probeer weer!";
+    if (pct >= 97) return "Perfekte innings! Jy het die d6-verdedigings volledig bemeester!";
+    if (pct >= 90) return "Uitstekende innings! Jy ken hierdie verdedigings baie goed.";
+    if (pct >= 80) return "Baie goed gespeel! 'n Sterk innings met mooi vordering.";
+    if (pct >= 70) return "Goeie werk! Bly oefen vir daardie fynere lopies.";
+    if (pct >= 60) return "Nie sleg nie! Elke wedstryd leer jou meer.";
+    if (pct >= 50) return "Mooi probeer! Die d6-stelsel verg oefening — soos enige goeie kolfwerk.";
+    if (pct >= 40) return "Hou aan oefen — jy verbeter elke wedstryd!";
+    return "Moenie moed verloor nie — elke groot kolwer het stadig begin. Probeer weer!";
 }
 
 async function endGame() {
@@ -1203,7 +1216,7 @@ async function endGame() {
     isThinking = false;
     clearHighlights();
     clearArrows();
-    showMessage("Spel voltooi! Besigtig jou finale posisie...", "info");
+    showMessage("Wedstryd verby! Besigtig jou finale posisie...", "info");
     setTimeout(async () => { await showEndGameModal(); }, 5000);
 }
 
@@ -1211,11 +1224,11 @@ async function showEndGameModal() {
     await checkEndGameBadges();
     const isNew = saveHighScore(score);
 
-    document.getElementById('modal-score').textContent   = `${score}/${TARGET_SCORE} punte`;
+    document.getElementById('modal-score').textContent   = `${score}/${TARGET_SCORE} lopies`;
     document.getElementById('modal-rating').textContent  = getEndMessage((score / TARGET_SCORE) * 100);
 
     const hsMsgEl = document.getElementById('modal-highscore-msg');
-    if (isNew) { hsMsgEl.textContent = "NUWE HOOGTEPUNT!"; hsMsgEl.style.display = 'block'; }
+    if (isNew) { hsMsgEl.textContent = "NUWE BESTE TELLING!"; hsMsgEl.style.display = 'block'; }
     else       { hsMsgEl.style.display = 'none'; }
 
     const earned = document.getElementById('modal-badges-earned');
@@ -1226,7 +1239,7 @@ async function showEndGameModal() {
     } else { earned.style.display = 'none'; }
 
     document.getElementById('game-over-modal').classList.add('show');
-    showMessage("Spel voltooi! Kyk na jou telling.", "info");
+    showMessage("Wedstryd verby! Kyk na jou telling.", "info");
 }
 
 // ==================== NEW GAME ====================
@@ -1262,7 +1275,8 @@ function newGame() {
     document.getElementById('move-score-display').style.display = 'none';
     document.getElementById('branch-row').style.display    = 'none';
     document.getElementById('white-pool').textContent       = 'Top 20 skuiwe';
-    document.getElementById('white-pool').style.color      = '#5DCFE0';
+    document.getElementById('white-pool').style.color      = '#2EC4B6';
+    document.getElementById('phase-pill').classList.remove('show');
     document.getElementById('game-over-modal').classList.remove('show');
     document.getElementById('review-panel').style.display  = 'none';
     document.getElementById('analysis-panel').style.display = 'flex';
@@ -1300,7 +1314,7 @@ function exitReviewMode() {
     document.getElementById('review-panel').style.display   = 'none';
     document.getElementById('analysis-panel').style.display = 'flex';
     board.position(positionHistory[positionHistory.length - 1]);
-    showMessage("Spel voltooi! Begin 'n nuwe spel om weer te speel.", "info");
+    showMessage("Wedstryd verby! Begin 'n nuwe wedstryd om weer te speel.", "info");
 }
 
 async function updateReviewDisplay() {
@@ -1370,7 +1384,7 @@ async function showBestMovesForReview(fen) {
                 const winRate = games > 0 ? ((yd.black / games) * 100).toFixed(0) : 0;
                 const rank    = sorted.findIndex(m => m.san === playedMove) + 1;
                 html += `
-                    <div class="best-move-item" style="border-left:3px solid #5D9C43;margin-top:7px;">
+                    <div class="best-move-item" style="border-left:3px solid #FFC94A;margin-top:7px;">
                         <div>
                             <span class="best-move-san">${playedMove}</span>
                             <span class="your-move-indicator">Jou skuif (#${rank})</span>
@@ -1381,7 +1395,7 @@ async function showBestMovesForReview(fen) {
         }
         listEl.innerHTML = html;
     } catch (e) {
-        listEl.innerHTML = '<p style="color:#C13B2A;">Fout met laai van data.</p>';
+        listEl.innerHTML = '<p style="color:#E63946;">Fout met laai van data.</p>';
     }
 }
 
