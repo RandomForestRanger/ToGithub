@@ -162,7 +162,8 @@
       filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
     }
 
-    .card-icon svg {
+    .card-icon svg,
+    .card-icon img {
       display: block;
       margin: 0 auto;
     }
@@ -218,6 +219,8 @@
     .card--blunder { --accent: #b84b4b; }
     .card--matkat  { --accent: #4b7ab8; }
     .card--adi     { --accent: #8a5fa8; }
+    .card--blokkie { --accent: #c97a3a; }
+    .card--sneeuluiperd { --accent: #6f8f7a; }
 
     .card--chess   .card-title { color: var(--dark-green); }
     .card--spanish .card-title { color: #8a5a10; }
@@ -225,6 +228,8 @@
     .card--blunder .card-title { color: #7a2020; }
     .card--matkat  .card-title { color: #1a3a6e; }
     .card--adi     .card-title { color: #4a1f6e; }
+    .card--blokkie .card-title { color: #8a4a10; }
+    .card--sneeuluiperd .card-title { color: #2f5040; }
 
     .card--chess   .btn { background: linear-gradient(135deg, #6b8f4e, #4a6635); }
     .card--spanish .btn { background: linear-gradient(135deg, #c9933a, #8a5a10); }
@@ -232,6 +237,8 @@
     .card--blunder .btn { background: linear-gradient(135deg, #c95a5a, #8a2020); }
     .card--matkat  .btn { background: linear-gradient(135deg, #5a8ac9, #1a3a7a); }
     .card--adi     .btn { background: linear-gradient(135deg, #9e6bc9, #5a2090); }
+    .card--blokkie .btn { background: linear-gradient(135deg, #d99a5a, #a8621a); }
+    .card--sneeuluiperd .btn { background: linear-gradient(135deg, #8fae99, #4f6f5a); }
 
     /* ── FOOTER ── */
     footer {
@@ -394,6 +401,20 @@
         </div>
         <div class="card-title">Adi – Die Mancala Speletjie</div>
         <p class="card-desc">Speel Adi, 'n ou Afrika-speletjie met klippies en komme. Baie pret!</p>
+        <span class="btn">Speel nou!</span>
+      </a>
+
+      <a href="https://blokkies-joubert.netlify.app/" class="card card--blokkie">
+        <div class="card-icon"><img src="img/blokkie-avonturier.png" alt="" width="76" height="79" /></div>
+        <div class="card-title">Die Caro-Kann in Blokkie-wêreld</div>
+        <p class="card-desc">Speel die Caro-Kann-opening in 'n snaakse blokkie-wêreld vol vierkante verrassings!</p>
+        <span class="btn">Speel nou!</span>
+      </a>
+
+      <a href="https://sneeuluiperd.netlify.app/kruin/welkom.html" class="card card--sneeuluiperd">
+        <div class="card-icon"><img src="img/sneeuluiperd.png" alt="" width="82" height="72" /></div>
+        <div class="card-title">Sneeuluiperd se Kruin</div>
+        <p class="card-desc">Klim saam met die Sneeuluiperd na die kruin en ontmoet al die diere-vriende wat daar woon.</p>
         <span class="btn">Speel nou!</span>
       </a>
 
