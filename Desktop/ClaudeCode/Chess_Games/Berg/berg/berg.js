@@ -15,9 +15,13 @@
 // looptyd met fetch() ingebring nie -- 'n vroeëre weergawe het dit gedoen,
 // laat vaar ten gunste van hierdie eenvoudiger benadering, sien CLAUDE.md).
 // Sien bepaalKunsGereed() vir die teenwoordigheid-toets, en
-// BEWONER_KUNS/KAPOK_POSES vir die crop-koördinate. Bewoners sonder kuns
-// (Akkedis/Papegaai/Klipdassie/Bergkraai/Lammergier) bly die kleur+letter-
-// plekhouer van Kaart 4 tot hulle kuns ook opgelaai word.
+// BEWONER_KUNS/KAPOK_POSES vir die crop-koördinate. Kaart 7-vervolg
+// (2026-08-19): 'n tweede kuns-lewering (Four_animals_additional.jpg) het
+// Padda/Papegaai/Klipdassie/Sneeuman bygevoeg (Padda en Sneeuman vervang/
+// hernoem "Akkedis"/"Lammergier" -- 'n padda en 'n sneeuman i.p.v. 'n
+// akkedis en 'n lammergier, op die gebruiker se versoek; sien CLAUDE.md).
+// Slegs Bergkraai het nog geen kuns nie en bly die kleur+letter-plekhouer
+// van Kaart 4 tot sy kuns ook opgelaai word.
 (function (root) {
   'use strict';
 
@@ -28,8 +32,14 @@
   // Plekhouer-silhoeëtte per bewoner: 'n kleur + 'n kort letter-etiket.
   // Bewoners met werklike kuns (sien BEWONER_KUNS) gebruik dit i.p.v. hierdie
   // sirkel; die res val terug op hierdie plekhouer tot hul kuns ook inkom.
+  // Kaart 7-vervolg (2026-08-19): Padda (was "Akkedis") en Sneeuman (was
+  // "Lammergier") is hernoem toe hul kuns (Four_animals_additional.jpg --
+  // 'n padda, 'n papegaai, 'n klipdassie, 'n sneeuman) 'n regte inhoud-
+  // wysiging was, nie net 'n herskin nie -- op die gebruiker se uitdruklike
+  // versoek. Lae risiko: `naam` word net as 'n verborge `data-naam`-DOM-
+  // attribuut gebruik, nooit deur enige dialoog aangehaal nie.
   const BEWONER_INFO = {
-    3: { naam: 'Akkedis', kleur: '#7a9c5c', letter: 'Ak' },
+    3: { naam: 'Padda', kleur: '#7a9c5c', letter: 'Pd' },
     6: { naam: 'Aksolotl', kleur: '#e8a0c0', letter: 'Ax' },
     9: { naam: 'Papegaai', kleur: '#3fa34d', letter: 'Pa' },
     12: { naam: 'Apie', kleur: '#8a5a3c', letter: 'Ap' },
@@ -37,30 +47,98 @@
     18: { naam: 'Ibeks', kleur: '#c9a876', letter: 'Ib' },
     21: { naam: 'Bergkraai', kleur: '#3a3a3a', letter: 'Bk' },
     24: { naam: 'Sneeuhaas', kleur: '#f0f0f0', letter: 'Sh' },
-    27: { naam: 'Lammergier', kleur: '#8a7060', letter: 'Lg' },
+    27: { naam: 'Sneeuman', kleur: '#8a7060', letter: 'Sm' },
     30: { naam: 'Sneeuluiperd', kleur: '#dfe6ea', letter: 'Sl' },
   };
 
   // Kaart 7-vervolg: werklike kuns per bewoner. 'crop'-tipe deel dieselfde
-  // vlak-paaie (creature-tan/outline/highlight) uit "four creatures.svg" --
-  // net die viewBox-crop verskil per dier, presies soos Kapok se vier
+  // vlak-paaie (creature-fur/tan/outline/highlight) uit "four creatures.svg"
+  // -- net die viewBox-crop verskil per dier, presies soos Kapok se vier
   // posisies een gedeelde pad-stel deel. 'group'-tipe (Sneeuluiperd) is
-  // klaar 'n eie <g>-groep. Let wel: die vierde gedeelde vlak (die naby-wit/
-  // -romerige "agtergrond-was", #f9faf6 in die bronlêer) word doelbewus
-  // NIE gebruik nie -- dit was 'n ondeurskynende vlak wat byna die hele
-  // 1408x768-doek dek (nie net die dier se buitelyn nie), wat 'n lelike
-  // reghoekige wit blok om elke dier gegee het toe dit uitgesny is. Sien
-  // CLAUDE.md "Kaart 7-vervolg" vir die volledige diagnose. ('n Poging om
-  // die Sneeuhaas se wit vagsel met 'n handgeplaaste rugsteun-vorm te
-  // herstel is saam met Kapok s'n teruggerol -- sien KAPOK_USE_IDS.)
-  const CREATURE_USE_IDS = ['creature-tan', 'creature-outline', 'creature-highlight'];
+  // klaar 'n eie <g>-groep. Let wel: die bronlêer se eie vierde gedeelde
+  // vlak (die naby-wit/-romerige "agtergrond-was", #f9faf6) word steeds nie
+  // gebruik nie -- dit was 'n ondeurskynende vlak wat byna die hele
+  // 1408x768-doek dek, wat 'n lelike reghoekige wit blok om elke dier gegee
+  // het toe dit uitgesny is. Sien CLAUDE.md "Kaart 7-vervolg" vir die
+  // volledige diagnose.
+  //
+  // Kaart 7-vervolg (2026-08-20): `creature-fur` -- die kapok-fur-tegniek
+  // (outline-laag hoë-resolusie gerender, scipy binary_fill_holes, skimage
+  // find_contours-vektorisering) toegepas op al vier diere, nie net die
+  // Sneeuhaas nie. Eerste poging het slegs die Sneeuhaas reggemaak (op die
+  // aanname dat "Aksolotl/Apie/Ibeks se liggame kom reeds van ander vlakke"
+  // uit 'n vroeëre kaart se nota) -- die gebruiker het toe self opgemerk dat
+  // die ander drie in-game óók sketterig/deursigtig lyk. Regte oorsaak: al
+  // vier diere se buitelyn het dieselfde soort hiaat as Kapok s'n (sien
+  // onder), dit was nooit net 'n Sneeuhaas-eiendomlikheid nie -- die eerste
+  // "lyk reg"-oordeel was op 'n te-klein voorskou-beeld gebaseer.
+  //
+  // Twee slaggate wat eers ontdek moes word (anders as Kapok se enkele-
+  // silhoeët-doek):
+  // (1) Aksolotl/Apie/Ibeks staan elk in 'n omraamde "kaart" in die bronlêer
+  //     (Sneeuhaas nie). 'n Reguit doek-wye vulling sou elke hele raam-
+  //     reghoek gevul het (dieselfde "wit blok"-fout, van 'n raam-lyn i.p.v.
+  //     die was-vlak). Oplossing: die WAND-MASKER (nie net die eindresultaat
+  //     nie) word EERS na elke dier se eie crop-rehoek (+12px marge)
+  //     uitgeknip, VOORDAT closing/fill_holes loop -- die raam se lynwerk
+  //     bestaan dan eenvoudig nie in die berekening nie, dus kan dit nooit
+  //     die vulling insleep nie.
+  // (2) elke dier het sy eie minimum binary_closing-iterasietal nodig gehad
+  //     voor die gevulde fraksie spring/stabiliseer (Aksolotl 2, Apie 4,
+  //     Ibeks 6, Sneeuhaas 8 -- getoets oor 'n reeks 0-16 per dier, nie
+  //     aanvaar dat een waarde vir almal sou werk nie). By Ibeks het 'n te-
+  //     hoë waarde (8) sy liggaam met 'n aparte kaart-basislyn-versiering
+  //     laat saamsmelt tot een gevulde vorm; die uiteindelike keuse (6) plus
+  //     'n "hou net die grootste verbonde komponent"-filter (laat vaar die
+  //     versiering as 'n aparte, kleiner stuk) los dit op. **Les:** moenie
+  //     aanvaar dieselfde sluitings-waarde (of dieselfde "dit lyk reg"-
+  //     oordeel by klein voorskou-grootte) oor bronlêers of selfs oor diere
+  //     binne een bronlêer heen werk nie -- toets die gevulde fraksie oor 'n
+  //     reeks waardes per dier en kyk teen werklike speletjie-ikoon-grootte.
+  const CREATURE_USE_IDS = ['creature-fur', 'creature-tan', 'creature-outline', 'creature-highlight'];
+  // Kaart 7-vervolg (2026-08-19): 'raster'-tipe (Padda/Papegaai/Klipdassie/
+  // Sneeuman, uit Four_animals_additional.jpg) -- soos Stapper Seun, 'n
+  // reeds-volledig-geverfde JPEG-illustrasie, nie plat SVG-lynwerk nie, dus
+  // elke dier 'n eie, volledige raster-beeld (`<image id="creature2-...">`
+  // in <defs>) i.p.v. 'n gedeelde-canvas viewBox-crop. bouRasterSnit()
+  // hanteer hierdie tipe (analoog aan stelStapperPos()). Agtergrond hier
+  // was NIE by die raam se rand betroubaar nie -- die sneeuman se ysige
+  // pels en die papegaai se kop is self amper suiwer wit, so 'n suiwer
+  // kleursleutel (soos vir Stapper Seun) sou hulle laat vergrys teen 'n
+  // donker agtergrond. Rand-verbondenheid (net wit wat aan die beeld se
+  // buiterand raak, tel as agtergrond) los dit reg op: wit binne 'n
+  // geslote silhoeët (soos die pels) bly ondeurskynend. Sien CLAUDE.md.
   const BEWONER_KUNS = {
+    3: { type: 'raster', id: 'creature2-padda', maxDim: 42 },      // Padda (was Akkedis)
     6: { type: 'crop', ids: CREATURE_USE_IDS, crop: [55, 70, 355, 235], maxDim: 42 },   // Aksolotl
+    9: { type: 'raster', id: 'creature2-papegaai', maxDim: 42 },   // Papegaai
     12: { type: 'crop', ids: CREATURE_USE_IDS, crop: [585, 50, 210, 275], maxDim: 42 }, // Apie
+    15: { type: 'raster', id: 'creature2-klipdassie', maxDim: 42 }, // Klipdassie
     18: { type: 'crop', ids: CREATURE_USE_IDS, crop: [1035, 55, 290, 280], maxDim: 42 }, // Ibeks
     24: { type: 'crop', ids: CREATURE_USE_IDS, crop: [585, 405, 235, 270], maxDim: 42 }, // Sneeuhaas
-    30: { type: 'group', id: 'sneeuluiperd-figure', crop: [130, 35, 1080, 733], maxDim: 56 }, // Sneeuluiperd
+    27: { type: 'raster', id: 'creature2-sneeuman', maxDim: 42 },  // Sneeuman (was Lammergier)
+    30: { type: 'group', id: 'sneeuluiperd-figure', crop: [130, 35, 1080, 733], maxDim: 80 }, // Sneeuluiperd (2026-08-20: 56 -> 67 -> 80, twee opeenvolgende 20%-versoeke)
   };
+
+  // 2026-08-20 (gebruiker-versoek): die Sneeuluiperd sit nie langs merker 30
+  // nie (soos die ander nege bewoners, translate(p.x+26,p.y-26)) -- sy sit by
+  // die roete se ware eindpunt (t=1.0, ná merker 30 se t=30/31 -- die klein
+  // marge wat §2.1 doelbewus tussen die laaste merker en die kruin los), 'n
+  // paar wêreld-eenhede hoër as merker 30. SNEEULUIPERD_VERSET is die
+  // verset t.o.v. daardie ware eindpunt (nie t.o.v. 'n merker nie, anders as
+  // elke ander bewoner) -- geverifieer teen die werklike roetepad + agtergrond
+  // dat sy net bo-op die bergpiek se rots sit, met die roete wat reg by haar
+  // pote eindig.
+  // 2026-08-20-vervolg: nog 'n versoek om "'n bietjie hoër" te skuif -- +20
+  // wêreld-eenhede opwaarts bygevoeg (-15 -> -35). Hierdie is wêreld-
+  // koördinaat-eenhede in die 720x2036-ruimte, nie skerm-pixels nie, maar
+  // wel dieselfde ruimte as VENSTER_W/H (360x280) se kamera-venster -- 20
+  // eenhede is dus ~5.5% van die sigbare vensterwydte, 'n werklik sigbare
+  // skuif, nie kosmeties klein nie. Geverifieer teen die werklike agtergrond
+  // dat sy (met haar nou-groter maxDim: 80) steeds binne die 720x2036-wêreld
+  // se boonste rand bly (ore net-net onder y=0; die rotsperskie se ink self
+  // het marge in sy crop-rehoek, dus geen werklike afsny nie).
+  const SNEEULUIPERD_VERSET = { x: 0, y: -28 }; // 2026-08-20-vervolg: -35 -> -31 -> -28 (twee opeenvolgende "'n bietjie laer"-versoeke)
 
   // Kapok se vier posisies (uit Kapok/4_vlekkies.svg, gedeelde paaie
   // kapok-fur/kapok-shade/kapok-outline). Die bronlêer se eie derde vlak
@@ -90,6 +168,25 @@
   };
   const KAPOK_ICON_MAXDIM = 38;
 
+  // Kaart 7-vervolg (2026-08-18): Stapper Seun -- die klimmer self, uit
+  // Stapper_seun.jpg (vier uitrustings, een per sone: Moeras/Woud/Rotse/
+  // Sneeu, in daardie volgorde in die bronlêer). Anders as Kapok se
+  // bronlêer is dit 'n plat JPEG op 'n effe wit agtergrond, nie 'n SVG met
+  // 'n bruikbare buitelynlaag nie -- die "fill-holes"-tegniek van kapok-fur
+  // pas dus nie hier nie. In plaas daarvan is elke posisie met 'n kleur-
+  // sleutel uitgesny (agtergrond se ware wit, #fff, wêreldwyd verwyder --
+  // nie net wat aan die raam se rand raak nie, sodat toevallige omsluite
+  // gaatjies -- die tou-lus in Woud, die ysbyl-band in Sneeu -- ook reg
+  // deursigtig word, nie as lelike reghoekige wit kolle bly nie), sagte
+  // rand-vervaging via 'n afstand-tot-wit-helling, dan as PNG (nie SVG-pad
+  // nie, aangesien dit 'n volledige geverfde illustrasie is, nie plat
+  // lynwerk om te vektoriseer nie) ingebed. Elke uitrusting staan as sy eie
+  // <image id="stapper-<sone>">-element in <defs> (kruin.html/
+  // berg-demo2.html), verwys deur STAPPER_ZONE_IDS hieronder. Sien
+  // CLAUDE.md vir die volledige metode.
+  const STAPPER_ZONE_IDS = { moeras: 'stapper-moeras', woud: 'stapper-woud', rotse: 'stapper-rotse', sneeu: 'stapper-sneeu' };
+  const STAPPER_ICON_MAXDIM = 54;
+
   function easeInOutCubic(t) {
     return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
   }
@@ -104,8 +201,10 @@
   function createEngine() {
     let svg = null, routePath = null, routeLen = 0;
     const markerPos = {}; // n -> {x,y}
+    let kruinPos = null; // die roete se ware eindpunt (t=1.0) -- sien SNEEULUIPERD_PLASING
     let reducedMotionOverride = null;
     let kunsGereed = false; // true sodra kuns-bates.svg se <defs> ingespuit is
+    let stapperKunsGereed = false; // true sodra Stapper Seun se <defs>-beelde teenwoordig is
 
     function isReducedMotion() {
       if (reducedMotionOverride !== null) return reducedMotionOverride;
@@ -221,6 +320,10 @@
       if (!kunsGereed && typeof console !== 'undefined') {
         console.warn('Karakter-kuns (#kapok-outline) nie in die SVG-merkup gevind nie -- plekhouers bly geld.');
       }
+      stapperKunsGereed = !!svg.querySelector('#' + STAPPER_ZONE_IDS.moeras);
+      if (!stapperKunsGereed && typeof console !== 'undefined') {
+        console.warn('Stapper Seun se kuns (#stapper-moeras) nie in die SVG-merkup gevind nie -- die plekhouer-sirkel bly geld.');
+      }
     }
 
     // Bou 'n <svg>-broksel wat 'n crop uit die gedeelde bates vertoon,
@@ -239,11 +342,28 @@
       return el;
     }
 
+    // Kaart 7-vervolg: soos bouKunsSnit(), maar vir 'n volledige, aparte
+    // raster-beeld (geen gedeelde canvas/viewBox-crop nodig nie) -- gebruik
+    // deur BEWONER_KUNS se 'raster'-tipe. Gee null terug as die <defs>-
+    // beeld ontbreek, sodat die roeper op die plekhouer kan terugval.
+    function bouRasterSnit(imgDefId, maxDim) {
+      const bron = document.getElementById(imgDefId);
+      if (!bron) return null;
+      const w = Number(bron.getAttribute('width')), h = Number(bron.getAttribute('height'));
+      const skaal = maxDim / Math.max(w, h);
+      const dispW = w * skaal, dispH = h * skaal;
+      return svgEl('image', {
+        href: bron.getAttribute('href'),
+        x: -dispW / 2, y: -dispH / 2, width: dispW, height: dispH,
+      });
+    }
+
     function init(svgEl_, opts) {
       opts = opts || {};
       svg = svgEl_;
       routePath = svg.querySelector('#roete');
       routeLen = routePath.getTotalLength();
+      kruinPos = routePath.getPointAtLength(routeLen); // t=1.0, die roete se ware eindpunt
       bepaalKunsGereed();
 
       const merkersGroup = svg.querySelector('#merkers');
@@ -264,18 +384,28 @@
       bewonersGroup.innerHTML = '';
       for (const n of MILESTONE_RUNGS) {
         const info = BEWONER_INFO[n];
-        const p = markerPos[n];
+        // Sneeuluiperd (n=30) sit by die roete se ware eindpunt (kruinPos),
+        // nie langs haar merker soos die ander nege bewoners nie -- sien
+        // SNEEULUIPERD_VERSET.
+        const tx = n === 30 ? kruinPos.x + SNEEULUIPERD_VERSET.x : markerPos[n].x + 26;
+        const ty = n === 30 ? kruinPos.y + SNEEULUIPERD_VERSET.y : markerPos[n].y - 26;
         const g = svgEl('g', {
           id: 'bewoner-' + n,
-          transform: `translate(${p.x + 26},${p.y - 26})`,
+          transform: `translate(${tx},${ty})`,
           visibility: 'hidden',
           'data-naam': info.naam,
         });
         const kuns = kunsGereed ? BEWONER_KUNS[n] : null;
+        let kunsEl = null;
         if (kuns && kuns.type === 'crop') {
-          g.appendChild(bouKunsSnit(kuns.ids, kuns.crop, kuns.maxDim));
+          kunsEl = bouKunsSnit(kuns.ids, kuns.crop, kuns.maxDim);
         } else if (kuns && kuns.type === 'group') {
-          g.appendChild(bouKunsSnit([kuns.id], kuns.crop, kuns.maxDim));
+          kunsEl = bouKunsSnit([kuns.id], kuns.crop, kuns.maxDim);
+        } else if (kuns && kuns.type === 'raster') {
+          kunsEl = bouRasterSnit(kuns.id, kuns.maxDim); // null as <defs>-beeld ontbreek -- val terug op plekhouer
+        }
+        if (kunsEl) {
+          g.appendChild(kunsEl);
         } else {
           // plekhouer: kleur-sirkel + letter (geen kuns vir hierdie bewoner nog nie)
           g.appendChild(svgEl('circle', { r: 16, fill: info.kleur, stroke: '#1a1a2e', 'stroke-width': 2.5 }));
@@ -303,9 +433,22 @@
         }
       }
 
+      // Stapper Seun: vervang die plekhouer-sirkel <circle id="klimmer-lyf">
+      // met 'n <image>-element (indien kuns teenwoordig); die sirkel bly
+      // andersins as plekhouer staan. Anders as Kapok se <use>-gebaseerde
+      // snit (een gedeelde canvas, viewBox-crop per posisie) is elke
+      // Stapper Seun-uitrusting 'n volledige, aparte raster-illustrasie --
+      // stelStapperPos() wissel bloot watter <defs>-beeld se href/afmetings
+      // op die sigbare <image> toegepas word, geen crop-venster nodig nie.
+      const klimmerLyf = document.getElementById('klimmer-lyf');
+      if (klimmerLyf && stapperKunsGereed) {
+        klimmerLyf.replaceWith(svgEl('image', { id: 'stapper-sprite' }));
+      }
+
       const beginRung = opts.beginRung || 1;
       setViewBox(viewBoxForMarker(beginRung));
       setKlimmerPos(markerPos[beginRung].x, markerPos[beginRung].y);
+      stelStapperPos(ZONE_OF(beginRung));
       for (const n of MILESTONE_RUNGS) if (n <= beginRung) stelBewonerZigbaarheid(n, true);
 
       // Waarborg skilder-volgorde: die klimmer (en dus Kapok) moet altyd BO
@@ -346,6 +489,7 @@
       for (const n of MILESTONE_RUNGS) stelBewonerZigbaarheid(n, ontslote.includes(n));
       setViewBox(kruinView());
       setKlimmerPos(markerPos[rung].x, markerPos[rung].y);
+      stelStapperPos(ZONE_OF(rung));
       const DUUR = 3500;
       if (!isReducedMotion()) skeduleerKopdraaie(ontslote, DUUR);
       return animateViewBox(kruinView(), viewBoxForMarker(rung), DUUR, { skippable: true });
@@ -365,6 +509,25 @@
       art.setAttribute('x', -w / 2); art.setAttribute('y', -h / 2);
       art.setAttribute('width', w); art.setAttribute('height', h);
       art.setAttribute('viewBox', `${crop.x} ${crop.y} ${crop.w} ${crop.h}`);
+    }
+
+    // Kaart 7-vervolg: wissel Stapper Seun se vertoonde uitrusting om na sy
+    // huidige sone (Moeras/Woud/Rotse/Sneeu) -- geen effek as die kuns nog
+    // nie gelaai het nie (bly die plekhouer-sirkel). Elke uitrusting is 'n
+    // volledige, aparte raster-beeld (nie 'n gedeelde-canvas crop soos
+    // Kapok nie), dus stel dit bloot href + skaalafmetings, geen viewBox
+    // nodig nie. Anker: voete op die roetelyn (y=0), gesentreer horisontaal.
+    function stelStapperPos(zone) {
+      const img = document.getElementById('stapper-sprite');
+      if (!img) return; // kuns nie gelaai nie -- niks om te wissel nie
+      const bron = document.getElementById(STAPPER_ZONE_IDS[zone] || STAPPER_ZONE_IDS.moeras);
+      if (!bron) return;
+      const w = Number(bron.getAttribute('width')), h = Number(bron.getAttribute('height'));
+      const skaal = STAPPER_ICON_MAXDIM / Math.max(w, h);
+      const dispW = w * skaal, dispH = h * skaal;
+      img.setAttribute('href', bron.getAttribute('href'));
+      img.setAttribute('width', dispW); img.setAttribute('height', dispH);
+      img.setAttribute('x', -dispW / 2); img.setAttribute('y', -dispH);
     }
 
     function kapokBlaf() {
@@ -429,6 +592,7 @@
     function klim(vanRung, naRung) {
       const hetKuns = !!document.getElementById('kapok-art');
       if (hetKuns && !isReducedMotion()) stelKapokPos('klimOnder');
+      stelStapperPos(ZONE_OF(naRung));
       return Promise.all([
         animateViewBox(viewBoxForMarker(vanRung), viewBoxForMarker(naRung), 1500),
         animateKlimmerTo(vanRung, naRung, 1500),
@@ -440,6 +604,7 @@
 
     // §4.2: daal (misluk) -- een rustige tree af, geen tuimel nie.
     function daal(vanRung, naRung) {
+      stelStapperPos(ZONE_OF(naRung));
       return Promise.all([
         animateViewBox(viewBoxForMarker(vanRung), viewBoxForMarker(naRung), 2200),
         animateKlimmerTo(vanRung, naRung, 2200),
@@ -450,8 +615,13 @@
     function bewonerOnthulling(rung) {
       if (!MILESTONE_RUNGS.includes(rung)) return Promise.resolve();
       const huidige = viewBoxForMarker(rung);
-      const p = markerPos[rung];
-      const nabyBewoner = { x: p.x - 42, y: p.y - 108, w: 230, h: 180 };
+      // Sneeuluiperd (n=30) sit by kruinPos, nie by haar merker nie (sien
+      // SNEEULUIPERD_VERSET) -- die onthullingsvenster volg dieselfde plek.
+      const bx = rung === 30 ? kruinPos.x + SNEEULUIPERD_VERSET.x : markerPos[rung].x;
+      const by = rung === 30 ? kruinPos.y + SNEEULUIPERD_VERSET.y : markerPos[rung].y;
+      const nabyBewoner = rung === 30
+        ? { x: bx - 130, y: by - 20, w: 230, h: 180 } // gekalibreer om binne die 720x2036-wêreld te bly (sy sit naby die boonste/regterrand); y-verset verklein van 40->20 toe sy hoër geskuif is
+        : { x: bx - 42, y: by - 108, w: 230, h: 180 };
       const el = bewonerEl(rung);
       return animateViewBox(huidige, nabyBewoner, 3000)
         .then(() => {
@@ -471,8 +641,10 @@
       isBewonerZigbaar,
       isReducedMotion,
       kapokBlaf, kapokTolVanVreugde, kapokOreVlat, kapokKunsie, stelKapokPos,
+      stelStapperPos,
       _forseerVerminderdeBeweging: (v) => { reducedMotionOverride = v; },
       _kunsGereed: () => kunsGereed,
+      _stapperKunsGereed: () => stapperKunsGereed,
     };
   }
 
