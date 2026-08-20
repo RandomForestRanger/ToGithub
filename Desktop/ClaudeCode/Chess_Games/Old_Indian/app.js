@@ -1,0 +1,1431 @@
+// Philidor & Old Indian Defence Trainer
+// Computer plays White, student plays Black — 30 moves
+
+// ==================== STOCKFISH ENGINE ====================
+
+let stockfishEngine = null;
+let stockfishReady = false;
+
+// Job-ID isolation for the local worker: only ONE UCI job is ever "active" at a
+// time, and every engine message is routed to that job alone. Concurrent callers
+// (e.g. Black's move-analysis query and White's own move-selection query) queue
+// up and run strictly one-after-another, so a late/mismatched engine line can
+// never get attributed to the wrong FEN/request. See root CLAUDE.md pitfall #4.
+let stockfishJobCounter  = 0;
+let stockfishActiveJob   = null; // { id, callback }
+let stockfishRequestQueue = [];  // [{ fen, depth, multipv, resolve }]
+
+function initStockfish() {
+    fetch('https://cdnjs.cloudflare.com/ajax/libs/stockfish.js/10.0.2/stockfish.js')
+        .then(r => r.text())
+        .then(code => {
+            try {
+                const blob = new Blob([code], { type: 'application/javascript' });
+                stockfishEngine = new Worker(URL.createObjectURL(blob));
+                stockfishEngine.onmessage = function(event) {
+                    const line = event.data;
+                    if (line === 'uciok' || line === 'readyok') stockfishReady = true;
+                    if (stockfishActiveJob && stockfishActiveJob.callback) stockfishActiveJob.callback(line);
+                };
+                stockfishEngine.onerror = e => { console.error('SF worker error:', e); };
+                stockfishEngine.postMessage('uci');
+            } catch (e) {
+                console.error('Failed to create SF worker:', e);
+                stockfishEngine = null;
+            }
+        })
+        .catch(e => { console.error('Failed to fetch SF:', e); stockfishEngine = null; });
+}
+
+function getLocalStockfishEval(fen, depth = 12, multipv = 2) {
+    return new Promise(resolve => {
+        if (!stockfishEngine) { resolve(null); return; }
+        stockfishRequestQueue.push({ fen, depth, multipv, resolve });
+        pumpStockfishQueue();
+    });
+}
+
+// Starts the next queued request only once no job is currently active — this is
+// what guarantees a single in-flight FEN/depth/multipv per engine message.
+function pumpStockfishQueue() {
+    if (stockfishActiveJob || stockfishRequestQueue.length === 0) return;
+
+    const { fen, depth, multipv, resolve } = stockfishRequestQueue.shift();
+    const jobId = ++stockfishJobCounter;
+    let results = [], resolved = false;
+
+    const finish = value => {
+        if (resolved) return;
+        resolved = true;
+        if (stockfishActiveJob && stockfishActiveJob.id === jobId) stockfishActiveJob = null;
+        resolve(value);
+        pumpStockfishQueue(); // hand the engine to the next queued caller, if any
+    };
+
+    const callback = line => {
+        // Belt-and-braces: ignore anything arriving after this job already resolved
+        // (e.g. a straggling 'info' line racing the timeout).
+        if (resolved || !stockfishActiveJob || stockfishActiveJob.id !== jobId) return;
+        if (line.startsWith && line.startsWith('info') && line.includes(' pv ')) {
+            const depthM = line.match(/depth (\d+)/);
+            const mpvM   = line.match(/multipv (\d+)/);
+            const scoreM = line.match(/score (cp|mate) (-?\d+)/);
+            const pvM    = line.match(/ pv (.+)/);
+            if (depthM && pvM && scoreM && parseInt(depthM[1]) >= depth - 2) {
+                const mpv = mpvM ? parseInt(mpvM[1]) : 1;
+                const res = { multipv: mpv, moves: pvM[1].split(' ')[0],
+                              cp: scoreM[1]==='cp' ? parseInt(scoreM[2]) : undefined,
+                              mate: scoreM[1]==='mate' ? parseInt(scoreM[2]) : undefined };
+                const idx = results.findIndex(r => r.multipv === mpv);
+                if (idx >= 0) results[idx] = res; else results.push(res);
+            }
+        }
+        if (line.startsWith && line.startsWith('bestmove')) {
+            results.sort((a, b) => a.multipv - b.multipv);
+            finish(results.length > 0 ? results : null);
+        }
+    };
+
+    stockfishActiveJob = { id: jobId, callback };
+    stockfishEngine.postMessage('ucinewgame');
+    stockfishEngine.postMessage(`setoption name MultiPV value ${multipv}`);
+    stockfishEngine.postMessage(`position fen ${fen}`);
+    stockfishEngine.postMessage(`go depth ${depth}`);
+
+    setTimeout(() => {
+        if (resolved || !stockfishActiveJob || stockfishActiveJob.id !== jobId) return;
+        results.sort((a, b) => a.multipv - b.multipv);
+        finish(results.length > 0 ? results : null);
+    }, 8000);
+}
+
+// ==================== CANVAS ARROW SYSTEM ====================
+
+let arrowCanvas = null;
+let arrowCtx    = null;
+
+function initArrowCanvas() {
+    arrowCanvas = document.getElementById('board-arrows');
+    arrowCtx    = arrowCanvas ? arrowCanvas.getContext('2d') : null;
+    resizeArrowCanvas();
+}
+
+function resizeArrowCanvas() {
+    const boardEl = document.getElementById('board');
+    if (!boardEl || !arrowCanvas) return;
+    const size = boardEl.offsetWidth;
+    arrowCanvas.width  = size;
+    arrowCanvas.height = size;
+    arrowCanvas.style.width  = size + 'px';
+    arrowCanvas.style.height = size + 'px';
+}
+
+function clearArrows() {
+    if (!arrowCtx || !arrowCanvas) return;
+    arrowCtx.clearRect(0, 0, arrowCanvas.width, arrowCanvas.height);
+}
+
+// Convert algebraic square name to pixel centre (for flipped board — Black at bottom).
+// Flipped board: file 'a' is on the RIGHT, rank 8 is at the BOTTOM.
+function squareToXY(square) {
+    const squareSize = arrowCanvas ? arrowCanvas.width / 8 : 60;
+    const file = square.charCodeAt(0) - 'a'.charCodeAt(0); // 0=a … 7=h
+    const rank = parseInt(square[1]);                        // 1–8
+    // In Black-perspective (flipped):
+    //   file 'a' appears at column 7 (rightmost)  → x = (7 - file) * s + s/2
+    //   rank 8 appears at row 7 (bottommost)       → y = (rank - 1) * s + s/2
+    return {
+        x: (7 - file) * squareSize + squareSize / 2,
+        y: (rank - 1) * squareSize + squareSize / 2
+    };
+}
+
+function drawArrow(from, to, color) {
+    if (!arrowCtx || !arrowCanvas) return;
+    const squareSize = arrowCanvas.width / 8;
+    const fp = squareToXY(from);
+    const tp = squareToXY(to);
+
+    const dx    = tp.x - fp.x;
+    const dy    = tp.y - fp.y;
+    const angle = Math.atan2(dy, dx);
+
+    const headLen   = squareSize * 0.40;
+    const lineWidth = squareSize * 0.13;
+    const startOff  = squareSize * 0.20; // offset from source centre
+
+    const sx = fp.x + Math.cos(angle) * startOff;
+    const sy = fp.y + Math.sin(angle) * startOff;
+
+    // Body end: pull back so arrowhead sits cleanly
+    const bx = tp.x - Math.cos(angle) * headLen * 0.55;
+    const by = tp.y - Math.sin(angle) * headLen * 0.55;
+
+    arrowCtx.save();
+    arrowCtx.globalAlpha = 0.84;
+    arrowCtx.strokeStyle = color;
+    arrowCtx.fillStyle   = color;
+    arrowCtx.lineWidth   = lineWidth;
+    arrowCtx.lineCap     = 'round';
+
+    // Shaft
+    arrowCtx.beginPath();
+    arrowCtx.moveTo(sx, sy);
+    arrowCtx.lineTo(bx, by);
+    arrowCtx.stroke();
+
+    // Arrowhead (filled triangle)
+    const spread = Math.PI / 5.5;
+    arrowCtx.beginPath();
+    arrowCtx.moveTo(tp.x, tp.y);
+    arrowCtx.lineTo(tp.x - headLen * Math.cos(angle - spread),
+                    tp.y - headLen * Math.sin(angle - spread));
+    arrowCtx.lineTo(tp.x - headLen * Math.cos(angle + spread),
+                    tp.y - headLen * Math.sin(angle + spread));
+    arrowCtx.closePath();
+    arrowCtx.fill();
+
+    arrowCtx.restore();
+}
+
+// Resolve a SAN string to { from, to } using chess.js.
+function sanToFromTo(fen, san) {
+    try {
+        const tmp   = new Chess(fen);
+        const moves = tmp.moves({ verbose: true });
+        const m     = moves.find(mv => mv.san === san);
+        return m ? { from: m.from, to: m.to } : null;
+    } catch (e) { return null; }
+}
+
+// ==================== GAME STATE ====================
+
+let game               = new Chess();
+let board              = null;
+let currentMoveNumber  = 1;
+let score              = 0;
+let gameOver           = false;
+let moveHistory        = [];
+let positionHistory    = [];
+let bestMove           = null;   // { san, from, to, source }
+let isThinking         = false;
+let isReviewMode       = false;
+let reviewPosition     = 0;
+let selectedSquare     = null;
+let highScore          = 0;
+let unlockedBadges     = new Set();
+let badgesEarnedThisGame = [];
+let perfectMovesThisGame = 0;
+let currentPlayer      = 'Debora';
+let lastWhiteMoveSan   = null;
+let lastWhiteFenBefore = null;
+let antoshinExd4Played = false;
+
+const TARGET_SCORE   = 150;
+const MAX_MOVES      = 30;
+const WHITE_POOL_SIZES = [20, 16, 8, 4, 2, 2];
+
+// ==================== STORAGE KEYS ====================
+
+function getHighScoreKey() { return `philidorOldIndian_${currentPlayer}_highScore`; }
+function getBadgesKey()    { return `philidorOldIndian_${currentPlayer}_badges`; }
+
+// ==================== WISDOM & BADGE DATA ====================
+
+const WISDOM_QUOTES = [
+    "...d6 is die sleutel wat amper elke deur oopsluit — teen e4 sowel as d4.",
+    "Philidor het gesê pionne is die siel van skaak; d6 is waar daardie siel begin.",
+    "Bou jou pionnestruktuur soos 'n fondament — blok vir blok, nie haastig nie.",
+    "Die Hanham-opstelling is stadig maar staalvas: Nd7, Ngf6, Be7, dan rokade.",
+    "In die Ou-Indiër ontwikkel jou loper na e7 — beskeie, maar betroubaar.",
+    "Moheschunder Bannerjee het hierdie idees in Calcutta gespeel lank voor Europa dit 'hipermodern' genoem het.",
+    "Tartakower het die naam 'Indiër' voorgestel uit respek vir daardie vroeë Indiese spelers.",
+    "Chigorin het die Ou-Indiër ontwikkel as 'n soliede alternatief vir die Koning-Indiër.",
+    "'n Fianchetto na g7 verander jou Ou-Indiër in 'n Koning-Indiër — weet watter pad jy kies.",
+    "Philidor self was aggressief: hy het ...f5 aanbeveel, nie net verdedig nie.",
+    "Morphy se opponente in die Opera-spel het ...Bg4 gespeel — en betaal daarvoor.",
+    "Geduld bou vestings; haas bou net puinhope.",
+    "'n Perd op d7 lyk passief, maar hou al die belangrike velde in die oog.",
+    "Speel nooit ...e5 voor jou ontwikkeling reg is nie — bou eers, val dan aan.",
+    "Die Tsjeggiese Variasie (...c6) is stil, maar dit laat geen skeure in jou fondament nie.",
+    "Janowski het ...Bf5 gespeel om sy loper uit te kry voor die deur toeslaan.",
+    "Elke groot vesting begin met een blok wat reg geplaas is.",
+    "'n Koningin gevang is 'n groot prys — maar 'n goeie fondament wen die meeste speletjies."
+];
+
+const BADGE_DESCRIPTIONS = {
+    'd6-boumeester':          "Behaal 'n perfekte 150/150 punte in een spel. Speel al 30 skuiwe optimaal!",
+    'philidor-verdediger':    "Voltooi 'n spel in die Philidor-tak (1.e4 was Wit se eerste skuif).",
+    'ou-indier-boumeester':   "Voltooi 'n spel in die Ou-Indiër-tak (1.d4 of 1.c4 was Wit se eerste skuif).",
+    'hanham-vesting':         "Bereik die Hanham-opstelling: Nd7, Ngf6 (of Nf6), Be7, en rokade op g8.",
+    'antoshin-blok':          "Speel ...exd4 en bereik dan Be7 plus rokade — die Antoshin-variasie.",
+    'philidors-eie-keuse':    "Speel die gewaagde ...f5-stoot in die Philidor-tak — Philidor se eie aanbeveling!",
+    'opera-spook':            "Speel ...Bg4 in die Philidor-tak — die Hertog van Brunswick se lyn teen Morphy.",
+    'chigorin-hoofline':      "Bereik die Ou-Indiër hooflyn: ...Nbd7 met ...e5 en Wit se pion op e4.",
+    'janowski-blok':          "Speel ...Bf5 in die Ou-Indiër-tak voor die pion die loper toemaak.",
+    'tsjeggiese-fondament':   "Speel ...c6 in die Ou-Indiër-tak — die Tsjeggiese Variasie.",
+    'tartakower-indier':      "Speel ...Bg4 in die Ou-Indiër-tak — die Tartakower-stelsel.",
+    'koning-indier-oorgang':  "Fianchetto met ...g6 + ...Bg7 i.p.v. ...Be7 — oorgang na Koning-Indiër idees.",
+    'koningin-jagter':        "Vang Wit se koningin tydens die spel. 'n Seldsame en groot trofee!",
+    'teoretikus':             "Bereik 15 of meer perfekte skuiwe (5 punte elk) in een spel.",
+    'grootmeester':           "Bereik 21 of meer perfekte skuiwe (5 punte elk) in een spel.",
+    'oorheersend':            "Eindig die spel met 'n evaluasie van -2.0 of beter (in Swart se guns)."
+};
+
+const BADGES = {
+    'd6-boumeester':          { icon: '⛏️',  name: 'd6-Boumeester' },
+    'philidor-verdediger':    { icon: '🛡️',  name: 'Philidor Verdediger' },
+    'ou-indier-boumeester':   { icon: '🧱',  name: 'Ou-Indiër Boumeester' },
+    'hanham-vesting':         { icon: '🏰',  name: 'Hanham Vesting' },
+    'antoshin-blok':          { icon: '🟫',  name: 'Antoshin Blok' },
+    'philidors-eie-keuse':    { icon: '⚔️',  name: "Philidor se Eie Keuse" },
+    'opera-spook':            { icon: '🎭',  name: 'Opera-spook' },
+    'chigorin-hoofline':      { icon: '♞',   name: 'Chigorin Hooflyn' },
+    'janowski-blok':          { icon: '💎',  name: 'Janowski Blok' },
+    'tsjeggiese-fondament':   { icon: '🏗️',  name: 'Tsjeggiese Fondament' },
+    'tartakower-indier':      { icon: '📖',  name: 'Tartakower-Indiër' },
+    'koning-indier-oorgang':  { icon: '👑',  name: 'Koning-Indiër Oorgang' },
+    'koningin-jagter':        { icon: '♛',   name: 'Koningin Jagter' },
+    'teoretikus':             { icon: '📚',  name: 'Teoretikus' },
+    'grootmeester':           { icon: '🏆',  name: 'Grootmeester' },
+    'oorheersend':            { icon: '🔥',  name: 'Oorheersend' }
+};
+
+let currentWisdom = '';
+
+// ==================== BADGE TOOLTIP SYSTEM ====================
+
+function selectRandomWisdom() {
+    currentWisdom = WISDOM_QUOTES[Math.floor(Math.random() * WISDOM_QUOTES.length)];
+    showWisdom();
+}
+
+function showWisdom() {
+    const tooltip = document.getElementById('badge-tooltip');
+    const text    = document.getElementById('tooltip-text');
+    tooltip.classList.remove('badge-hover');
+    text.textContent = currentWisdom;
+}
+
+function showBadgeDescription(badgeId) {
+    const tooltip = document.getElementById('badge-tooltip');
+    const text    = document.getElementById('tooltip-text');
+    const desc    = BADGE_DESCRIPTIONS[badgeId];
+    if (desc) {
+        tooltip.classList.add('badge-hover');
+        text.textContent = desc;
+    }
+}
+
+function setupBadgeHovers() {
+    document.querySelectorAll('.badge-item').forEach(item => {
+        const badgeId = item.dataset.badge;
+        item.addEventListener('mouseenter', () => showBadgeDescription(badgeId));
+        item.addEventListener('mouseleave', () => showWisdom());
+    });
+}
+
+// ==================== BADGE SYSTEM ====================
+
+function resetAllBadgesIfNeeded() {
+    const BADGE_VERSION = 'v2';
+    if (localStorage.getItem('philidorOldIndian_badgeVersion') !== BADGE_VERSION) {
+        ['Debora','Jack','Jacobus','Sammy','Thomas','Martin','Coach Corno','Birdman']
+            .forEach(p => localStorage.removeItem(`philidorOldIndian_${p}_badges`));
+        localStorage.setItem('philidorOldIndian_badgeVersion', BADGE_VERSION);
+    }
+}
+
+function loadBadges() {
+    try { unlockedBadges = new Set(JSON.parse(localStorage.getItem(getBadgesKey()) || '[]')); }
+    catch (e) { unlockedBadges = new Set(); }
+    updateBadgeDisplay();
+}
+
+function saveBadges() {
+    localStorage.setItem(getBadgesKey(), JSON.stringify([...unlockedBadges]));
+}
+
+function unlockBadge(badgeId) {
+    if (unlockedBadges.has(badgeId)) return false;
+    unlockedBadges.add(badgeId);
+    badgesEarnedThisGame.push(badgeId);
+    saveBadges();
+    updateBadgeDisplay(badgeId);
+    showBadgeNotification(badgeId);
+    return true;
+}
+
+function updateBadgeDisplay(justUnlockedId = null) {
+    Object.keys(BADGES).forEach(badgeId => {
+        const el = document.getElementById(`badge-${badgeId}`);
+        if (!el) return;
+        if (unlockedBadges.has(badgeId)) {
+            el.classList.remove('locked');
+            el.classList.add('unlocked');
+            if (badgeId === justUnlockedId) {
+                el.classList.add('just-unlocked');
+                setTimeout(() => el.classList.remove('just-unlocked'), 500);
+            }
+        } else {
+            el.classList.add('locked');
+            el.classList.remove('unlocked');
+        }
+    });
+}
+
+function showBadgeNotification(badgeId) {
+    const badge = BADGES[badgeId];
+    if (!badge) return;
+    document.getElementById('notif-icon').textContent = badge.icon;
+    document.getElementById('notif-text').textContent = badge.name;
+    const notif = document.getElementById('badge-notification');
+    notif.classList.add('show');
+    setTimeout(() => notif.classList.remove('show'), 4000);
+}
+
+// ==================== BADGE CONDITION CHECKS ====================
+
+function getCurrentBranch() {
+    const h = game.history();
+    if (h.includes('e4')) return 'philidor';
+    if (h.includes('d4') || h.includes('c4')) return 'oldindian';
+    return 'unknown';
+}
+
+function checkBadges() {
+    const h      = game.history();
+    const b      = game.board();
+    const branch = getCurrentBranch();
+
+    if (branch === 'philidor') {
+        if (h.includes('f5'))  unlockBadge('philidors-eie-keuse');
+        if (h.includes('Bg4')) unlockBadge('opera-spook');
+    }
+    if (branch === 'oldindian') {
+        if (h.includes('Bg4')) unlockBadge('tartakower-indier');
+        if (h.includes('Bf5')) unlockBadge('janowski-blok');
+        if (h.includes('c6'))  unlockBadge('tsjeggiese-fondament');
+    }
+
+    // Fianchetto → King's Indian transition
+    const g6pawn = b[2]?.[6]?.type === 'p' && b[2][6].color === 'b';
+    const bg7    = b[1]?.[6]?.type === 'b' && b[1][6].color === 'b';
+    if (g6pawn && bg7) unlockBadge('koning-indier-oorgang');
+
+    checkHanhamSetup(b);
+    checkChigorinSetup(b);
+    checkAntoshinSetup(h, b);
+}
+
+function checkHanhamSetup(b) {
+    // Nd7, Nf6, Be7, king castled (g8)
+    if (b[1]?.[3]?.type==='n' && b[1][3].color==='b' &&
+        b[2]?.[5]?.type==='n' && b[2][5].color==='b' &&
+        b[1]?.[4]?.type==='b' && b[1][4].color==='b' &&
+        b[0]?.[6]?.type==='k' && b[0][6].color==='b') {
+        unlockBadge('hanham-vesting');
+    }
+}
+
+function checkChigorinSetup(b) {
+    // Nd7 + Black pawn on e5 + White pawn on e4
+    if (b[1]?.[3]?.type==='n' && b[1][3].color==='b' &&
+        b[3]?.[4]?.type==='p' && b[3][4].color==='b' &&
+        b[4]?.[4]?.type==='p' && b[4][4].color==='w') {
+        unlockBadge('chigorin-hoofline');
+    }
+}
+
+function checkAntoshinSetup(h, b) {
+    if (h.some(m => m === 'exd4' || m === 'exd4+')) antoshinExd4Played = true;
+    if (!antoshinExd4Played) return;
+    if (b[1]?.[4]?.type==='b' && b[1][4].color==='b' &&
+        b[0]?.[6]?.type==='k' && b[0][6].color==='b') {
+        unlockBadge('antoshin-blok');
+    }
+}
+
+async function checkEndGameBadges() {
+    const branch = getCurrentBranch();
+    if (score === TARGET_SCORE) unlockBadge('d6-boumeester');
+    if (branch === 'philidor')  unlockBadge('philidor-verdediger');
+    if (branch === 'oldindian') unlockBadge('ou-indier-boumeester');
+    if (perfectMovesThisGame >= 15) unlockBadge('teoretikus');
+    if (perfectMovesThisGame >= 21) unlockBadge('grootmeester');
+
+    // Dominant: eval <= -200 from White's frame (Black winning by 2 pawns) at game end.
+    // Game ends after Black's last move → White to move → positive cp = White winning.
+    try {
+        const data = await fetchStockfishEval(game.fen());
+        if (data && data.pvs && data.pvs[0]) {
+            const pv = data.pvs[0];
+            // White to move: negate cp to get Black's perspective
+            const cpBlack = pv.cp !== undefined ? -pv.cp : undefined;
+            if ((cpBlack !== undefined && cpBlack >= 200) ||
+                (pv.mate !== undefined && pv.mate < 0)) {
+                unlockBadge('oorheersend');
+            }
+        }
+    } catch (e) { console.error('checkEndGameBadges eval error:', e); }
+}
+
+// ==================== TARGET POSITION TRACKER ====================
+// Target: Black pawn on d6, knight on f6, knight on e5, bishop on e7, king castled (g8)
+
+function updateTargetDisplay() {
+    const b = game.board();
+
+    // Board index reference (row 0 = rank 8, row 7 = rank 1):
+    // d6 = row 2, col 3 | f6 = row 2, col 5 | e5 = row 3, col 4
+    // e7 = row 1, col 4 | g8 = row 0, col 6
+    const targets = {
+        'd6': b[2]?.[3]?.type==='p' && b[2][3].color==='b',
+        'f6': b[2]?.[5]?.type==='n' && b[2][5].color==='b',
+        'e5': b[3]?.[4]?.type==='n' && b[3][4].color==='b',
+        'e7': b[1]?.[4]?.type==='b' && b[1][4].color==='b',
+        'g8': b[0]?.[6]?.type==='k' && b[0][6].color==='b'
+    };
+
+    Object.entries(targets).forEach(([sq, achieved]) => {
+        const el = document.getElementById(`target-${sq}`);
+        if (el) el.classList.toggle('achieved', achieved);
+    });
+}
+
+function resetTargetDisplay() {
+    ['d6','f6','e5','e7','g8'].forEach(sq => {
+        const el = document.getElementById(`target-${sq}`);
+        if (el) el.classList.remove('achieved');
+    });
+}
+
+// ==================== HIGH SCORE ====================
+
+function loadHighScore() {
+    highScore = parseInt(localStorage.getItem(getHighScoreKey()) || '0', 10);
+    updateHighScoreDisplay();
+}
+
+function saveHighScore(s) {
+    if (s > highScore) {
+        highScore = s;
+        localStorage.setItem(getHighScoreKey(), highScore.toString());
+        updateHighScoreDisplay(true);
+        return true;
+    }
+    return false;
+}
+
+function updateHighScoreDisplay(isNew = false) {
+    const el  = document.getElementById('highscore');
+    const box = document.querySelector('.highscore-box');
+    el.textContent = highScore;
+    if (isNew) {
+        box.classList.add('new-record');
+        setTimeout(() => box.classList.remove('new-record'), 2000);
+    }
+}
+
+// ==================== BOARD INIT ====================
+
+function initBoard() {
+    board = Chessboard('board', {
+        draggable: false,
+        position: 'start',
+        orientation: 'black',
+        pieceTheme: 'https://chessboardjs.com/img/chesspieces/wikipedia/{piece}.png'
+    });
+    positionHistory = [game.fen()];
+}
+
+// ==================== WHITE AUTO-MOVE ====================
+
+function showEngineTransitionPopup() {
+    const el = document.getElementById('engine-popup');
+    if (!el) return;
+    el.style.display = 'block';
+    el.style.opacity = '1';
+    setTimeout(() => {
+        el.style.opacity = '0';
+        setTimeout(() => { el.style.display = 'none'; }, 600);
+    }, 3500);
+}
+
+async function makeWhiteMove() {
+    isThinking = true;
+    lastWhiteFenBefore = game.fen();
+
+    // First Stockfish move — announce the transition out of the book
+    if (currentMoveNumber === 7) {
+        showEngineTransitionPopup();
+        showMessage("Wit is buite die boek — nou begin ek dink!", "thinking");
+        await new Promise(r => setTimeout(r, 1200));
+    } else {
+        showMessage("Wit dink...", "thinking");
+    }
+
+    try {
+        if (currentMoveNumber === 1)         await makeWhiteFirstMove();
+        else if (currentMoveNumber <= 6)     await makeWhitePopularityMove();
+        else                                  await makeWhiteStockfishMove();
+    } catch (e) {
+        console.error('makeWhiteMove error:', e);
+        const moves = game.moves();
+        if (moves.length > 0) {
+            const m = game.move(moves[Math.floor(Math.random() * moves.length)]);
+            if (m) lastWhiteMoveSan = m.san;
+        }
+    }
+
+    board.position(game.fen());
+    positionHistory.push(game.fen());
+    updateBranchInfo();
+    updateMoveCounter();
+    updateWhitePoolInfo();
+    updateTargetDisplay();
+
+    await showAutoHints();
+    await fetchBestMove();
+
+    isThinking = false;
+    showMessage("Jou beurt — speel as Swart!", "info");
+}
+
+function makeWhiteFirstMove() {
+    const r = Math.random();
+    const san = r < 0.45 ? 'e4' : r < 0.85 ? 'd4' : r < 0.95 ? 'c4' : 'Nf3';
+    const m = game.move(san);
+    if (m) { lastWhiteMoveSan = m.san; showMessage(`Wit speel ${m.san}`, "info"); }
+}
+
+async function makeWhitePopularityMove() {
+    const poolSize = WHITE_POOL_SIZES[currentMoveNumber - 1] || 2;
+    try {
+        const data = await fetchLichessData(game.fen());
+        if (data && data.moves && data.moves.length > 0) {
+            let sorted = data.moves.sort((a, b) =>
+                (b.white + b.draws + b.black) - (a.white + a.draws + a.black));
+            sorted = applyWhiteBoosts(sorted);
+            const sel = selectWeightedMove(sorted.slice(0, Math.min(poolSize, sorted.length)));
+            const m   = game.move(sel.san);
+            if (m) { lastWhiteMoveSan = m.san; showMessage(`Wit speel ${m.san}`, "info"); return; }
+        }
+    } catch (e) { console.error('makeWhitePopularityMove error:', e); }
+    await makeWhiteStockfishMove();
+}
+
+function applyWhiteBoosts(sorted) {
+    const h = game.history();
+    // After 1.e4 d6: boost 2.d4 to ~60%
+    if (h.length === 2 && h[0] === 'e4' && h[1] === 'd6') return boostMove(sorted, 'd4', 0.60);
+    // After 1.d4 d6: boost 2.c4 to ~55%
+    if (h.length === 2 && h[0] === 'd4' && h[1] === 'd6') return boostMove(sorted, 'c4', 0.55);
+    return sorted;
+}
+
+function boostMove(moves, targetSan, prob) {
+    const idx = moves.findIndex(m => m.san === targetSan);
+    if (idx < 0) return moves;
+    const othersTotal = moves.reduce((s, m, i) => i !== idx ? s + m.white + m.draws + m.black : s, 0);
+    if (othersTotal <= 0) return moves;
+    const boosted = Math.round(othersTotal * prob / (1 - prob));
+    const res = [...moves];
+    res[idx] = { ...res[idx], white: boosted, draws: 0, black: 0 };
+    return res.sort((a, b) => (b.white + b.draws + b.black) - (a.white + a.draws + a.black));
+}
+
+async function makeWhiteStockfishMove() {
+    try {
+        // Depth 5 keeps White's moves quick and age-appropriate for young players
+        const data = await fetchStockfishEval(game.fen(), 5);
+        if (data && data.pvs && data.pvs[0]) {
+            const uci = data.pvs[0].moves.split(' ')[0];
+            const m   = game.move({ from: uci.slice(0,2), to: uci.slice(2,4),
+                                    promotion: uci.length > 4 ? uci[4] : undefined });
+            if (m) { lastWhiteMoveSan = m.san; showMessage(`Wit speel ${m.san}`, "info"); return; }
+        }
+    } catch (e) { console.error('makeWhiteStockfishMove error:', e); }
+    const moves = game.moves();
+    if (moves.length > 0) {
+        const m = game.move(moves[Math.floor(Math.random() * moves.length)]);
+        if (m) lastWhiteMoveSan = m.san;
+    }
+}
+
+// ==================== SCORING (BLACK'S MOVES) ====================
+
+async function scoreMove(fen, move) {
+    try {
+        const uciMove = move.from + move.to + (move.promotion || '');
+        const [lichessData, sfData] = await Promise.all([fetchLichessData(fen), fetchStockfishEval(fen)]);
+
+        let popularMoves = [], totalGames = 0;
+        if (lichessData && lichessData.moves && lichessData.moves.length > 0) {
+            popularMoves = lichessData.moves.sort((a, b) =>
+                (b.white + b.draws + b.black) - (a.white + a.draws + a.black));
+            totalGames = popularMoves.reduce((s, m) => s + m.white + m.draws + m.black, 0);
+        }
+
+        let engineTopMoves = [];
+        if (sfData && sfData.pvs) {
+            for (const pv of sfData.pvs) {
+                const uci = pv.moves.split(' ')[0];
+                const tmp = new Chess(fen);
+                const em  = tmp.move({ from: uci.slice(0,2), to: uci.slice(2,4),
+                                       promotion: uci.length>4 ? uci[4] : undefined });
+                if (em) engineTopMoves.push({ san: em.san, uci });
+            }
+        }
+
+        if (totalGames < 20) return scoreByStockfishOnly(move.san, uciMove, engineTopMoves, sfData, fen);
+
+        const pi = popularMoves.findIndex(m => m.san === move.san);
+        const ei = engineTopMoves.findIndex(m => m.san === move.san);
+
+        if (pi <= 1 || ei <= 1) return 5;
+        if (pi <= 3 || ei <= 3) return 4;
+        if (pi === 4 || ei === 4) return 3;
+        if (pi === 5 || ei === 5) return 2;
+        return 1;
+
+    } catch (e) { console.error('scoreMove error:', e); return 3; }
+}
+
+async function scoreByStockfishOnly(moveSan, uciMove, engineTopMoves, sfData, fen) {
+    if (engineTopMoves.length > 0) {
+        const ei = engineTopMoves.findIndex(m => m.san === moveSan || m.uci === uciMove);
+        if (ei <= 1) return 5;
+        if (ei <= 3) return 4;
+        if (ei === 4) return 3;
+        if (ei === 5) return 2;
+
+        // Centipawn-loss fallback
+        // fen is Black to move; positive cp = good for Black (side to move)
+        if (sfData && sfData.pvs && sfData.pvs[0] && sfData.pvs[0].cp !== undefined) {
+            const bestEval = sfData.pvs[0].cp;
+            try {
+                const gAfter = new Chess(fen);
+                gAfter.move(moveSan);
+                const evalAfter = await fetchStockfishEval(gAfter.fen());
+                if (evalAfter && evalAfter.pvs && evalAfter.pvs[0] && evalAfter.pvs[0].cp !== undefined) {
+                    // After Black's move → White to move; negate to get Black's perspective
+                    const ourEval = -(evalAfter.pvs[0].cp);
+                    const diff    = bestEval - ourEval;
+                    if (diff <= 10)  return 5;
+                    if (diff <= 30)  return 4;
+                    if (diff <= 60)  return 3;
+                    if (diff <= 100) return 2;
+                    return 1;
+                }
+            } catch (e) { /* ignore */ }
+        }
+        return 1;
+    }
+    return 3;
+}
+
+// ==================== PROCESS BLACK'S MOVE ====================
+
+async function processBlackMove(move, fenBeforeBlack) {
+    // Move 1 forced to d6
+    if (currentMoveNumber === 1 && !(move.piece === 'p' && move.to === 'd6')) {
+        game.undo();
+        board.position(game.fen());
+        showMessage("Speel d6 — dit werk teen amper alles!", "error");
+        clearSelection();
+        isThinking = false;
+        return;
+    }
+
+    isThinking = true;
+    clearArrows(); // clear hint arrows once Black plays
+
+    // fenBeforeBlack comes from the caller, captured BEFORE game.move() ran — using
+    // game.fen() here instead would already reflect the position AFTER Black's move
+    // (White to move), which silently broke scoring/analysis against White's replies.
+
+    let moveScore = currentMoveNumber > 1 ? await scoreMove(fenBeforeBlack, move) : 5;
+    if (moveScore === 5) perfectMovesThisGame++;
+    score += moveScore;
+
+    positionHistory.push(game.fen());
+    moveHistory.push({
+        moveNum:        currentMoveNumber,
+        white:          lastWhiteMoveSan,
+        whiteFenBefore: lastWhiteFenBefore,
+        black:          move.san,
+        blackScore:     moveScore,
+        blackFenBefore: fenBeforeBlack
+    });
+
+    if (move.captured === 'q') unlockBadge('koningin-jagter');
+
+    updateDisplay(moveScore);
+    updateHistory();
+    updateTargetDisplay();
+    checkBadges();
+
+    await showMoveAnalysis(fenBeforeBlack, move.san);
+    await updatePositionEval();
+
+    await new Promise(r => setTimeout(r, 2000));
+    clearHighlights();
+
+    if (currentMoveNumber >= MAX_MOVES) { await endGame(); return; }
+
+    currentMoveNumber++;
+    await makeWhiteMove();
+}
+
+// ==================== LICHESS & STOCKFISH FETCH ====================
+
+async function fetchStockfishEval(fen, depth = 12) {
+    const ef = encodeURIComponent(fen);
+
+    // 1. Lichess Cloud Eval (depth not user-controlled — fast cache)
+    try {
+        const r = await fetch(`https://lichess.org/api/cloud-eval?fen=${ef}&multiPv=5`,
+            { headers: window.LICHESS_TOKEN ? { 'Authorization': 'Bearer ' + window.LICHESS_TOKEN } : {} });
+        if (r.ok) {
+            const d = await r.json();
+            if (d && d.pvs && d.pvs.length > 0) return d;
+        }
+    } catch (e) { /* fallthrough */ }
+
+    // 2. Stockfish.online (cap at 15 per API limit)
+    try {
+        const r = await fetch(`https://stockfish.online/api/s/v2.php?fen=${ef}&depth=${Math.min(depth, 15)}`);
+        if (r.ok) {
+            const d = await r.json();
+            if (d && d.success && d.data) {
+                const sm = d.data.match(/score (cp|mate) (-?\d+)/);
+                const pm = d.data.match(/ pv (.+)/);
+                if (sm && pm) return { pvs: [{ moves: pm[1].trim().split(' ')[0],
+                    cp: sm[1]==='cp' ? parseInt(sm[2]) : undefined,
+                    mate: sm[1]==='mate' ? parseInt(sm[2]) : undefined }] };
+            }
+        }
+    } catch (e) { /* fallthrough */ }
+
+    // 3. Local Stockfish.js blob worker
+    if (stockfishEngine) {
+        try {
+            const res = await getLocalStockfishEval(fen, depth, 5);
+            if (res && res.length > 0) return { pvs: res };
+        } catch (e) { /* ignore */ }
+    }
+
+    return null;
+}
+
+async function fetchLichessData(fen) {
+    const ef  = encodeURIComponent(fen);
+    const url = `https://explorer.lichess.ovh/lichess?fen=${ef}&ratings=1600,1800,2000,2200,2500&speeds=rapid,classical`;
+    try {
+        const r = await fetch(url,
+            { headers: window.LICHESS_TOKEN ? { 'Authorization': 'Bearer ' + window.LICHESS_TOKEN } : {} });
+        if (!r.ok) throw new Error('Lichess API ' + r.status);
+        return await r.json();
+    } catch (e) { console.error('fetchLichessData error:', e); return null; }
+}
+
+// ==================== HINT SYSTEM ====================
+
+// Hints and arrows are available only on moves 3–6 (guided theory window)
+function hintsActiveNow() {
+    return currentMoveNumber >= 3 && currentMoveNumber <= 6;
+}
+
+async function fetchBestMove() {
+    if (game.turn() !== 'b') return;
+    if (!hintsActiveNow()) { bestMove = null; return; }
+    const fen = game.fen();
+
+    // Try Lichess popularity first
+    try {
+        const d = await fetchLichessData(fen);
+        if (d && d.moves && d.moves.length > 0) {
+            const sorted = d.moves.sort((a, b) =>
+                (b.white + b.draws + b.black) - (a.white + a.draws + a.black));
+            const ft = sanToFromTo(fen, sorted[0].san);
+            bestMove = { san: sorted[0].san, from: ft?.from, to: ft?.to, source: 'popularity' };
+            return;
+        }
+    } catch (e) { /* fallthrough */ }
+
+    // Engine fallback
+    try {
+        const d = await fetchStockfishEval(fen);
+        if (d && d.pvs && d.pvs[0]) {
+            const uci = d.pvs[0].moves.split(' ')[0];
+            const tmp = new Chess(fen);
+            const m   = tmp.move({ from: uci.slice(0,2), to: uci.slice(2,4),
+                                   promotion: uci.length>4 ? uci[4] : undefined });
+            if (m) { bestMove = { san: m.san, from: m.from, to: m.to, source: 'engine' }; return; }
+        }
+    } catch (e) { /* ignore */ }
+
+    bestMove = null;
+}
+
+function showHint() {
+    if (!bestMove || gameOver || isThinking) return;
+    if (!hintsActiveNow()) {
+        showMessage("Geen wenke hier nie — dink self!", "error");
+        return;
+    }
+
+    clearArrows();
+    if (bestMove.from && bestMove.to) {
+        drawArrow(bestMove.from, bestMove.to, 'rgba(93,207,224,0.92)'); // diamond blue
+    }
+    showMessage(`Wenk: ${bestMove.san}`, "hint");
+    setTimeout(() => clearArrows(), 4000);
+}
+
+// Clear square CSS highlights (tap-to-move UI — NOT arrows)
+function clearHighlights() {
+    $('#board .square-55d63').removeClass('highlight-selected highlight-legal-move');
+}
+
+// ==================== AUTO-HINTS (board arrows for Black's best moves) ====================
+
+async function showAutoHints() {
+    if (gameOver || game.turn() !== 'b') return;
+    if (!hintsActiveNow()) return; // auto-arrows only on moves 3–6 and 27–28
+    clearArrows();
+
+    const fen = game.fen(); // capture synchronously
+
+    let popMove    = null; // { from, to }
+    let engineMove = null;
+
+    try {
+        const d = await fetchLichessData(fen);
+        if (d && d.moves && d.moves.length > 0) {
+            const top = d.moves.sort((a, b) =>
+                (b.white + b.draws + b.black) - (a.white + a.draws + a.black))[0];
+            popMove = sanToFromTo(fen, top.san);
+        }
+    } catch (e) { /* ignore */ }
+
+    try {
+        const d = await fetchStockfishEval(fen);
+        if (d && d.pvs && d.pvs[0]) {
+            const uci = d.pvs[0].moves.split(' ')[0];
+            const tmp = new Chess(fen);
+            const m   = tmp.move({ from: uci.slice(0,2), to: uci.slice(2,4),
+                                   promotion: uci.length>4 ? uci[4] : undefined });
+            if (m) engineMove = { from: m.from, to: m.to };
+        }
+    } catch (e) { /* ignore */ }
+
+    if (popMove && engineMove && popMove.from === engineMove.from && popMove.to === engineMove.to) {
+        // Both agree → green arrow
+        drawArrow(popMove.from, popMove.to, 'rgba(85, 204, 51, 0.90)');
+    } else {
+        // Diamond blue for popularity, red for engine
+        if (popMove)    drawArrow(popMove.from,    popMove.to,    'rgba(93,207,224,0.88)');
+        if (engineMove) drawArrow(engineMove.from, engineMove.to, 'rgba(193,59,42,0.88)');
+    }
+}
+
+// ==================== TAP-TO-MOVE (BLACK PIECES) ====================
+
+function clearSelection() {
+    selectedSquare = null;
+    $('#board .square-55d63').removeClass('highlight-selected highlight-legal-move');
+}
+
+function showLegalMoves(square) {
+    game.moves({ square, verbose: true }).forEach(m =>
+        $(`#board .square-${m.to}`).addClass('highlight-legal-move'));
+}
+
+function attemptTapMove(from, to) {
+    const piece = game.get(from);
+    // Black pawns promote on rank 1 (from their perspective they move "down" to rank 1)
+    const isPromotion = piece && piece.type === 'p' && to[1] === '1';
+    const fenBeforeMove = game.fen(); // capture BEFORE game.move() mutates state
+    const move = game.move({ from, to, promotion: isPromotion ? 'q' : undefined });
+    clearSelection();
+    if (move === null) return;
+    board.position(game.fen());
+    processBlackMove(move, fenBeforeMove);
+}
+
+function setupTapToMove() {
+    $('#board').on('click', '.square-55d63', function() {
+        if (gameOver || isThinking || isReviewMode || game.turn() !== 'b') return;
+
+        let clickedSquare = null;
+        for (const cls of $(this).attr('class').split(/\s+/)) {
+            const m = cls.match(/^square-([a-h][1-8])$/);
+            if (m) { clickedSquare = m[1]; break; }
+        }
+        if (!clickedSquare) return;
+
+        const clickedPiece = game.get(clickedSquare);
+
+        if (selectedSquare) {
+            if (clickedSquare === selectedSquare) { clearSelection(); return; }
+            if (clickedPiece && clickedPiece.color === 'b') {
+                clearSelection();
+                selectedSquare = clickedSquare;
+                $(`#board .square-${clickedSquare}`).addClass('highlight-selected');
+                showLegalMoves(clickedSquare);
+                return;
+            }
+            attemptTapMove(selectedSquare, clickedSquare);
+            return;
+        }
+
+        if (clickedPiece && clickedPiece.color === 'b') {
+            selectedSquare = clickedSquare;
+            $(`#board .square-${clickedSquare}`).addClass('highlight-selected');
+            showLegalMoves(clickedSquare);
+        }
+    });
+}
+
+// ==================== MOVE ANALYSIS PANEL ====================
+
+async function showMoveAnalysis(fenBeforeMove, playedMove) {
+    const sfDiv     = document.getElementById('stockfish-moves');
+    const lichDiv   = document.getElementById('lichess-moves');
+    const yourSec   = document.getElementById('your-move-section');
+    const yourInfo  = document.getElementById('your-move-info');
+
+    sfDiv.innerHTML   = '<p class="analysis-placeholder">Laai...</p>';
+    lichDiv.innerHTML = '<p class="analysis-placeholder">Laai...</p>';
+
+    let sfMoves = [], lichMoves = [];
+
+    // fenBeforeMove is Black to move; positive cp = good for Black
+    try {
+        const d = await fetchStockfishEval(fenBeforeMove);
+        if (d && d.pvs) {
+            for (const pv of d.pvs.slice(0, 2)) {
+                const uci = pv.moves.split(' ')[0];
+                const tmp = new Chess(fenBeforeMove);
+                const m   = tmp.move({ from: uci.slice(0,2), to: uci.slice(2,4),
+                                       promotion: uci.length>4 ? uci[4] : undefined });
+                if (m) {
+                    const eval_ = pv.mate !== undefined
+                        ? (pv.mate > 0 ? `#${pv.mate}` : `#${pv.mate}`)
+                        : `${(pv.cp||0)>=0 ? '+' : ''}${((pv.cp||0)/100).toFixed(1)}`;
+                    sfMoves.push({ san: m.san, eval: eval_ });
+                }
+            }
+        }
+    } catch (e) { /* ignore */ }
+
+    try {
+        const d = await fetchLichessData(fenBeforeMove);
+        if (d && d.moves && d.moves.length > 0) {
+            const sorted = d.moves.sort((a, b) =>
+                (b.white + b.draws + b.black) - (a.white + a.draws + a.black));
+            for (const m of sorted.slice(0, 2)) {
+                const games   = m.white + m.draws + m.black;
+                const winRate = games > 0 ? ((m.black / games) * 100).toFixed(0) : 0;
+                lichMoves.push({ san: m.san, games, winRate });
+            }
+        }
+    } catch (e) { /* ignore */ }
+
+    sfDiv.innerHTML = sfMoves.length > 0
+        ? sfMoves.map((m, i) => `
+            <div class="analysis-move-item rank-${i+1}">
+                <span class="analysis-move-san">${m.san}</span>
+                <span class="analysis-move-info">${m.eval}</span>
+            </div>`).join('')
+        : `<p class="analysis-placeholder">${!stockfishEngine ? 'Enjin laai...' : 'Geen data'}</p>`;
+
+    lichDiv.innerHTML = lichMoves.length > 0
+        ? lichMoves.map((m, i) => `
+            <div class="analysis-move-item rank-${i+1}">
+                <span class="analysis-move-san">${m.san}</span>
+                <span class="analysis-move-info">${m.games.toLocaleString()} spele (${m.winRate}% sw.)</span>
+            </div>`).join('')
+        : '<p class="analysis-placeholder">Geen data</p>';
+
+    if (playedMove) {
+        yourSec.style.display = 'block';
+        const inSF   = sfMoves.some(m => m.san === playedMove);
+        const inLich = lichMoves.some(m => m.san === playedMove);
+        let cls, text;
+        if (inSF && inLich) {
+            cls = 'your-move-good'; text = `<strong>${playedMove}</strong> — Uitstekend! Top in beide.`;
+        } else if (inSF) {
+            cls = 'your-move-good'; text = `<strong>${playedMove}</strong> — Top enjin skuif!`;
+        } else if (inLich) {
+            cls = 'your-move-ok'; text = `<strong>${playedMove}</strong> — Gewilde keuse.`;
+        } else if (!sfMoves.length && !lichMoves.length) {
+            cls = 'your-move-ok'; text = `<strong>${playedMove}</strong> — Geen vergelykingsdata.`;
+        } else {
+            cls = 'your-move-weak'; text = `<strong>${playedMove}</strong> — Nie in top 2 nie.`;
+        }
+        yourInfo.innerHTML = `<span class="${cls}">${text}</span>`;
+    }
+}
+
+// ==================== EVAL DISPLAY ====================
+
+async function updatePositionEval() {
+    const evalEl     = document.getElementById('position-eval');
+    const sideToMove = game.turn(); // capture synchronously
+    evalEl.textContent = '...';
+    evalEl.className   = 'stat-value';
+
+    try {
+        const d = await fetchStockfishEval(game.fen());
+        if (d && d.pvs && d.pvs[0]) {
+            const pv = d.pvs[0];
+            // Convert to Black's perspective (positive = good for student)
+            let evalText, evalClass;
+            if (pv.mate !== undefined) {
+                // Black to move: positive mate = Black delivers mate
+                // White to move: positive mate = White delivers mate (bad for Black)
+                const blackMate = sideToMove === 'b' ? pv.mate : -pv.mate;
+                evalText  = blackMate > 0 ? `#${blackMate}` : `#${blackMate}`;
+                evalClass = blackMate > 0 ? 'eval-winning' : 'eval-losing';
+            } else if (pv.cp !== undefined) {
+                const cpBlack = sideToMove === 'b' ? pv.cp : -pv.cp;
+                const pawns   = cpBlack / 100;
+                evalText  = pawns >= 0 ? `+${pawns.toFixed(1)}` : `${pawns.toFixed(1)}`;
+                evalClass = pawns >= 0.5 ? 'eval-winning' : pawns <= -0.5 ? 'eval-losing' : 'eval-equal';
+            } else {
+                evalText = '0.0'; evalClass = 'eval-equal';
+            }
+            evalEl.textContent = evalText;
+            evalEl.className   = `stat-value ${evalClass}`;
+        } else { evalEl.textContent = '?'; }
+    } catch (e) { evalEl.textContent = '?'; }
+}
+
+// ==================== DISPLAY UPDATES ====================
+
+function updateDisplay(lastScore) {
+    document.getElementById('score').textContent = `${score}/${TARGET_SCORE}`;
+    document.getElementById('progress-fill').style.width =
+        `${Math.min((score / TARGET_SCORE) * 100, 100)}%`;
+
+    const scoreDisplay = document.getElementById('move-score-display');
+    const scoreText    = document.getElementById('last-move-score');
+    if (lastScore !== undefined) {
+        scoreDisplay.style.display = 'block';
+        scoreDisplay.className     = `move-score score-${lastScore}`;
+        const labels = { 5:'Uitstekend! (+5)', 4:'Goeie skuif! (+4)',
+                         3:'Redelik (+3)', 2:'Swakker (+2)', 1:'Probeer beter (+1)' };
+        scoreText.textContent = labels[lastScore] || `+${lastScore}`;
+    }
+}
+
+function updateMoveCounter() {
+    document.getElementById('move-counter').textContent = `${currentMoveNumber}/${MAX_MOVES}`;
+}
+
+function updateWhitePoolInfo() {
+    const el = document.getElementById('white-pool');
+    if (currentMoveNumber >= 7) {
+        el.textContent = 'Beste enjin skuif';
+        el.style.color = '#9B59B6';
+    } else {
+        const size = WHITE_POOL_SIZES[currentMoveNumber - 1] || 2;
+        el.textContent = `Top ${size} skuiwe`;
+        el.style.color = '#5DCFE0';
+    }
+}
+
+function updateBranchInfo() {
+    const branch = getCurrentBranch();
+    const row    = document.getElementById('branch-row');
+    const label  = document.getElementById('branch-label');
+    if (branch === 'unknown') { row.style.display = 'none'; return; }
+    row.style.display = 'flex';
+    label.textContent = branch === 'philidor'
+        ? '🛡️ Philidor-verdediging'
+        : '🧱 Ou-Indiër-verdediging';
+}
+
+function updateHistory() {
+    const div = document.getElementById('history-list');
+    div.innerHTML = '';
+    moveHistory.forEach(e => {
+        const item = document.createElement('div');
+        item.className = 'history-item';
+        let html = `<span class="move-num">${e.moveNum}.</span>`;
+        if (e.white) html += `<span class="white-move">${e.white}</span>`;
+        if (e.black) {
+            html += `<span class="black-move">${e.black}</span>`;
+            html += `<span class="score-badge s${e.blackScore}">+${e.blackScore}</span>`;
+        }
+        item.innerHTML = html;
+        div.appendChild(item);
+    });
+    div.scrollTop = div.scrollHeight;
+}
+
+function showMessage(text, type) {
+    const el = document.getElementById('game-message');
+    el.textContent = text;
+    switch (type) {
+        case 'error':    el.style.color = '#C13B2A'; break;
+        case 'thinking': el.style.color = '#5DCFE0'; break;
+        case 'hint':     el.style.color = '#9B59B6'; break;
+        default:         el.style.color = '#5D9C43';
+    }
+}
+
+function selectWeightedMove(moves) {
+    const total = moves.reduce((s, m) => s + m.white + m.draws + m.black, 0);
+    let rand = Math.random() * total;
+    for (const m of moves) { rand -= (m.white + m.draws + m.black); if (rand <= 0) return m; }
+    return moves[0];
+}
+
+// ==================== GAME END ====================
+
+function getEndMessage(pct) {
+    if (pct >= 97) return "Perfek! Jy het die d6-verdedigings bemeester!";
+    if (pct >= 90) return "Uitstekend! Jy ken die verdedigings baie goed.";
+    if (pct >= 80) return "Baie goed gespeel! Jy vorder mooi.";
+    if (pct >= 70) return "Goeie werk! Bly oefen vir die fynere punte.";
+    if (pct >= 60) return "Nie sleg nie! Elke spel leer jou meer.";
+    if (pct >= 50) return "Mooi probeer! Die d6-stelsel verg oefening.";
+    if (pct >= 40) return "Hou aan oefen — jy verbeter elke keer!";
+    return "Moenie moed verloor nie — probeer weer!";
+}
+
+async function endGame() {
+    gameOver = true;
+    isThinking = false;
+    clearHighlights();
+    clearArrows();
+    showMessage("Spel voltooi! Besigtig jou finale posisie...", "info");
+    setTimeout(async () => { await showEndGameModal(); }, 5000);
+}
+
+async function showEndGameModal() {
+    await checkEndGameBadges();
+    const isNew = saveHighScore(score);
+
+    document.getElementById('modal-score').textContent   = `${score}/${TARGET_SCORE} punte`;
+    document.getElementById('modal-rating').textContent  = getEndMessage((score / TARGET_SCORE) * 100);
+
+    const hsMsgEl = document.getElementById('modal-highscore-msg');
+    if (isNew) { hsMsgEl.textContent = "NUWE HOOGTEPUNT!"; hsMsgEl.style.display = 'block'; }
+    else       { hsMsgEl.style.display = 'none'; }
+
+    const earned = document.getElementById('modal-badges-earned');
+    const list   = document.getElementById('badges-earned-list');
+    if (badgesEarnedThisGame.length > 0) {
+        earned.style.display = 'block';
+        list.innerHTML = badgesEarnedThisGame.map(id => `<span class="earned-badge">${BADGES[id].icon}</span>`).join('');
+    } else { earned.style.display = 'none'; }
+
+    document.getElementById('game-over-modal').classList.add('show');
+    showMessage("Spel voltooi! Kyk na jou telling.", "info");
+}
+
+// ==================== NEW GAME ====================
+
+function newGame() {
+    game = new Chess();
+    board.position('start');
+    board.orientation('black');
+
+    currentMoveNumber    = 1;
+    score                = 0;
+    gameOver             = false;
+    moveHistory          = [];
+    positionHistory      = [game.fen()];
+    bestMove             = null;
+    isThinking           = false;
+    isReviewMode         = false;
+    reviewPosition       = 0;
+    badgesEarnedThisGame = [];
+    perfectMovesThisGame = 0;
+    lastWhiteMoveSan     = null;
+    lastWhiteFenBefore   = null;
+    antoshinExd4Played   = false;
+
+    clearSelection();
+    clearArrows();
+    resetTargetDisplay();
+
+    document.getElementById('score').textContent            = '0/150';
+    document.getElementById('move-counter').textContent     = '1/30';
+    document.getElementById('progress-fill').style.width   = '0%';
+    document.getElementById('history-list').innerHTML       = '';
+    document.getElementById('move-score-display').style.display = 'none';
+    document.getElementById('branch-row').style.display    = 'none';
+    document.getElementById('white-pool').textContent       = 'Top 20 skuiwe';
+    document.getElementById('white-pool').style.color      = '#5DCFE0';
+    document.getElementById('game-over-modal').classList.remove('show');
+    document.getElementById('review-panel').style.display  = 'none';
+    document.getElementById('analysis-panel').style.display = 'flex';
+    document.getElementById('stockfish-moves').innerHTML   = '<p class="analysis-placeholder">Wag vir jou skuif...</p>';
+    document.getElementById('lichess-moves').innerHTML     = '<p class="analysis-placeholder">Wag vir jou skuif...</p>';
+    document.getElementById('your-move-section').style.display = 'none';
+
+    const evalEl = document.getElementById('position-eval');
+    evalEl.textContent = '0.0';
+    evalEl.className   = 'stat-value eval-equal';
+
+    selectRandomWisdom();
+    showMessage("Wag — Wit speel eerste...", "info");
+    makeWhiteMove();
+}
+
+// ==================== REVIEW MODE ====================
+
+function enterReviewMode() {
+    if (!gameOver) return;
+    isReviewMode   = true;
+    reviewPosition = positionHistory.length - 1;
+    clearArrows();
+    document.getElementById('game-over-modal').classList.remove('show');
+    document.getElementById('analysis-panel').style.display = 'none';
+    document.getElementById('review-panel').style.display   = 'flex';
+    updateReviewDisplay();
+}
+
+function reviewBack()    { if (reviewPosition > 0) { reviewPosition--; updateReviewDisplay(); } }
+function reviewForward() { if (reviewPosition < positionHistory.length - 1) { reviewPosition++; updateReviewDisplay(); } }
+
+function exitReviewMode() {
+    isReviewMode = false;
+    document.getElementById('review-panel').style.display   = 'none';
+    document.getElementById('analysis-panel').style.display = 'flex';
+    board.position(positionHistory[positionHistory.length - 1]);
+    showMessage("Spel voltooi! Begin 'n nuwe spel om weer te speel.", "info");
+}
+
+async function updateReviewDisplay() {
+    const fen = positionHistory[reviewPosition];
+    board.position(fen);
+    updateReviewPositionLabel();
+    document.getElementById('review-back-btn').disabled    = (reviewPosition === 0);
+    document.getElementById('review-forward-btn').disabled = (reviewPosition === positionHistory.length - 1);
+    await showBestMovesForReview(fen);
+}
+
+function updateReviewPositionLabel() {
+    const posLabel    = document.getElementById('review-position');
+    if (reviewPosition === 0) { posLabel.textContent = 'Beginposisie'; return; }
+    const isAfterWhite = (reviewPosition % 2 === 1);
+    const roundNum     = Math.ceil(reviewPosition / 2);
+    const entry        = moveHistory[roundNum - 1];
+    posLabel.textContent = isAfterWhite
+        ? `Na ${roundNum}. ${entry?.white || '...'}`
+        : `Na ${roundNum}... ${entry?.black || '...'}`;
+}
+
+async function showBestMovesForReview(fen) {
+    const listEl = document.getElementById('best-moves-list');
+    listEl.innerHTML = '<div class="loading"></div> Laai...';
+
+    let playedMove = null, playerColor = null;
+    if (reviewPosition > 0) {
+        const isAfterWhite = (reviewPosition % 2 === 1);
+        const roundNum     = Math.ceil(reviewPosition / 2);
+        const entry        = moveHistory[roundNum - 1];
+        if (entry) {
+            if (!isAfterWhite) { playedMove = entry.black;  playerColor = 'black'; }
+            else               { playedMove = entry.white;  playerColor = 'white'; }
+        }
+    }
+
+    try {
+        const d = await fetchLichessData(fen);
+        if (!d || !d.moves || d.moves.length === 0) {
+            listEl.innerHTML = '<p style="color:#6A8A6A;">Geen data vir hierdie posisie nie.</p>';
+            return;
+        }
+        const sorted   = d.moves.sort((a, b) =>
+            (b.white + b.draws + b.black) - (a.white + a.draws + a.black));
+        const topMoves = sorted.slice(0, 2);
+
+        let html = '';
+        topMoves.forEach((m, i) => {
+            const games   = m.white + m.draws + m.black;
+            const winRate = games > 0 ? ((m.black / games) * 100).toFixed(0) : 0;
+            const isYours = (playedMove === m.san && playerColor === 'black');
+            html += `
+                <div class="best-move-item rank-${i+1}">
+                    <div>
+                        <span class="best-move-san">${m.san}</span>
+                        ${isYours ? '<span class="your-move-indicator">Jou skuif</span>' : ''}
+                    </div>
+                    <div class="best-move-stats">${games.toLocaleString()} spele (${winRate}% sw. wen)</div>
+                </div>`;
+        });
+
+        if (playedMove && playerColor === 'black' && !topMoves.find(m => m.san === playedMove)) {
+            const yd  = sorted.find(m => m.san === playedMove);
+            if (yd) {
+                const games   = yd.white + yd.draws + yd.black;
+                const winRate = games > 0 ? ((yd.black / games) * 100).toFixed(0) : 0;
+                const rank    = sorted.findIndex(m => m.san === playedMove) + 1;
+                html += `
+                    <div class="best-move-item" style="border-left:3px solid #5D9C43;margin-top:7px;">
+                        <div>
+                            <span class="best-move-san">${playedMove}</span>
+                            <span class="your-move-indicator">Jou skuif (#${rank})</span>
+                        </div>
+                        <div class="best-move-stats">${games.toLocaleString()} spele (${winRate}% sw. wen)</div>
+                    </div>`;
+            }
+        }
+        listEl.innerHTML = html;
+    } catch (e) {
+        listEl.innerHTML = '<p style="color:#C13B2A;">Fout met laai van data.</p>';
+    }
+}
+
+// ==================== PLAYER CHANGE ====================
+
+function onPlayerChange() {
+    currentPlayer = document.getElementById('player-select').value;
+    loadHighScore();
+    loadBadges();
+    newGame();
+}
+
+// ==================== INITIALIZATION ====================
+
+$(document).ready(function() {
+    initStockfish();
+    currentPlayer = document.getElementById('player-select').value;
+    resetAllBadgesIfNeeded();
+    initBoard();
+    setupTapToMove();
+    loadHighScore();
+    loadBadges();
+    selectRandomWisdom();
+    setupBadgeHovers();
+
+    // Arrow canvas must be sized after board renders
+    setTimeout(() => {
+        initArrowCanvas();
+        resizeArrowCanvas();
+    }, 200);
+
+    document.getElementById('new-game-btn').addEventListener('click', newGame);
+    document.getElementById('hint-btn').addEventListener('click', showHint);
+    document.getElementById('modal-new-game').addEventListener('click', newGame);
+    document.getElementById('modal-review').addEventListener('click', enterReviewMode);
+    document.getElementById('review-back-btn').addEventListener('click', reviewBack);
+    document.getElementById('review-forward-btn').addEventListener('click', reviewForward);
+    document.getElementById('exit-review-btn').addEventListener('click', exitReviewMode);
+    document.getElementById('player-select').addEventListener('change', onPlayerChange);
+
+    makeWhiteMove();
+});
+
+$(window).resize(function() {
+    board.resize();
+    resizeArrowCanvas();
+});
