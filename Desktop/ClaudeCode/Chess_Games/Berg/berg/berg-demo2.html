@@ -57,6 +57,7 @@
     <button id="btnBly">Kapok bly (vreugde)</button>
     <button id="btnOreVlat">Kapok ore-plat</button>
     <label><input id="verminderdeBewegingKnop" type="checkbox"> prefers-reduced-motion simuleer</label>
+    <label><input id="stilKnop" type="checkbox"> stil (demp klank)</label>
     <span id="status"></span>
   </div>
   <div id="bergWrap">
@@ -89,6 +90,7 @@
   </div>
 
   <script src="berg.js"></script>
+  <script src="../kruin/klank.js"></script>
   <script>
     const Berg = window.BergEngine;
     Berg.init(document.getElementById('bergSvg'), { beginRung: 1 })
@@ -96,25 +98,69 @@
 
     function statusUit(tekst) { document.getElementById('status').textContent = tekst; }
 
+    // Kaart 7-vervolg (2026-08-21, gebruiker-versoek): klank hier ook
+    // toets-baar maak, sodat 'n klim/daal-knoppie-klik presies dieselfde
+    // klanke gee as 'n regte speler sou hoor -- baie vinniger as om die
+    // hele spel deur te speel om elke sport se klank te hoor. Hierdie
+    // logika (sone-grense, sone-geur-sport-keuses) is 'n opsetlike DUN
+    // duplikaat van kruin/app.js se RUNG_SONE_KLANK-tabel/soneVanSport-
+    // logika -- hierdie bladsy laai nie app.js/posisiebank.js nie (dit het
+    // sy eie, ligter toets-opstelling). Hou in sinc met app.js as die
+    // sone-geur-sport-keuses ooit daar verander.
+    function soneVanSport(n) {
+      return n <= 6 ? 'moeras' : n <= 14 ? 'woud' : n <= 22 ? 'rotse' : 'sneeu';
+    }
+    // 2026-08-21: rivier net op sporte 1-3 (gebruiker-versoek: "die moeras-
+    // rivier speel oral" was 'n regte fout -- sien CLAUDE.md).
+    const RIVIER_LAASTE_SPORT = 3;
+    const RUNG_SONE_KLANK = {
+      4: 'speelMoerasKlank', 5: 'speelMoerasKlank',
+      7: 'speelWoudKlank', 10: 'speelWoudKlank', 13: 'speelWoudKlank',
+      15: 'speelRotseKlank', 17: 'speelRotseKlank', 20: 'speelRotseKlank',
+      23: 'speelSneeuEenKlank', 26: 'speelSneeuTweeKlank', 29: 'speelSneeuDrieKlank',
+    };
+    function speelLandingsKlanke(rung) {
+      if (rung <= RIVIER_LAASTE_SPORT) Klank.speelRivierAmbient();
+      if (RUNG_SONE_KLANK[rung]) Klank[RUNG_SONE_KLANK[rung]]();
+    }
+
     document.getElementById('btnAfkoms').addEventListener('click', () => {
       const rung = parseInt(document.getElementById('sportInvoer').value, 10);
       statusUit('Afkoms speel...');
-      Berg.openingsAfkoms(rung).then(() => statusUit('Afkoms klaar, by sport ' + rung));
+      Klank.speelAfkomsKlank(); // die windgeluid (nou 'n 1s-sneeu-snit)
+      Berg.openingsAfkoms(rung).then(() => {
+        statusUit('Afkoms klaar, by sport ' + rung);
+        speelLandingsKlanke(rung);
+      });
     });
     document.getElementById('btnKlim').addEventListener('click', () => {
       const rung = parseInt(document.getElementById('sportInvoer').value, 10);
+      const naRung = rung + 1;
       statusUit('Klim...');
-      Berg.klim(rung, rung + 1).then(() => {
-        document.getElementById('sportInvoer').value = rung + 1;
-        statusUit('Geklim na sport ' + (rung + 1));
+      Klank.stopRivierAmbient(); // presies soos verwerkUitkomste() in app.js
+      // Kaart 7-vervolg: hierdie eenvoudige demo ken nie die wenk/skoon-
+      // herhaling-toestandsmasjien nie (geen posisiebank/hint-opsporing
+      // hier nie) -- dus altyd die gewone opgaan/nuwe-bioom-blaf, nooit die
+      // vlak-klaar-fanfares of die mat-klokkie-veiligheidsnet nie. Toets
+      // daardie drie in die regte spel (kruin.html).
+      if (soneVanSport(naRung) !== soneVanSport(rung)) Klank.speelNuweBioomBlaf();
+      else Klank.speelOpgaanBlaf();
+      Berg.klim(rung, naRung).then(() => {
+        document.getElementById('sportInvoer').value = naRung;
+        statusUit('Geklim na sport ' + naRung);
+        speelLandingsKlanke(naRung);
       });
     });
     document.getElementById('btnDaal').addEventListener('click', () => {
       const rung = parseInt(document.getElementById('sportInvoer').value, 10);
+      const naRung = Math.max(1, rung - 1);
       statusUit('Daal...');
-      Berg.daal(rung, Math.max(1, rung - 1)).then(() => {
-        document.getElementById('sportInvoer').value = Math.max(1, rung - 1);
-        statusUit('Gedaal na sport ' + Math.max(1, rung - 1));
+      Klank.stopRivierAmbient();
+      Klank.speelAfgaanBlaf();
+      Berg.daal(rung, naRung).then(() => {
+        document.getElementById('sportInvoer').value = naRung;
+        statusUit('Gedaal na sport ' + naRung);
+        speelLandingsKlanke(naRung);
       });
     });
     document.getElementById('btnBewoner').addEventListener('click', () => {
@@ -128,6 +174,9 @@
     document.getElementById('verminderdeBewegingKnop').addEventListener('change', (ev) => {
       Berg._forseerVerminderdeBeweging(ev.target.checked);
     });
+    const stilKnop = document.getElementById('stilKnop');
+    stilKnop.checked = Klank.isStil();
+    stilKnop.addEventListener('change', () => Klank.stelStil(stilKnop.checked));
   </script>
 </body>
 </html>

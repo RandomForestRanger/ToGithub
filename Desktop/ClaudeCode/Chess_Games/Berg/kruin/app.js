@@ -395,7 +395,15 @@
   // enige nuwe bewoner-onthulling.
   function verwerkUitkomste(geslaag, kategoriePad) {
     stopFadeTimer(); clearCageOverlay(); clearHintGlow();
-    if (geslaag) { BergEngine.kapokTolVanVreugde(); Klank.speelMatKlok(); }
+    // Kaart 7-vervolg (2026-08-20, herroep): die rivier-agtergrondlus stop nou
+    // op ENIGE uitkoms (sukses óf mislukking) -- oorspronklik het dit op 'n
+    // mislukking bly speel, maar die gebruiker het opgemerk dit "volg jou 'n
+    // paar sporte af" op dié manier. Dit begin skoon van voor af weer in
+    // beginPoging() (ná die afgaan-blaf, sodra die nuwe/laer sport begin).
+    // Die gesintetiseerde mat-klokkie is verwyder (2026-08-20) -- elke
+    // suksespad speel klaar 'n regte opname (blaf of vlak-klaar-fanfare).
+    Klank.stopRivierAmbient();
+    if (geslaag) BergEngine.kapokTolVanVreugde();
     else BergEngine.kapokOreVlat();
 
     const gaanVoort = () => voltooiUitkomste(geslaag, kategoriePad);
@@ -408,6 +416,10 @@
 
   function voltooiUitkomste(geslaag, kategoriePad) {
     const vanRung = huidigeSport.rung;
+    // Kaart 7-vervolg: vasgevang VOOR finaliseerPoging (wat vorderRung roep,
+    // wat state.pendingCleanAscents muteer) -- was hierdie sport reeds op
+    // "wag vir 'n skoon herhaling ná 'n wenk" toe hierdie poging begin het?
+    const wasPendingCleanAscent = (state.pendingCleanAscents[String(vanRung)] || 0) > 0;
     const residenteVoor = state.residents.length;
     const boodskap = jorkaKiesVirKategorie(kategoriePad);
     finaliseerPoging(geslaag, boodskap);
@@ -415,7 +427,36 @@
 
     let kameraP = Promise.resolve();
     if (naRung !== vanRung) {
+      if (geslaag) {
+        // Kaart 7-vervolg: die kwalifiserende skoon herhaling ná 'n wenk (die
+        // rede vir die klim ditkeer) kry die tweede "vlak-klaar"-fanfare
+        // i.p.v. Kapok se blaf (gebruiker-versoek: "dan speel ons nie Kapok
+        // se blaf nie, maar die trompet-fanfare"). Andersins die gewone
+        // opgaan-blaf, of 'n eie blaf as die klim 'n nuwe sone binnegaan.
+        if (wasPendingCleanAscent && !hintActiveThisAttempt) {
+          Klank.speelVlakKlaarTwee();
+        } else {
+          const naZone = (POSITION_BANK.rungs.find((r) => r.rung === naRung) || {}).zone;
+          if (naZone && naZone !== huidigeSport.zone) Klank.speelNuweBioomBlaf();
+          else Klank.speelOpgaanBlaf();
+        }
+      } else {
+        Klank.speelAfgaanBlaf();
+      }
       kameraP = geslaag ? BergEngine.klim(vanRung, naRung) : BergEngine.daal(vanRung, naRung);
+    } else if (geslaag && hintActiveThisAttempt) {
+      // Kaart 7-vervolg: 'n wenk-geslaagde poging vorder nie die sport nie
+      // (vorderRung hou dit op dieselfde sport totdat 'n skoon herhaling
+      // volg) -- geen klim-animasie, geen Kapok-blaf, net die eerste
+      // "vlak-klaar"-fanfare om die (voorwaardelike) sukses te merk.
+      Klank.speelVlakKlaarEen();
+    } else if (geslaag) {
+      // Kaart 7-vervolg (2026-08-20): oorblywende leemte -- geslaag, geen
+      // klim (aan die plafon: sport 30, geen hoër sport om na te klim nie)
+      // EN geen wenk betrokke nie, dus sou geen ander klank gespeel het
+      // nie. Bring die (gesintetiseerde) mat-klokkie terug net vir hierdie
+      // geval, op die gebruiker se versoek.
+      Klank.speelMatKlok();
     }
     kameraP.then(() => {
       if (state.residents.length > residenteVoor) {
@@ -439,6 +480,32 @@
   const LAASTE_SPORT_VAN_SONE = { moeras: 6, woud: 14, rotse: 22, sneeu: 30 };
   // Kaart 5 (§5.4): kunsie wat 'n skoon-sone-styging ontsluit.
   const ZONE_KUNSIE = { moeras: 'modder-skud', woud: 'stok-gaan-haal', rotse: 'klip-tot-klip-spring', sneeu: 'sneeu-engel' };
+
+  // Kaart 7-vervolg (2026-08-20): sone-geur-eenmaligklanke op gekose sporte
+  // (gebruiker-versoek: "kies self watter" -- hierdie is 'n eenvoudige,
+  // maklik-verstelbare tabel, nie 'n vaste reël nie). Bergkraai (21) en die
+  // Sneeuluiperd se sport-30-onthulling is doelbewus uitgesluit sodat 'n
+  // lang omgewingsklank nie 'n bewoner-onthullingseremonie (~10s kamera-
+  // pan) of, ergste geval, die finale sport-30-openbaring oorlaai nie.
+  // Elke ander gekose sport is 'n nie-mylpaal-sport binne sy sone.
+  // Kaart 7-vervolg (2026-08-21, gebruiker-versoek): die moeras-inskrywings
+  // is van {2,5} na {4,5} geskuif -- die rivier-agtergrondlus (sien
+  // RIVIER_LAASTE_SPORT hieronder) is nou net op sporte 1-3, dus kry die
+  // "gewone" moeras-geurklank die orige helfte van die sone (4-6, met 6
+  // uitgesluit aangesien dit 'n bewoner-mylpaal is -- Aksolotl).
+  const RUNG_SONE_KLANK = {
+    4: 'speelMoerasKlank', 5: 'speelMoerasKlank',
+    7: 'speelWoudKlank', 10: 'speelWoudKlank', 13: 'speelWoudKlank',
+    15: 'speelRotseKlank', 17: 'speelRotseKlank', 20: 'speelRotseKlank',
+    23: 'speelSneeuEenKlank', 26: 'speelSneeuTweeKlank', 29: 'speelSneeuDrieKlank',
+  };
+  // Kaart 7-vervolg (2026-08-21, gebruiker-versoek): "die moeras-rivier
+  // speel oral" -- reggestel. Die rivier-agtergrondlus is nou net op die
+  // eerste drie moeras-sporte; elders (die orige moeras + elke ander sone)
+  // speel dit glad nie. `stopRivierAmbient()` in verwerkUitkomste() bly
+  // onvoorwaardelik (op enige uitkoms) -- 'n stil geen-effek as dit nie
+  // eers gespeel het nie.
+  const RIVIER_LAASTE_SPORT = 3;
 
   function finaliseerPoging(geslaag, boodskap) {
     sportGeslaagOfMislukEnigste = true;
@@ -475,6 +542,13 @@
     const bank = POSITION_BANK.rungs.find((r) => r.rung === rungN);
     if (!bank) throw new Error(`geen posisiebank-inskrywing vir sport ${rungN} nie`);
     huidigeSport = bank;
+
+    // Kaart 7-vervolg: "speel terwyl die speler speel" -- begin (of hou aan
+    // speel, sien Klank.speelRivierAmbient() se eie "reeds-speel"-wagter) die
+    // rivier-agtergrondlus, maar net op die eerste drie moeras-sporte (sien
+    // RIVIER_LAASTE_SPORT). Word op enige uitkoms gestop (verwerkUitkomste).
+    if (rungN <= RIVIER_LAASTE_SPORT) Klank.speelRivierAmbient();
+    if (RUNG_SONE_KLANK[rungN]) Klank[RUNG_SONE_KLANK[rungN]]();
     symIdx = Math.floor(Math.random() * 8);
     const canonical = parseFEN(bank.fen);
     huidigePos = transformPos(canonical, symIdx);
@@ -678,7 +752,7 @@
     // die wenk-verskyn-gebeurtenis kry Oom Jorka se wenk-aanbieding-teks.
     document.addEventListener('kruin:kleure-aangekom', () => {
       BergEngine.kapokBlaf();
-      Klank.speelBlaf();
+      Klank.speelWenkBlaf();
     });
     document.addEventListener('kruin:wenk-verskyn', () => {
       setJorkaTeks(Jorka.kies('wenkAanbieding'));
@@ -696,7 +770,7 @@
       // §5.2: die Web Worker bereken die orakel TERWYL die openingsafkoms speel.
       // As die orakel eerste klaar is, verander niks nie; as nie, "vang die
       // klimmer sy asem" by die landing totdat dit gereed is.
-      Klank.speelWind();
+      Klank.speelAfkomsKlank();
       const afkomsP = BergEngine.openingsAfkoms(state.currentRung, state.residents);
       const orakelP = Orakel.ready({ workerUrl: '../orakel/orakel-worker.js' });
       let orakelGereed = false;
