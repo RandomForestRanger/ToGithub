@@ -663,3 +663,36 @@ config so White's piece visibly glides to its new square instead of appearing to
 
 ### Terminology
 "wiket" → "paaltjie" throughout (wisdom quotes) per user correction.
+
+---
+
+## 17. Top Tier Scores 6, Not 5 (2026-08-21)
+
+The user pointed out that awarding 5 points for a "SES!" (six) was counterintuitive — a real
+cricket six is worth 6 runs. Changed the top tier from 5 to 6 across the whole app, which
+happens to land on something more authentic than a coincidence: the scoring scale is now
+**6, 4, 3, 2, 1** — skipping 5 entirely, exactly like real cricket, where a single ball scores
+1, 2, 3, 4, or 6 (5 only happens on a rare overthrow).
+
+Touched everywhere the tier value 6 (formerly 5) appears — this is the full list, useful if this
+needs revisiting again:
+- `scoreMove()` and `scoreByStockfishOnly()`: the top-tier `return 5` in each (three call sites:
+  the ranked-comparison branch, the engine-only branch, and the centipawn-loss fallback) → `6`.
+  The unrelated `pi === 5` / `ei === 5` checks (6th-place *rank index*, worth 2 points) were left
+  alone — same digit, different meaning, easy to confuse if skimming.
+- `TARGET_SCORE`: 150 → 180 (30 moves × 6).
+- Move 1's forced-score hardcode and the `perfectMovesThisGame`/`showCelebrationPhoto()` gate
+  checks: `=== 5` → `=== 6`.
+- `COMMENTARY_BANK`'s key `5:` → `6:`, `updateDisplay()`'s label map key and text
+  (`'SES! (+5)'` → `'SES! (+6)'`).
+- CSS classes keyed on the tier value: `.move-score.score-5` → `.score-6`,
+  `.score-badge.s5` → `.s6` (both className strings are built dynamically from the score value at
+  runtime, so only the CSS selectors needed renaming, not any JS logic).
+- Badge description text quoting old values: `d6-boumeester` ("150/150" → "180/180"),
+  `teoretikus`/`grootmeester` ("5 lopies elk" → "6 lopies elk").
+- `showEndGameModal()`'s fair-rating calculation (§16): `movesPlayed * 5` → `* 6`.
+- `index.html`'s two hardcoded initial-state strings (`0/150` stat display, `Perfekte 150/150`
+  badge description).
+
+Verified live: fresh load shows `0/180`; the forced move-1 `d6` now shows `6/180`, `"SES! (+6)"`,
+CSS class `score-6` (gold styling applied), and a `+6` history badge — all consistent.

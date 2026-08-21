@@ -225,7 +225,7 @@ let lastWhiteMoveSan   = null;
 let lastWhiteFenBefore = null;
 let antoshinExd4Played = false;
 
-const TARGET_SCORE   = 150;
+const TARGET_SCORE   = 180; // 30 moves x max 6 (SES!) per move
 const MAX_MOVES      = 30;
 const WHITE_POOL_SIZES = [20, 16, 8, 4, 2, 2];
 
@@ -258,7 +258,7 @@ const WISDOM_QUOTES = [
 ];
 
 const BADGE_DESCRIPTIONS = {
-    'd6-boumeester':          "Behaal 'n perfekte 150/150 lopies in een spel. Speel al 30 skuiwe optimaal!",
+    'd6-boumeester':          "Behaal 'n perfekte 180/180 lopies in een spel. Speel al 30 skuiwe optimaal!",
     'philidor-verdediger':    "Voltooi 'n spel in die Philidor-tak (1.e4 was Wit se eerste skuif).",
     'ou-indier-boumeester':   "Voltooi 'n spel in die Ou-Indiër-tak (1.d4 of 1.c4 was Wit se eerste skuif).",
     'hanham-vesting':         "Bereik die Hanham-opstelling: Nd7, Ngf6 (of Nf6), Be7, en rokade op g8.",
@@ -271,8 +271,8 @@ const BADGE_DESCRIPTIONS = {
     'tartakower-indier':      "Speel ...Bg4 in die Ou-Indiër-tak — die Tartakower-stelsel.",
     'koning-indier-oorgang':  "Fianchetto met ...g6 + ...Bg7 i.p.v. ...Be7 — oorgang na Koning-Indiër idees.",
     'koningin-jagter':        "Vang Wit se koningin tydens die spel. 'n Seldsame en groot trofee!",
-    'teoretikus':             "Bereik 15 of meer perfekte skuiwe (5 lopies elk) in een spel.",
-    'grootmeester':           "Bereik 21 of meer perfekte skuiwe (5 lopies elk) in een spel.",
+    'teoretikus':             "Bereik 15 of meer perfekte skuiwe (6 lopies elk) in een spel.",
+    'grootmeester':           "Bereik 21 of meer perfekte skuiwe (6 lopies elk) in een spel.",
     'oorheersend':            "Eindig die spel met 'n evaluasie van -2.0 of beter (in Swart se guns)."
 };
 
@@ -705,7 +705,7 @@ async function scoreMove(fen, move) {
         const ei = engineTopMoves.findIndex(m => m.san === move.san);
         const piOk = pi !== -1, eiOk = ei !== -1;
 
-        if ((piOk && pi <= 1) || (eiOk && ei <= 1)) return 5;
+        if ((piOk && pi <= 1) || (eiOk && ei <= 1)) return 6; // SES! — top tier scores 6, like a real six
         if ((piOk && pi <= 3) || (eiOk && ei <= 3)) return 4;
         if ((piOk && pi === 4) || (eiOk && ei === 4)) return 3;
         if ((piOk && pi === 5) || (eiOk && ei === 5)) return 2;
@@ -722,7 +722,7 @@ async function scoreByStockfishOnly(moveSan, uciMove, engineTopMoves, sfData, fe
         // fallback below, same as when it's ranked worse than 6th.
         const ei = engineTopMoves.findIndex(m => m.san === moveSan || m.uci === uciMove);
         if (ei !== -1) {
-            if (ei <= 1) return 5;
+            if (ei <= 1) return 6; // SES! — top tier scores 6, like a real six
             if (ei <= 3) return 4;
             if (ei === 4) return 3;
             if (ei === 5) return 2;
@@ -740,7 +740,7 @@ async function scoreByStockfishOnly(moveSan, uciMove, engineTopMoves, sfData, fe
                     // After Black's move → White to move; negate to get Black's perspective
                     const ourEval = -(evalAfter.pvs[0].cp);
                     const diff    = bestEval - ourEval;
-                    if (diff <= 10)  return 5;
+                    if (diff <= 10)  return 6; // SES! — top tier scores 6, like a real six
                     if (diff <= 30)  return 4;
                     if (diff <= 60)  return 3;
                     if (diff <= 100) return 2;
@@ -762,7 +762,7 @@ async function scoreByStockfishOnly(moveSan, uciMove, engineTopMoves, sfData, fe
 const PIECE_NAMES_AF = { p: 'Pion', n: 'Perd', b: 'Loper', r: 'Toring', q: 'Koningin', k: 'Koning' };
 
 const COMMENTARY_BANK = {
-    5: [
+    6: [
         "SES! Swart skuif {san} — die {piece} vind die perfekte veld op {square}!",
         "SES! Wat 'n slag! {san} stuur die bal reg oor die tou.",
         "SES! Swart se {piece} land op {square} — die skare spring op!",
@@ -1002,8 +1002,8 @@ async function processBlackMove(move, fenBeforeBlack) {
     // game.fen() here instead would already reflect the position AFTER Black's move
     // (White to move), which silently broke scoring/analysis against White's replies.
 
-    let moveScore = currentMoveNumber > 1 ? await scoreMove(fenBeforeBlack, move) : 5;
-    if (moveScore === 5) perfectMovesThisGame++;
+    let moveScore = currentMoveNumber > 1 ? await scoreMove(fenBeforeBlack, move) : 6;
+    if (moveScore === 6) perfectMovesThisGame++;
     score += moveScore;
 
     positionHistory.push(game.fen());
@@ -1023,7 +1023,7 @@ async function processBlackMove(move, fenBeforeBlack) {
     updateTargetDisplay();
     checkBadges();
     showCommentary(move, moveScore);
-    if (moveScore === 5) showCelebrationPhoto();
+    if (moveScore === 6) showCelebrationPhoto();
 
     // Black may have just delivered mate (or the position is a draw) — check
     // before running analysis on what would otherwise be a terminal FEN.
@@ -1379,7 +1379,7 @@ function updateDisplay(lastScore) {
     if (lastScore !== undefined) {
         scoreDisplay.style.display = 'block';
         scoreDisplay.className     = `move-score score-${lastScore}`;
-        const labels = { 5:'SES! (+5)', 4:'VIER! (+4)',
+        const labels = { 6:'SES! (+6)', 4:'VIER! (+4)',
                          3:'Drie lopies! (+3)', 2:'Twee lopies (+2)', 1:'Enkelloop (+1)' };
         scoreText.textContent = labels[lastScore] || `+${lastScore}`;
     }
@@ -1515,7 +1515,7 @@ async function showEndGameModal() {
     // percentage of the points actually possible in the moves played, not
     // always against the full 30-move TARGET_SCORE.
     const movesPlayed  = moveHistory.length;
-    const maxPossible  = movesPlayed * 5;
+    const maxPossible  = movesPlayed * 6;
     const pct          = maxPossible > 0 ? (score / maxPossible) * 100 : 0;
 
     document.getElementById('modal-score').textContent   = `${score}/${TARGET_SCORE} lopies`;
@@ -1564,7 +1564,7 @@ function newGame() {
     clearArrows();
     resetTargetDisplay();
 
-    document.getElementById('score').textContent            = '0/150';
+    document.getElementById('score').textContent            = '0/180';
     document.getElementById('move-counter').textContent     = '1/30';
     document.getElementById('progress-fill').style.width   = '0%';
     document.getElementById('history-list').innerHTML       = '';
