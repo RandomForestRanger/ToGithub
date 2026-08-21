@@ -856,7 +856,11 @@ const CELEBRATION_IMAGES = [
     'six-celebrations/Celebrate12_6.jpg',
     'six-celebrations/Celebrate13_6.jpg',
     'six-celebrations/Celebrate14_6.jpg',
-    'six-celebrations/Celebrate15_6.jpg'
+    'six-celebrations/Celebrate15_6.jpg',
+    'six-celebrations/C1.jpg',
+    'six-celebrations/C2.jpg',
+    'six-celebrations/C3.jpg',
+    'six-celebrations/C4.jpg'
 ];
 
 let celebrationPool = [];
@@ -1470,6 +1474,24 @@ async function showEndGameModal() {
     const isNew = saveHighScore(score);
 
     document.getElementById('modal-title').textContent = MODAL_TITLES[gameEndReason] || MODAL_TITLES.moves;
+
+    // Outcome photo: Victory.jpg on a checkmate win or a perfect score,
+    // OUT.jpg on a checkmate loss. Silent on every other ending (draw, or
+    // just running out of moves without either) — no image is shown.
+    const photoEl = document.getElementById('modal-outcome-photo');
+    let outcomePhoto = null;
+    if (gameEndReason === 'checkmate-black-wins' || score === TARGET_SCORE) {
+        outcomePhoto = 'Victory.jpg';
+    } else if (gameEndReason === 'checkmate-white-wins') {
+        outcomePhoto = 'OUT.jpg';
+    }
+    if (outcomePhoto) {
+        photoEl.src = outcomePhoto;
+        photoEl.alt = outcomePhoto === 'Victory.jpg' ? 'Victory!' : 'Out!';
+        photoEl.style.display = 'block';
+    } else {
+        photoEl.style.display = 'none';
+    }
 
     // Fair rating for an early-ended game (checkmate/draw before move 30):
     // percentage of the points actually possible in the moves played, not

@@ -557,3 +557,41 @@ Web Audio API, no external sound file: same "original assets only" approach as e
 in this app, and it means there's no audio-licensing question to even ask). The shutter call is
 wrapped in try/catch since some browsers block `AudioContext` without a prior user gesture — the
 visual flash still plays either way, so a blocked sound never breaks the moment.
+
+---
+
+## 15. Blur Recalibration, C1–C4, Victory/OUT Wiring (2026-08-21)
+
+### The first blur pass was too heavy-handed — user feedback, corrected
+The six images fixed in §14 were blurred with generously-oversized boxes (large margins, full
+chest/sleeve "bands" instead of tight boxes around just the badge) — safe, but visually
+disruptive; the user pushed back directly: *"these ruin the pictures at the moment."* Redone
+with tight boxes sized to the actual logo/text pixels (a few percent of margin, not generous
+padding), and a lighter mosaic factor (8 instead of 10) so the patches read as small soft-focus
+spots rather than large flat blocks. **Verify at normal display size, not just zoomed crops** —
+a mosaic pattern of high-contrast pixels (e.g. white text on a red sponsor board) can look like
+it's "still showing letters" under a 2–3x zoom purely from the block-averaging pattern, even
+when the actual word is destroyed and unreadable at real size. Confirmed this with a direct
+pixel-diff between the original and the output (every sampled pixel across the "suspicious" band
+had changed) before trusting the visual read. Lesson: tight boxes first, verify at real size,
+zoom in only to locate a gap — don't let a zoomed-in artifact talk you into re-inflating the box.
+
+### C1–C4 reviewed and added to the pool
+Four more user-supplied images (`six-celebrations/C1.jpg`–`C4.jpg`). `C1` and `C3` were clean
+(correct "D6 Dynamos" branding or fully generic). `C2` had a real **Kingfisher** logo/wordmark
+on the boundary hoarding; `C4` had a real **TATA** logo — both fixed with the same tight-box
+approach, applied precisely from the start this time rather than needing a correction round.
+All four added to `CELEBRATION_IMAGES` in `app.js` — the pool is now 17 images.
+
+### Victory.jpg / OUT.jpg wired into the game-over modal
+`showEndGameModal()` now sets a `#modal-outcome-photo` `<img>` based on `gameEndReason` (and
+`score === TARGET_SCORE` for a perfect-game win even without a checkmate finish):
+`checkmate-black-wins` (or a perfect score) → `Victory.jpg`; `checkmate-white-wins` →
+`OUT.jpg`; every other ending (running out of moves without either, or a draw) shows no photo.
+Verified on fresh page loads for both outcomes via direct FEN injection (Fool's Mate for the
+win path, Scholar's Mate for the loss path) — an earlier combined single-session test showed
+the loss path incorrectly returning `Victory.jpg`, which turned out to be a **test race
+condition** (reusing page state across a `#modal-new-game` click without waiting for `newGame()`'s
+async chain to fully settle), not a real bug — confirmed by re-running the same check on a clean
+page load, where it passed correctly. Worth remembering: when a same-session before/after test
+gives a surprising result, try it isolated on a fresh page before concluding the app is wrong.
