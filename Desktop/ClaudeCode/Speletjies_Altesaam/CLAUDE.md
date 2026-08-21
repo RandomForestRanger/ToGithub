@@ -16,6 +16,7 @@ Bou 'n enkele HTML-bladsy wat as 'n vriendelike, kleurvolle portaal dien vir 'n 
 | Vind die Flater | https://flater-vind.netlify.app/ |
 | Mat-Kat | https://mat-kat.netlify.app/ |
 | Adi – Die Mancala Speletjie | https://adi-joy.netlify.app/ |
+| D6 Dynamos | https://indiese-verdediging.netlify.app/ |
 
 ---
 
@@ -62,6 +63,7 @@ Gebruik hierdie beskrywings op die kaarte:
 - **Vind die Flater** – "Kan jy die fout raaksien? Vind die flater voor dit te laat is!"
 - **Mat-Kat** – "Oefen jou eindspel en leer hoe om mat te gee soos 'n kampioen."
 - **Adi – Die Mancala Speletjie** – "Speel Adi, 'n ou Afrika-speletjie met klippies en komme. Baie pret!"
+- **D6 Dynamos** – "Speel soos 'n cricket-kampioen en leer die Ou-Indiese verdediging – block elke aanval met jou slim d6-pion!"
 
 ---
 
