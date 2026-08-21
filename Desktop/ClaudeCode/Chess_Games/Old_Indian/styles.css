@@ -23,6 +23,8 @@
     --gold:      #FFC94A;   /* trophy gold — score, high score, bursts */
     --teal:      #2EC4B6;   /* floodlight teal — good moves, hints, links */
     --red:       #E63946;   /* ball red — danger, errors, death overs */
+    --team-blue: #1E4FA0;   /* D6 Dynamos kit blue — board boundary rope */
+    --team-pink: #FF5FA8;   /* firework pink accent — used sparingly */
     --white:     #F4EDE4;
     --muted:     #B9AFA0;
 }
@@ -245,7 +247,17 @@ header h1 {
 
 /* ── Board — boundary-rope frame + hoarding ───────────────── */
 .board-container {
-    background: repeating-linear-gradient(135deg, #F4EFDD 0 12px, var(--red) 12px 24px);
+    /* Team-colour boundary rope: blue/gold, with one pink stripe per
+       7-stripe cycle for an occasional firework-y accent. */
+    background: repeating-linear-gradient(135deg,
+        var(--team-blue) 0 12px,
+        var(--gold)      12px 24px,
+        var(--team-blue) 24px 36px,
+        var(--gold)      36px 48px,
+        var(--team-blue) 48px 60px,
+        var(--gold)      60px 72px,
+        var(--team-pink) 72px 84px
+    );
     padding: 10px;
     border-radius: 10px;
     box-shadow: 0 10px 26px rgba(0,0,0,0.45);
@@ -411,13 +423,19 @@ header h1 {
     opacity: 1; transform: translate(-50%, -50%) scale(1) rotate(-3deg);
 }
 .polaroid {
+    display: inline-block;
     background: #fdfcf8;
-    padding: 14px 14px 38px;
+    padding: 12px 12px 34px;
     border-radius: 2px;
     box-shadow: 0 22px 55px rgba(0,0,0,0.55);
 }
 .polaroid img {
-    display: block; width: 260px; height: 260px; object-fit: cover;
+    display: block;
+    max-width: 240px; max-height: 240px;
+    width: auto; height: auto;
+    /* Never crop — user-supplied photos vary in dimensions, so they scale
+       down to fit the frame at their own aspect ratio instead. */
+    object-fit: contain;
     border-radius: 1px;
     filter: saturate(1.05) contrast(1.03);
 }
@@ -427,7 +445,7 @@ header h1 {
 }
 
 @media (max-width: 600px) {
-    .polaroid img { width: 190px; height: 190px; }
+    .polaroid img { max-width: 170px; max-height: 170px; }
 }
 
 /* ── Bal-vir-Bal — move history scorecard ─────────────────── */

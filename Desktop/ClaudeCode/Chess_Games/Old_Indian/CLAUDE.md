@@ -595,3 +595,71 @@ condition** (reusing page state across a `#modal-new-game` click without waiting
 async chain to fully settle), not a real bug — confirmed by re-running the same check on a clean
 page load, where it passed correctly. Worth remembering: when a same-session before/after test
 gives a surprising result, try it isolated on a fresh page before concluding the app is wrong.
+
+---
+
+## 16. Real Scoring Bug, Blur Recalibration Round 2, Polaroid/Board/Glide Fixes (2026-08-21)
+
+### `findIndex()` returning -1, and -1 <= 1 being true — a real, significant scoring bug
+The user reported "SES! appears to be awarded at every move of black." Root cause: both
+`scoreMove()`'s combined-ranking branch and `scoreByStockfishOnly()`'s engine-only branch did
+`const ei = engineTopMoves.findIndex(...); if (ei <= 1) return 5;` — but `findIndex()` returns
+`-1` when nothing matches, and **`-1 <= 1` is `true` in JavaScript**. Every move the engine
+*didn't* rank at all was silently scored as if it were a top-2 move. This had been live and
+undetected through every previous testing pass because local dev always routes through
+`scoreByStockfishOnly()` (no Lichess token → Explorer always 401s → `totalGames < 20` always),
+and every move actually tested in prior smoke tests happened to be an engine-approved move (`d6`,
+`Nf6`) — so `ei` was always a small non-negative number, never `-1`, and the bug never fired in
+those specific tests. Fixed by explicitly checking `ei !== -1` (and `pi !== -1`) before the tier
+comparisons in both functions, falling through to the centipawn-loss fallback (or tier 1) instead
+of the false-positive shortcut. **Verified with a stubbed `fetchStockfishEval`**: called
+`scoreByStockfishOnly()` directly with a move absent from `engineTopMoves` and a clearly-bad
+fabricated evaluation — confirmed it now returns 1, not 5.
+
+### Blur recalibration, round 2 — user feedback: too large, too noticeable
+Round 1 (§14/§15) used tight rectangular boxes; still too visually heavy for a photo shown
+briefly at a small, non-enlarged size — the user specifically called out the umpire-styled
+`Celebrate11_6.jpg` and a couple of the cheerleader shots as "overwhelming." Recalibrated with
+two techniques depending on what's being covered:
+- **Single icon/short-wordmark logos** (TATA oval, Kingfisher bird, corner wordmarks, the small
+  "eyes" logo pairs): genuinely tiny circles, sized just to the mark itself.
+- **Wide multi-word sponsor bands** (Dream11/vivo/CRE strips): a soft rounded-rectangle mask
+  (mosaic + Gaussian blur, rounded corners, feathered edge) — a true small circle can't cover a
+  wide wordmark without leaving letters exposed at the edges, and a tapering ellipse mask
+  under-covers content sitting near the box's top/bottom edge (found this the hard way on
+  `Celebrate11_6.jpg`, which turned out to have **three stacked sponsor rows**, not one — traced
+  precisely with `y`-column pixel-diff scans against the original rather than continuing to guess
+  from cropped screenshots).
+- Dropped the smaller chest/sleeve sponsor badges entirely on most images — small enough to
+  already be borderline illegible, and removing them measurably reduces the "blur all over the
+  person" feeling versus covering every last mark.
+- Confirmed real coverage with pixel-diff scans (comparing original vs. output pixel-by-pixel
+  along a column) rather than trusting a zoomed screenshot alone — repeatedly proved more
+  reliable than the eye at small scale, in both directions: catching genuine gaps a normal-size
+  view missed, and catching false "still looks off" alarms that were actually just JPEG/mosaic
+  texture reading as letters under zoom.
+
+### Polaroid frame — no cropping, fits varied dimensions
+`.polaroid img` was `width:260px;height:260px;object-fit:cover` — forced every photo into a fixed
+square, cropping anything not already square (most of the set: portraits, landscapes). Changed to
+`max-width/max-height:240px` with `width/height:auto` and `object-fit:contain`, and `.polaroid`
+itself to `display:inline-block` so the white polaroid border shrink-wraps to the image's actual
+rendered size rather than a fixed box. Verified with a deliberately landscape (`Celebrate12_6.jpg`,
+559×197) and deliberately portrait (`Celebrate5_6.jpg`, 205×624) image forced into the popup —
+both now render fully uncropped at their own aspect ratio.
+
+### Board boundary rope — team colours, with an occasional firework pink
+`.board-container`'s diagonal stripe was cream/red (matching neither the actual "D6 Dynamos"
+brand — blue and gold, per `Logo.jpg` and the celebration photos — nor anything cricket-specific).
+Changed to a 7-stripe repeating cycle: blue/gold alternating, with one pink stripe per cycle for
+the "still feels firework-y" accent the user asked to keep. New `--team-blue` (`#1E4FA0`) and
+`--team-pink` (`#FF5FA8`) custom properties.
+
+### White's move glide
+`board.position(fen)` animates by default in chessboard.js, but with no explicit speed
+configured it defaults fast enough (~200ms) to barely read as motion. Added explicit
+`moveSpeed: 500, appearSpeed: 400, snapbackSpeed: 300, snapSpeed: 150` to the `Chessboard()` init
+config so White's piece visibly glides to its new square instead of appearing to snap.
+
+### Terminology
+"wiket" → "paaltjie" throughout (wisdom quotes) per user correction.

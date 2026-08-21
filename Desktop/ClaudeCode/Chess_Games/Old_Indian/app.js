@@ -240,21 +240,21 @@ const WISDOM_QUOTES = [
     "...d6 is soos 'n vertroude verdedigende bal — dit werk teen vinnige boulwerk (e4) én stadige spin (d4).",
     "Philidor het gesê pionne is die siel van skaak — d6 is die eerste bal van daardie beurt.",
     "Bou jou posisie soos 'n goeie beurt — lopie vir lopie, nie roekeloos nie.",
-    "Die Hanham-opstelling speel soos 'n verdedigende kolwer: Nd7, Ngf6, Be7, dan rokade — wikets in die hand.",
+    "Die Hanham-opstelling speel soos 'n verdedigende kolwer: Nd7, Ngf6, Be7, dan rokade — paaltjies in die hand.",
     "In die Ou-Indiër ontwikkel jou loper na e7 — nie 'n groot slag nie, maar 'n betroubare enkelloop.",
     "Moheschunder Bannerjee het hierdie idees in Calcutta gespeel — dieselfde stad waar krieket-koors al vir 200 jaar brand.",
     "Tartakower het die naam 'Indiër' voorgestel uit respek — 'n eerbewys, soos 'n gehoor wat vir 'n goeie kolwer opstaan.",
     "Chigorin het die Ou-Indiër ontwikkel — soliede tegniek bo flambojante slae.",
     "'n Fianchetto na g7 verander jou hele beurt-plan — weet watter pad jy kies voor jy swaai.",
     "Philidor self was aggressief: hy het ...f5 aanbeveel — soms moet jy vir die grens slaan, nie net verdedig nie.",
-    "Morphy se opponente in die Opera-spel het roekeloos ...Bg4 gespeel — 'n wanhopige slag wat 'n wiket gekos het.",
-    "Geduld bou 'n groot telling; haas bou net 'n vroeë wiket.",
+    "Morphy se opponente in die Opera-spel het roekeloos ...Bg4 gespeel — 'n wanhopige slag wat 'n paaltjie gekos het.",
+    "Geduld bou 'n groot telling; haas bou net 'n vroeë paaltjie.",
     "'n Perd op d7 lyk passief, maar soos 'n goeie veldwagter hou dit al die belangrike velde dop.",
     "Speel nooit vir die grens voor jou ontwikkeling reg is nie — bou eers jou beurt, val dan aan.",
     "Die Tsjeggiese Variasie (...c6) is 'n stil enkelloop — geen groot slag nie, maar geen fout ook nie.",
     "Janowski het ...Bf5 gespeel om sy loper betyds uit te kry — soos 'n kolwer wat vroeg sy skoot kies.",
     "Elke groot beurt begin met een bal wat reg gespeel is.",
-    "'n Koningin gevang is soos 'n groot wiket — maar 'n goeie beurt wen die meeste wedstryde."
+    "'n Koningin gevang is soos 'n groot paaltjie — maar 'n goeie beurt wen die meeste wedstryde."
 ];
 
 const BADGE_DESCRIPTIONS = {
@@ -538,7 +538,15 @@ function initBoard() {
         draggable: false,
         position: 'start',
         orientation: 'black',
-        pieceTheme: 'https://chessboardjs.com/img/chesspieces/wikipedia/{piece}.png'
+        pieceTheme: 'https://chessboardjs.com/img/chesspieces/wikipedia/{piece}.png',
+        // Explicit, slower-than-default speeds so White's move reads as a
+        // visible glide rather than an instant snap — board.position(fen)
+        // animates by default, but the default speed is fast enough (~200ms)
+        // to barely register.
+        moveSpeed:     500,
+        appearSpeed:   400,
+        snapbackSpeed: 300,
+        snapSpeed:     150
     });
     positionHistory = [game.fen()];
 }
@@ -690,13 +698,17 @@ async function scoreMove(fen, move) {
 
         if (totalGames < 20) return scoreByStockfishOnly(move.san, uciMove, engineTopMoves, sfData, fen);
 
+        // findIndex() returns -1 when the move isn't found — and -1 <= 1 is
+        // true in JS, so an unguarded "pi <= 1" would silently score every
+        // unranked move as a top-2 move. Must check "found" explicitly.
         const pi = popularMoves.findIndex(m => m.san === move.san);
         const ei = engineTopMoves.findIndex(m => m.san === move.san);
+        const piOk = pi !== -1, eiOk = ei !== -1;
 
-        if (pi <= 1 || ei <= 1) return 5;
-        if (pi <= 3 || ei <= 3) return 4;
-        if (pi === 4 || ei === 4) return 3;
-        if (pi === 5 || ei === 5) return 2;
+        if ((piOk && pi <= 1) || (eiOk && ei <= 1)) return 5;
+        if ((piOk && pi <= 3) || (eiOk && ei <= 3)) return 4;
+        if ((piOk && pi === 4) || (eiOk && ei === 4)) return 3;
+        if ((piOk && pi === 5) || (eiOk && ei === 5)) return 2;
         return 1;
 
     } catch (e) { console.error('scoreMove error:', e); return 3; }
@@ -704,11 +716,17 @@ async function scoreMove(fen, move) {
 
 async function scoreByStockfishOnly(moveSan, uciMove, engineTopMoves, sfData, fen) {
     if (engineTopMoves.length > 0) {
+        // -1 (not found) must never satisfy "<= 1" — see scoreMove() for the
+        // same bug. Only take these tier shortcuts when the move was actually
+        // found and ranked; otherwise fall through to the centipawn-loss
+        // fallback below, same as when it's ranked worse than 6th.
         const ei = engineTopMoves.findIndex(m => m.san === moveSan || m.uci === uciMove);
-        if (ei <= 1) return 5;
-        if (ei <= 3) return 4;
-        if (ei === 4) return 3;
-        if (ei === 5) return 2;
+        if (ei !== -1) {
+            if (ei <= 1) return 5;
+            if (ei <= 3) return 4;
+            if (ei === 4) return 3;
+            if (ei === 5) return 2;
+        }
 
         // Centipawn-loss fallback
         // fen is Black to move; positive cp = good for Black (side to move)
