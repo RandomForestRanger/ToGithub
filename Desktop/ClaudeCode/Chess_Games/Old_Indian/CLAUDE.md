@@ -741,3 +741,45 @@ offered) so two-line names still read comfortably.
 ### Subtitle wording
 "...van Powerplay tot doodsbeurte" → "...vanaf die eerste powerplay tot in die doodsbeurte" per
 user correction.
+
+---
+
+## 19. Randomised Sponsors, Logo Watermark, Lightbox Effect, Netlify Prep (2026-08-21)
+
+### Randomised boundary-hoarding sponsors
+`SPONSOR_POOL` in `app.js` — 7 invented sponsors (`d6 Bank`, `Fondament Motors`, and five new
+ones: `Son Sonneblom Olie`, `Luilekker Kerries`, `Pensmens se Rys`, `Lawwehaas Kaasmakery`,
+`Njam-njam Kitskos`). `pickBoardSponsors()` shuffles and picks 2, called from `newGame()` so
+every game shows a different pair. The hoarding row's first plate is now a fixed "Geborg deur:"
+label (`.ad-plate.ad-label` — a distinct dark/muted style so it doesn't get mistaken for a third
+sponsor) instead of a third sponsor name; `#sponsor-1`/`#sponsor-2` hold the two random ones.
+
+### Logo watermark — "surreptitious" placement
+`Logo.jpg` now appears as a small (30px), low-opacity (0.4), circular corner bug in the
+bottom-right of `.board-wrapper` (`.board-watermark`, `pointer-events: none` so it never
+intercepts tap-to-move clicks) — a quiet broadcast-style bug rather than a prominent logo
+placement, per the user's "surreptitiously" framing.
+
+### Lightbox effect replaces the white camera-flash
+The white full-screen flash was disorienting. `#camera-flash` (kept its id/class name — only its
+CSS role changed) is now a dim backdrop (`rgba(8,10,16,0.62)`) that shows/hides in sync with the
+photo itself (both toggle the same `.show` class together in `showCelebrationPhoto()`, instead of
+the old one-shot `flashPulse` animation), turning the whole thing into a proper lightbox: the
+background dims for as long as the photo is up, not just a brief pulse. The photo's pop-in/out
+uses `transition: ... steps(3, end)` instead of smooth easing — a 3-step discrete transition
+naturally passes through two intermediate sizes before settling (and the same two steps in
+reverse on the way out), giving a deliberately choppy, old-slide-projector zoom to match the
+shutter-click sound rather than a modern smooth animation.
+
+### Reachable-target follow-through
+(No new score changes this round — see §18. Confirmed the `>=` fix there still holds with the
+new sponsor/photo changes layered on top; nothing here touches scoring.)
+
+### Netlify deployment prep
+Added `netlify.toml` (same pattern as the sibling chess trainers in this repo — `Caro-Kahn`,
+`Spanish_Opening`: `publish = "."`, no build command since this is plain HTML/CSS/JS, security
+headers, long-cache headers for `.js`/`.css`). Confirmed no hardcoded Lichess token anywhere in
+the codebase — `fetchLichessData()`/`fetchStockfishEval()` both already gate on
+`window.LICHESS_TOKEN`, which needs to be set via Netlify snippet injection (Site settings →
+Build & deploy → Post processing → Snippet injection) after deploying, same as the other apps in
+this portfolio — that's a dashboard step, not something committed to the repo.

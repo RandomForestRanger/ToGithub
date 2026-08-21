@@ -881,6 +881,32 @@ const CELEBRATION_IMAGES = [
     'six-celebrations/C4.jpg'
 ];
 
+// Boundary-hoarding sponsors — all invented, no real brands. Two are picked
+// at random each game (see pickBoardSponsors(), called from newGame()) and
+// shown next to a fixed "Geborg deur:" label plate.
+const SPONSOR_POOL = [
+    'd6 Bank',
+    'Fondament Motors',
+    'Son Sonneblom Olie',
+    'Luilekker Kerries',
+    'Pensmens se Rys',
+    'Lawwehaas Kaasmakery',
+    'Njam-njam Kitskos'
+];
+
+function pickBoardSponsors() {
+    const pool = [...SPONSOR_POOL];
+    for (let i = pool.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [pool[i], pool[j]] = [pool[j], pool[i]];
+    }
+    const [a, b] = pool;
+    const el1 = document.getElementById('sponsor-1');
+    const el2 = document.getElementById('sponsor-2');
+    if (el1) el1.textContent = a;
+    if (el2) el2.textContent = b;
+}
+
 let celebrationPool = [];
 
 function refillCelebrationPool() {
@@ -935,20 +961,22 @@ function playSynthShutterSound() {
 }
 
 function showCelebrationPhoto() {
-    const flash = document.getElementById('camera-flash');
-    const wrap  = document.getElementById('celebration-photo');
-    const img   = document.getElementById('celebration-photo-img');
+    const backdrop = document.getElementById('camera-flash'); // dim lightbox backdrop, not a white flash
+    const wrap      = document.getElementById('celebration-photo');
+    const img       = document.getElementById('celebration-photo-img');
     if (!wrap || !img) return;
 
     img.src = nextCelebrationImage();
     playShutterSound();
 
-    if (flash) {
-        flash.classList.remove('flash'); void flash.offsetWidth; // restart animation
-        flash.classList.add('flash');
-    }
+    // Backdrop and photo show/hide together — the backdrop stays dim for
+    // the whole time the photo is up, then both clear together.
+    if (backdrop) backdrop.classList.add('show');
     wrap.classList.add('show');
-    setTimeout(() => wrap.classList.remove('show'), 2800);
+    setTimeout(() => {
+        if (backdrop) backdrop.classList.remove('show');
+        wrap.classList.remove('show');
+    }, 2800);
 }
 
 // ==================== GAME TERMINATION (checkmate / draw) ====================
@@ -1573,6 +1601,7 @@ function newGame() {
     lastWhiteFenBefore   = null;
     antoshinExd4Played   = false;
     refillCelebrationPool();
+    pickBoardSponsors();
 
     clearSelection();
     clearArrows();
