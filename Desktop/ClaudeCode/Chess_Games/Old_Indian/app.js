@@ -832,6 +832,91 @@ function showMateCommentary(matedSide) {
     el.style.display = 'block';
 }
 
+// ==================== SIX-CELEBRATION PHOTOS ====================
+// Shown on a perfect move (score 5, "SES!"). A per-game shuffled pool with
+// no repeats until every photo has been shown once, then it reshuffles —
+// so a long high-scoring game never runs dry, but you never see the same
+// photo twice in a row either.
+//
+// Deliberately excludes three images pending a likeness call (celebrate4_6,
+// Celebrate16__6, Celebrate10_6 — see CLAUDE.md §14): the branding on those
+// is fine, but the batter's face/stance reads as a specific real cricketer.
+// Add their filenames back into this list once that's decided.
+
+const CELEBRATION_IMAGES = [
+    'six-celebrations/Celebrate_6.jpg',
+    'six-celebrations/Celebrate2_6.jpg',
+    'six-celebrations/Celebrate3_6.jpg',
+    'six-celebrations/Celebrate5_6.jpg',
+    'six-celebrations/Celebrate6_6.jpg',
+    'six-celebrations/Celebrate7_6.jpg',
+    'six-celebrations/Celebrate8_6.jpg',
+    'six-celebrations/Celebrate9_6.jpg',
+    'six-celebrations/Celebrate11_6.jpg',
+    'six-celebrations/Celebrate12_6.jpg',
+    'six-celebrations/Celebrate13_6.jpg',
+    'six-celebrations/Celebrate14_6.jpg',
+    'six-celebrations/Celebrate15_6.jpg'
+];
+
+let celebrationPool = [];
+
+function refillCelebrationPool() {
+    celebrationPool = [...CELEBRATION_IMAGES];
+    // Fisher-Yates shuffle
+    for (let i = celebrationPool.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [celebrationPool[i], celebrationPool[j]] = [celebrationPool[j], celebrationPool[i]];
+    }
+}
+
+function nextCelebrationImage() {
+    if (celebrationPool.length === 0) refillCelebrationPool(); // exhausted — reshuffle fresh
+    return celebrationPool.pop();
+}
+
+// Synthesized camera-shutter click (a short decaying noise burst) — no
+// external sound asset, same "original assets only" approach as the rest
+// of this app. Fails silently if the browser blocks audio without a prior
+// user gesture; the visual flash still plays either way.
+function playShutterSound() {
+    try {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const now = ctx.currentTime;
+        const bufferSize = Math.floor(ctx.sampleRate * 0.06);
+        const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+        const data = buffer.getChannelData(0);
+        for (let i = 0; i < bufferSize; i++) {
+            data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (bufferSize * 0.15));
+        }
+        const noise = ctx.createBufferSource();
+        noise.buffer = buffer;
+        const gain = ctx.createGain();
+        gain.gain.setValueAtTime(0.5, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
+        noise.connect(gain).connect(ctx.destination);
+        noise.start(now);
+        noise.stop(now + 0.08);
+    } catch (e) { /* non-essential flourish — ignore */ }
+}
+
+function showCelebrationPhoto() {
+    const flash = document.getElementById('camera-flash');
+    const wrap  = document.getElementById('celebration-photo');
+    const img   = document.getElementById('celebration-photo-img');
+    if (!wrap || !img) return;
+
+    img.src = nextCelebrationImage();
+    playShutterSound();
+
+    if (flash) {
+        flash.classList.remove('flash'); void flash.offsetWidth; // restart animation
+        flash.classList.add('flash');
+    }
+    wrap.classList.add('show');
+    setTimeout(() => wrap.classList.remove('show'), 2800);
+}
+
 // ==================== GAME TERMINATION (checkmate / draw) ====================
 // Previously the game only ever ended via MAX_MOVES — a mid-game checkmate
 // (either side) wasn't detected at all. Checked after every move, both
@@ -916,6 +1001,7 @@ async function processBlackMove(move, fenBeforeBlack) {
     updateTargetDisplay();
     checkBadges();
     showCommentary(move, moveScore);
+    if (moveScore === 5) showCelebrationPhoto();
 
     // Black may have just delivered mate (or the position is a draw) — check
     // before running analysis on what would otherwise be a terminal FEN.
@@ -1432,6 +1518,7 @@ function newGame() {
     lastWhiteMoveSan     = null;
     lastWhiteFenBefore   = null;
     antoshinExd4Played   = false;
+    refillCelebrationPool();
 
     clearSelection();
     clearArrows();
@@ -1443,6 +1530,7 @@ function newGame() {
     document.getElementById('history-list').innerHTML       = '';
     document.getElementById('move-score-display').style.display = 'none';
     document.getElementById('commentary-line').style.display = 'none';
+    document.getElementById('celebration-photo').classList.remove('show');
     document.getElementById('branch-row').style.display    = 'none';
     document.getElementById('white-pool').textContent       = 'Top 20 skuiwe';
     document.getElementById('white-pool').style.color      = '#2EC4B6';

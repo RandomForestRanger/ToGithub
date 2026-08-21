@@ -392,6 +392,44 @@ header h1 {
     color: #cdd6e6; text-align: center; line-height: 1.4;
 }
 
+/* ── Six-celebration photo (SES! only) ────────────────────── */
+.camera-flash {
+    position: fixed; inset: 0; background: #fff; opacity: 0;
+    pointer-events: none; z-index: 1002;
+}
+.camera-flash.flash { animation: flashPulse 0.5s ease-out; }
+@keyframes flashPulse { 0% { opacity: 0.9; } 100% { opacity: 0; } }
+
+.celebration-photo {
+    position: fixed; top: 50%; left: 50%;
+    transform: translate(-50%, -50%) scale(0.82) rotate(-5deg);
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.25s ease, transform 0.25s ease;
+    z-index: 1003;
+}
+.celebration-photo.show {
+    opacity: 1; transform: translate(-50%, -50%) scale(1) rotate(-3deg);
+}
+.polaroid {
+    background: #fdfcf8;
+    padding: 14px 14px 38px;
+    border-radius: 2px;
+    box-shadow: 0 22px 55px rgba(0,0,0,0.55);
+}
+.polaroid img {
+    display: block; width: 260px; height: 260px; object-fit: cover;
+    border-radius: 1px;
+    filter: saturate(1.05) contrast(1.03);
+}
+.polaroid-caption {
+    font-family: 'Rajdhani', sans-serif; font-weight: 800; font-size: 1.25rem;
+    letter-spacing: 1px; color: #1a1206; text-align: center; margin-top: 10px;
+}
+
+@media (max-width: 600px) {
+    .polaroid img { width: 190px; height: 190px; }
+}
+
 /* ── Bal-vir-Bal — move history scorecard ─────────────────── */
 .move-history {
     width: 100%; max-width: 510px; padding: 12px;

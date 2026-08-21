@@ -499,7 +499,61 @@ Gemini-generated images) was rejected: they reproduced the real IPL logo, real s
 (VIVO IPL, Dream11, TATA), real CSK team colours, and what reads as a specific recognizable
 real cricketer's likeness — exactly what this project's own "inspired, not branded" rule (§2,
 §12) exists to avoid, even for personal/local use. The user is re-processing their own images
-(cropping, blurring the CSK/IPL marks) before handing them over. **Not yet wired in** — no
-image-display code exists yet. When ready: images go in `six-celebrations/` (empty folder,
-created and gitignored-equivalent by convention — check before assuming it's tracked), picked
-at random the same way `COMMENTARY_BANK` is, shown briefly on tier-5 moves only.
+(cropping, blurring the CSK/IPL marks) before handing them over.
+
+---
+
+## 14. Six-Celebration Photos — Wired In (2026-08-21)
+
+### 16 user-supplied images, reviewed individually
+The user re-processed their own AI-generated set (16 celebration photos in `six-celebrations/`,
+plus `Logo.jpg`, `OUT.jpg`, `Victory.jpg` in the project root) and asked for a logo/likeness
+review before use. Findings, file by file:
+- **7 clean from the start**: `Celebrate_6`, `Celebrate2_6`, `Celebrate3_6`, `Celebrate6_6`,
+  `Celebrate9_6`, `Celebrate14_6`, `Celebrate15_6` — generic non-identifiable crowds, either
+  plain colours or our own "D6 Dynamos" branding.
+- **6 fixed by blurring real sponsor/league logos**: `Celebrate5_6`, `Celebrate7_6`,
+  `Celebrate8_6`, `Celebrate10_6`, `Celebrate11_6`, `Celebrate12_6` — VIVO, Dream11, TATA, CRED
+  logos and text were still legible (some already had ad-hoc yellow dots over the biggest
+  offender but missed the boundary-hoarding text and small chest badges entirely). Fixed with a
+  Python/Pillow script (`blur_logos2.py`, scratch — not checked into the repo): pixelate down
+  10x then Gaussian-blur back up, feathered mask edges so it reads as a soft-focus patch rather
+  than a hard censor box. **Took several iterations** — first pass left text peeking out past
+  box edges in three images, and one attempt at widening a "chest badge" box accidentally
+  covered a player's *face* in two images (`Celebrate7_6`, `Celebrate11_6`) before being caught
+  and corrected by zooming into the exact pixel region rather than trusting the thumbnail. Every
+  fix was verified with a cropped/zoomed re-check, not just the full-image thumbnail — a small
+  blur artifact in a thumbnail can look like leftover text when it isn't (false alarm caught on
+  `Celebrate5_6`), so zoom in before concluding either way.
+- **1 left untouched, low risk**: `Celebrate13_6` — no visible logo, just a yellow/blue kit
+  colour that loosely evokes CSK. Nothing to blur.
+- **3 excluded from the default pool — likeness, not trademark**: `celebrate4_6`,
+  `Celebrate16__6` (already correctly branded "D6 Dynamos," no sponsor logos) and, discovered
+  during this pass, `Celebrate10_6` too (logos fixed, but the batting stance/build still reads
+  as a specific real cricketer). Blurring a face would defeat the point of a celebration photo,
+  so this is a judgement call left to the user rather than something to silently paper over.
+  Easy to add back into `CELEBRATION_IMAGES` in `app.js` once decided.
+- `Logo.jpg` (fully original "D6 Dynamos Cricket Club" shield — no fixes needed), `OUT.jpg`
+  (generic umpire, no branding), `Victory.jpg` (own "VICTORY D6 DYNAMOS!" jumbotron text; one
+  low-stakes note — the boundary hoarding reads "Rajiv Gandhi Stadium," a real venue name, much
+  lower-risk than a sponsor logo, treated as acceptable) are all clean. **Not yet wired into any
+  feature** — no game trigger references them yet.
+
+### The mechanism — per-game shuffled pool, no repeats until exhausted
+`CELEBRATION_IMAGES` in `app.js` lists the 13 currently-approved filenames. `celebrationPool`
+is a Fisher-Yates-shuffled copy, consumed via `.pop()` in `nextCelebrationImage()`; when it hits
+zero it reshuffles a fresh copy automatically, so a long high-scoring game never runs dry —
+verified directly (not by playing 13 real moves): a full draw of 13 pulls came back all-unique,
+and the 14th pull correctly triggered a reshuffle. `refillCelebrationPool()` runs in `newGame()`
+so every game starts with a fresh shuffle.
+
+### Trigger, framing, sound
+`showCelebrationPhoto()` is called from `processBlackMove()` only when `moveScore === 5`
+("SES!"). Framed as a polaroid (`#celebration-photo` / `.polaroid` in `styles.css`) that
+scales/rotates in centred over the board and auto-fades after 2.8s — same show/hide-by-class
+pattern as the achievement toast. Paired with a full-screen `.camera-flash` pulse and a
+synthesized camera-shutter click (`playShutterSound()` — a short decaying noise burst via the
+Web Audio API, no external sound file: same "original assets only" approach as everything else
+in this app, and it means there's no audio-licensing question to even ask). The shutter call is
+wrapped in try/catch since some browsers block `AudioContext` without a prior user gesture — the
+visual flash still plays either way, so a blocked sound never breaks the moment.
