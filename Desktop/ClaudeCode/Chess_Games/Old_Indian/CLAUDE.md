@@ -696,3 +696,48 @@ needs revisiting again:
 
 Verified live: fresh load shows `0/180`; the forced move-1 `d6` now shows `6/180`, `"SES! (+6)"`,
 CSS class `score-6` (gold styling applied), and a `+6` history badge — all consistent.
+
+---
+
+## 18. Target Score to 165, Photo Gating, Sizing/Asset Polish (2026-08-21)
+
+### TARGET_SCORE: 180 → 165, and a real off-by-semantics fix alongside it
+User wanted a reachable target, not the flawless 30×6=180. Changed `TARGET_SCORE` to 165, and
+along the way fixed the `d6-boumeester` badge (and the Victory.jpg modal-photo trigger) from
+`score === TARGET_SCORE` to `score >= TARGET_SCORE` — with `===`, a player who plays perfectly
+and scores *above* 165 would have missed the achievement entirely, which defeats the point of
+lowering the bar. Badge description text rewritten since it no longer describes flawless play
+("perfekte 180/180... optimaal" → "165 lopies of meer... 'n uitstekende beurt").
+
+### Six-celebration photos held back until move 7
+`showCelebrationPhoto()` now gated on `currentMoveNumber >= 7` in addition to `moveScore === 6` —
+the photo pop-up is a middlegame flourish and shouldn't fire during the guided Powerplay theory
+window (moves 1–6).
+
+### Old-school camera sound
+`playShutterSound()` now plays the user-supplied `camera_sound.mp3` (project root) via a plain
+`Audio` object, falling back to the previous synthesized noise-burst click (renamed
+`playSynthShutterSound()`) if the file fails to load or autoplay is blocked. Both paths are
+non-essential flourishes wrapped in try/catch — the visual camera-flash always plays regardless
+of whether either sound does.
+
+### Background photo
+`Background_image.jpg` (an aerial stadium-night shot, reviewed — no legible sponsor logos, just
+atmosphere) is now the `body` background, with the existing dusk radial-gradient laid over it at
+reduced opacity (rgba, not solid) so it tints toward the established palette and keeps foreground
+text legible rather than replacing the gradient outright.
+
+### Polaroid size
+Bumped from `max-width/height: 240px` (170px mobile) to `280px` (200px mobile) — "slightly
+bigger" per feedback.
+
+### Badge panel — names no longer truncate
+`.badge-name`/`.badge-desc` had `white-space: nowrap` + ellipsis truncation, cutting off longer
+names ("Ou-Indiër Boumeester", "Koning-Indiër Oorgang," etc.). Switched both to wrapping text
+(`.badge-info` already had the `min-width: 0` flex children need to wrap instead of overflowing)
+and widened `.badge-panel` from 310px to 400px (~29% — within the "up to a third bigger" the user
+offered) so two-line names still read comfortably.
+
+### Subtitle wording
+"...van Powerplay tot doodsbeurte" → "...vanaf die eerste powerplay tot in die doodsbeurte" per
+user correction.

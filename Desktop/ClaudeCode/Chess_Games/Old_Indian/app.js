@@ -225,7 +225,7 @@ let lastWhiteMoveSan   = null;
 let lastWhiteFenBefore = null;
 let antoshinExd4Played = false;
 
-const TARGET_SCORE   = 180; // 30 moves x max 6 (SES!) per move
+const TARGET_SCORE   = 165; // a real, reachable target -- not the flawless 180 (30 x 6) max
 const MAX_MOVES      = 30;
 const WHITE_POOL_SIZES = [20, 16, 8, 4, 2, 2];
 
@@ -258,7 +258,7 @@ const WISDOM_QUOTES = [
 ];
 
 const BADGE_DESCRIPTIONS = {
-    'd6-boumeester':          "Behaal 'n perfekte 180/180 lopies in een spel. Speel al 30 skuiwe optimaal!",
+    'd6-boumeester':          "Bereik 165 lopies of meer in een spel — 'n uitstekende beurt!",
     'philidor-verdediger':    "Voltooi 'n spel in die Philidor-tak (1.e4 was Wit se eerste skuif).",
     'ou-indier-boumeester':   "Voltooi 'n spel in die Ou-Indiër-tak (1.d4 of 1.c4 was Wit se eerste skuif).",
     'hanham-vesting':         "Bereik die Hanham-opstelling: Nd7, Ngf6 (of Nf6), Be7, en rokade op g8.",
@@ -452,7 +452,7 @@ function checkAntoshinSetup(h, b) {
 
 async function checkEndGameBadges() {
     const branch = getCurrentBranch();
-    if (score === TARGET_SCORE) unlockBadge('d6-boumeester');
+    if (score >= TARGET_SCORE) unlockBadge('d6-boumeester');
     if (branch === 'philidor')  unlockBadge('philidor-verdediger');
     if (branch === 'oldindian') unlockBadge('ou-indier-boumeester');
     if (perfectMovesThisGame >= 15) unlockBadge('teoretikus');
@@ -897,11 +897,23 @@ function nextCelebrationImage() {
     return celebrationPool.pop();
 }
 
-// Synthesized camera-shutter click (a short decaying noise burst) — no
-// external sound asset, same "original assets only" approach as the rest
-// of this app. Fails silently if the browser blocks audio without a prior
-// user gesture; the visual flash still plays either way.
+// Old-school camera-shutter click. Plays the user-supplied camera_sound.mp3;
+// falls back to a synthesized noise-burst click if the file fails to load
+// or the browser blocks audio without a prior user gesture — either way
+// this is a non-essential flourish, so failures are silent and the visual
+// flash always plays regardless.
 function playShutterSound() {
+    try {
+        const audio = new Audio('camera_sound.mp3');
+        audio.volume = 0.7;
+        const played = audio.play();
+        if (played && typeof played.catch === 'function') {
+            played.catch(() => playSynthShutterSound());
+        }
+    } catch (e) { playSynthShutterSound(); }
+}
+
+function playSynthShutterSound() {
     try {
         const ctx = new (window.AudioContext || window.webkitAudioContext)();
         const now = ctx.currentTime;
@@ -1023,7 +1035,9 @@ async function processBlackMove(move, fenBeforeBlack) {
     updateTargetDisplay();
     checkBadges();
     showCommentary(move, moveScore);
-    if (moveScore === 6) showCelebrationPhoto();
+    // Held back during the Powerplay (moves 1-6) — the photo pop-up is a
+    // middlegame flourish, not a distraction during the guided theory phase.
+    if (moveScore === 6 && currentMoveNumber >= 7) showCelebrationPhoto();
 
     // Black may have just delivered mate (or the position is a draw) — check
     // before running analysis on what would otherwise be a terminal FEN.
@@ -1498,7 +1512,7 @@ async function showEndGameModal() {
     // just running out of moves without either) — no image is shown.
     const photoEl = document.getElementById('modal-outcome-photo');
     let outcomePhoto = null;
-    if (gameEndReason === 'checkmate-black-wins' || score === TARGET_SCORE) {
+    if (gameEndReason === 'checkmate-black-wins' || score >= TARGET_SCORE) {
         outcomePhoto = 'Victory.jpg';
     } else if (gameEndReason === 'checkmate-white-wins') {
         outcomePhoto = 'OUT.jpg';
@@ -1564,7 +1578,7 @@ function newGame() {
     clearArrows();
     resetTargetDisplay();
 
-    document.getElementById('score').textContent            = '0/180';
+    document.getElementById('score').textContent            = '0/165';
     document.getElementById('move-counter').textContent     = '1/30';
     document.getElementById('progress-fill').style.width   = '0%';
     document.getElementById('history-list').innerHTML       = '';
