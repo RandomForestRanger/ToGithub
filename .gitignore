@@ -27,3 +27,9 @@
 .Rhistory
 .RData
 .Ruserdata
+
+# --- Local-only secrets ---
+# Per-project local API tokens (e.g. a Lichess token for local dev testing
+# of the chess trainer apps under Desktop/ClaudeCode/Chess_Games/) — never
+# committed. Matches config.local.js anywhere in the tree.
+config.local.js
