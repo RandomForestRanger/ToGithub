@@ -783,3 +783,130 @@ the codebase — `fetchLichessData()`/`fetchStockfishEval()` both already gate o
 `window.LICHESS_TOKEN`, which needs to be set via Netlify snippet injection (Site settings →
 Build & deploy → Post processing → Snippet injection) after deploying, same as the other apps in
 this portfolio — that's a dashboard step, not something committed to the repo.
+
+---
+
+## 20. Checkmate Bonus, Image Preloading, Engine Depth, Guided Window Widened to Move 1–7 (2026-08-24)
+
+### Checkmate bonus — flat +30, not full marks
+Delivering checkmate previously had no effect on `score` at all. Considered awarding full marks
+(165) for a win, rejected: a fast forced mate against a weakened middlegame Stockfish (unlikely,
+but possible) would trivialise the whole target — a handful of ordinary moves plus one mate would
+read as a "perfect game" identical to 30 rounds of genuinely top-tier play. Went with a flat
+`MATE_BONUS = 30` instead (added to `score` in `endGameByCheckmate()` only when `matedSide ===
+'w'`, i.e. Black delivered mate) — a real win bonus on top of whatever move-quality score was
+actually earned, rather than a substitute for it. `MATE_COMMENTARY.whiteMated` and the in-game
+message now mention the bonus explicitly (`+{bonus} lopies`, filled via the existing
+`fillTemplate()` helper). Interacts cleanly with the existing systems: `d6-boumeester` and the
+`Victory.jpg` modal photo both already gate on `score >= TARGET_SCORE`, so a bonus-assisted 165+
+correctly unlocks both; the §16 fair-rating calculation (`score / (movesPlayed * 6)`) also just
+uses the post-bonus score, so a mate can legitimately push an early-ended game's rating to 100%+.
+
+### Six-celebration images now preload
+`preloadCelebrationImages()` creates an `Image()` object per filename in `CELEBRATION_IMAGES`
+(kept alive in `preloadedCelebrationImgs` so they aren't garbage-collected before use) and is
+called once on page load and again at the start of every match (`newGame()`). Warms the browser's
+image cache during idle time — several rounds of "Wit dink..." pass before a six can even land
+(the photo is still gated to `currentMoveNumber >= 7`, per §18) — so the polaroid pops in fully
+rendered instead of painting in half-loaded over the network.
+
+### White's Stockfish depth: 5 → 6
+`makeWhiteStockfishMove()`'s `fetchStockfishEval(fen, 5)` → `fetchStockfishEval(fen, 6)`. Depth 5
+(set in §11) had become a bit too forgiving for the middlegame stretch; one ply deeper without
+reintroducing the original depth-12 pacing problem it was chosen to avoid.
+
+### Guided window widened: moves 3–6 → moves 1–7
+`hintsActiveNow()` changed from `currentMoveNumber >= 3 && currentMoveNumber <= 6` to
+`currentMoveNumber <= 7` — hint arrows and the "Wys Beste Skuif" button are now available from
+Black's very first move through the end of the opening-theory window (move 7 lines up with
+White's first pure-Stockfish move, so the student gets one more guided reply right as the
+Powerplay ends). Move 1 is special-cased in both `fetchBestMove()` and `showAutoHints()`: since
+Black's first move is unconditionally forced to `d6` regardless of what the popularity/engine data
+says (see `processBlackMove()`), querying either there could suggest a *different* move and
+contradict the forced rule — both functions now short-circuit straight to a hardcoded `d6`
+suggestion/arrow for move 1 instead.
+
+### Proactive coaching — new, separate from the existing reactive commentary
+`COMMENTARY_BANK` (§13) only ever reacts to a move Black already played. Added `COACHING_BANK`, a
+parallel template bank shown *before* Black replies — right after White's move, in the same spot
+in `makeWhiteMove()` where `showAutoHints()`/`fetchBestMove()` already run — walking the student
+through the Hanham/Old-Indian plan move by move for the guided window (1–7): d6 (forced) → Nf6 →
+Nbd7 → e5 → Be7 → O-O → consolidate (c6/Re8), branch-aware (`philidor` / `oldindian` / `unknown`
+for a still-undetermined branch, e.g. after 1.Nf3 d6 2.Nc3) and referencing White's actual last
+move via `{white}` (same `fillTemplate()` substitution pattern as everywhere else). Rendered in a
+new `#coach-line` element (`.coach-line` in `styles.css` — teal left-border "coach's whiteboard
+note" style, distinct from `.commentary-line`'s italic post-move style) placed above the target
+tracker in `index.html`. `hideCoaching()` clears it the moment Black actually moves (so the
+reactive `commentary-line` takes over cleanly) and in `newGame()`.
+
+---
+
+## 21. Six-Celebration Smoothness, Coaching Made Position-Aware (2026-08-25)
+
+### Six-celebration: real causes of the "delayed and jerky" feel
+Investigated rather than assumed -- the images themselves are small (50-200KB, ~300-700px), so
+decode cost wasn't the bottleneck. Real causes found: (1) the whole "SES!" moment (score flash +
+commentary + photo) was gated behind `await scoreMove(...)`'s full Lichess+Stockfish eval
+waterfall (up to ~8s on the slow fallback) with zero visual feedback while it ran -- worse,
+celebration-eligible positions (move 7+ only, per §18) are exactly the ones least likely to be
+Lichess-cloud-cached, so the reward moment was disproportionately likely to hit the slow path;
+(2) the pop-in transition used a deliberately choppy `steps(3, end)` 0.35s zoom (an intentional
+retro homage from §19) which read as literal jank rather than charm once it was the game's
+headline moment; (3) the shutter sound was a fresh `new Audio()` per shot, never primed, so first
+playback could stall and desync from the visual; (4) the `.show` class was toggled after several
+DOM-heavy synchronous calls in the same tick (`updateHistory()`, `checkBadges()`), competing for
+the frame; (5) no guard against a rapid re-trigger stomping the previous hide timer.
+
+Fixes: `.camera-flash`/`.celebration-photo` transitions changed from `steps(3,end)` to a smooth
+`ease-out`/back-out `cubic-bezier(0.34, 1.56, 0.64, 1)` over 0.4-0.5s (still has a slight overshoot
+"pop", just no discrete steps) with `will-change: opacity, transform` added to pre-promote both
+elements to their own compositor layer. `primeShutterSound()` creates one persistent `Audio`
+element with `preload='auto'` up front (called alongside `preloadCelebrationImages()`, both at
+page load and in `newGame()`); `playShutterSound()` now rewinds and replays that one element
+instead of constructing a new one each time. `showCelebrationPhoto()` gained a
+`celebrationHideTimer` guard (`clearTimeout` the previous one before starting a new show/hide
+cycle). In `processBlackMove()`, the celebration trigger moved to fire immediately once
+`moveScore` is known, before `updateHistory()`/`checkBadges()`, and a `"🎥 Analiseer jou skuif..."`
+message now shows the instant Black's move is accepted -- this doesn't shrink the real eval
+latency (inherent to the shared eval-waterfall architecture), but it means the wait now reads as
+"the app is working" rather than "stuck", which was very likely feeding the "delayed" complaint as
+much as any actual lag.
+
+### Proactive coaching: from a hand-scripted line to a position-aware one
+User feedback: the §20 coaching wasn't actually aware of the moves played -- it recited a single
+anticipated sequence (d6 → Nf6 → Nbd7 → e5 → Be7 → O-O) keyed purely by move NUMBER + top-level
+branch, so it could recommend a move already played, or contradict a legitimate alternate setup
+this app's own badges reward (Bg4, Bf5, a King's Indian fianchetto). Proposed fix under discussion:
+a hand-authored tree keyed on the actual move sequence (4 first moves × 4 second replies × 3 × 3 =
+144+ branches by move 4 alone). Rejected in favour of a dynamic approach: unbounded authoring
+effort for the tree, and *any* line outside the anticipated branches -- including transpositions --
+reintroduces the exact same staleness the tree was meant to fix.
+
+Replaced with two dynamic pieces layered onto a short, trimmed move-number/branch opener (the old
+openers had specific move recommendations baked in -- e.g. "Nou het jy 'n keuse: e5 of Nbd7..." --
+which is exactly the content that goes stale; trimmed down to pure scene-setting like "Wit speel
+{white} in hierdie Philidor-lyn," leaving the recommendation entirely to the dynamic parts below):
+
+1. **Real candidate moves for the exact current position.** `fetchGuidanceData(fen)` (new, in the
+   hint system) fetches the Lichess-popularity top move and the engine's top move ONCE per move,
+   and is now shared by `fetchBestMove()` (the hint button), `showAutoHints()` (the arrows), AND
+   `showProactiveCoaching()` -- previously the first two each ran this same query independently for
+   the same FEN (a pre-existing redundancy), and coaching would have been a third redundant copy;
+   sharing one fetch actually reduces total API/engine load versus before, despite adding a third
+   consumer and widening the guided window to moves 1-7 (§20). `MIN_POPULARITY_SAMPLE = 20` is a
+   named version of the same threshold `scoreMove()`/`scoreByStockfishOnly()` already used as a
+   magic number, now shared for consistency (the popularity move is only named in the coaching
+   text if the pool has at least this many games).
+2. **What to work toward, read from the actual board.** `getCoachingProgress()` checks: has Nf6
+   been played, has the central `e5` break been attempted (`history().includes('e5')`), has the
+   c8-bishop left home *at all* (not specifically to e7 -- Bg4/Bf5/a g6+Bg7 fianchetto all count),
+   has the king moved *at all* (not specifically O-O to g8 -- covers queenside castling or a manual
+   king move too). `nextSuggestedIdea()` returns the first not-yet-done step in that order, or a
+   "your own plan" message once all four are done. This can never recommend something already
+   played, and never contradicts a legitimate alternate line -- it reflects whatever position was
+   actually reached, by however many moves and whichever specific ones got there.
+
+`showProactiveCoaching()` dropped its own `async`/network code entirely (it now just consumes the
+`guidance` object passed in from `makeWhiteMove()`, which already did the one shared fetch) and
+assembles: `{opener}{options in brackets, if any}{Ons plan: nextSuggestedIdea()}.` Move 1 still
+shows just the opener (forced move, no options/idea to add).

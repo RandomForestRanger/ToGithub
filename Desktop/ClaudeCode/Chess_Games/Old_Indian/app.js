@@ -228,6 +228,11 @@ let antoshinExd4Played = false;
 const TARGET_SCORE   = 165; // a real, reachable target -- not the flawless 180 (30 x 6) max
 const MAX_MOVES      = 30;
 const WHITE_POOL_SIZES = [20, 16, 8, 4, 2, 2];
+// Flat win bonus for delivering checkmate -- not full marks. Full marks would
+// let a fast forced mate trivialise the 165-run target (a handful of decent
+// moves + one mate = "perfect game"); a bonus instead rewards the win as its
+// own achievement on top of whatever move-quality was actually earned.
+const MATE_BONUS     = 30;
 
 // ==================== STORAGE KEYS ====================
 
@@ -603,8 +608,19 @@ async function makeWhiteMove() {
     updatePhaseInfo();
     updateTargetDisplay();
 
-    await showAutoHints();
-    await fetchBestMove();
+    // Fetched ONCE and shared by the coach tip, the auto-hint arrows, and the
+    // "Wys Beste Skuif" button -- previously each of the latter two ran its
+    // own identical Lichess+Stockfish query for the same position; adding a
+    // third caller (coaching) without sharing would have tripled that load.
+    // undefined (not fetched) for move 1 -- forced move, and for anything
+    // past the guided window, where hintsActiveNow() is false anyway.
+    const guidance = (hintsActiveNow() && currentMoveNumber > 1)
+        ? await fetchGuidanceData(game.fen())
+        : null;
+
+    showProactiveCoaching(guidance);
+    await showAutoHints(guidance);
+    await fetchBestMove(guidance);
 
     isThinking = false;
     showMessage("Jou beurt — speel as Swart!", "info");
@@ -655,8 +671,9 @@ function boostMove(moves, targetSan, prob) {
 
 async function makeWhiteStockfishMove() {
     try {
-        // Depth 5 keeps White's moves quick and age-appropriate for young players
-        const data = await fetchStockfishEval(game.fen(), 5);
+        // Depth 6 keeps White's moves quick and age-appropriate for young
+        // players -- bumped from 5 (2026-08-24) since 5 was a smidge too easy.
+        const data = await fetchStockfishEval(game.fen(), 6);
         if (data && data.pvs && data.pvs[0]) {
             const uci = data.pvs[0].moves.split(' ')[0];
             const m   = game.move({ from: uci.slice(0,2), to: uci.slice(2,4),
@@ -696,7 +713,7 @@ async function scoreMove(fen, move) {
             }
         }
 
-        if (totalGames < 20) return scoreByStockfishOnly(move.san, uciMove, engineTopMoves, sfData, fen);
+        if (totalGames < MIN_POPULARITY_SAMPLE) return scoreByStockfishOnly(move.san, uciMove, engineTopMoves, sfData, fen);
 
         // findIndex() returns -1 when the move isn't found — and -1 <= 1 is
         // true in JS, so an unguarded "pi <= 1" would silently score every
@@ -818,9 +835,9 @@ const MATE_COMMENTARY = {
         "Uitgeboul! Die enjin sluit die beurt af — geen ontsnapping vir Swart nie."
     ],
     whiteMated: [
-        "Uitgeboul! Daar spat Wit se penne!",
-        "UITGEBOUL! Swart vang Wit se koning — wat 'n beurt!",
-        "Uitgeboul! Wit se verdediging val plat — Swart wen die wedstryd!"
+        "Uitgeboul! Daar spat Wit se penne! Bonus: +{bonus} lopies vir die wen-slag!",
+        "UITGEBOUL! Swart vang Wit se koning — wat 'n beurt! +{bonus} bonuslopies!",
+        "Uitgeboul! Wit se verdediging val plat — Swart wen die wedstryd! (+{bonus} lopies bonus)"
     ]
 };
 
@@ -846,8 +863,137 @@ function showMateCommentary(matedSide) {
     const el = document.getElementById('commentary-line');
     if (!el) return;
     const lines = matedSide === 'b' ? MATE_COMMENTARY.blackMated : MATE_COMMENTARY.whiteMated;
-    el.textContent = lines[Math.floor(Math.random() * lines.length)];
+    const tpl   = lines[Math.floor(Math.random() * lines.length)];
+    // fillTemplate() is a no-op on text with no {placeholders}, so this is
+    // safe to call for the blackMated lines too, which have none.
+    el.textContent = fillTemplate(tpl, { bonus: MATE_BONUS });
     el.style.display = 'block';
+}
+
+// ==================== PROACTIVE COACHING (moves 1-7) ====================
+// COMMENTARY_BANK above is reactive -- it comments on a move Black already
+// played. This is proactive: shown right after White moves, BEFORE Black
+// replies, walking the student toward the plan for the guided-theory window
+// (moves 1-7) instead of only judging them after the fact.
+//
+// v1 (2026-08-24) hand-scripted a fixed "d6 → Nf6 → Nbd7 → e5 → Be7 → O-O"
+// line keyed purely by move NUMBER + top-level branch. Feedback (2026-08-25):
+// it wasn't actually aware of the moves played -- it kept reciting the next
+// step in that one anticipated sequence even when the real game had already
+// done it, or had gone a different (also legitimate -- Bg4, Bf5, a King's
+// Indian fianchetto all have their own badges) way. The proposed fix was a
+// hand-authored tree keyed on the actual move sequence (4x4x3x3 = 144+
+// branches by move 4) -- rejected: unbounded authoring effort, and *any*
+// line outside the anticipated tree reintroduces the exact same staleness,
+// including transpositions and the alternate lines this app already
+// celebrates.
+//
+// v2 replaces the scripted "next move" entirely with two dynamic pieces,
+// assembled onto a short move-number/branch-flavoured opener below:
+//   1. REAL candidate moves for the exact current position -- the same
+//      `guidance` (Lichess-popularity top move + engine top move) that the
+//      hint arrows and "Wys Beste Skuif" button already use (see
+//      fetchGuidanceData() in the hint system, shared rather than re-fetched
+//      here). Correct for literally any position reached, not just the ones
+//      anticipated in a hand-built tree.
+//   2. "What to work toward" from getCoachingProgress()/nextSuggestedIdea()
+//      below, which reads the ACTUAL board (has the bishop left c8 at all,
+//      regardless of which square it went to? has the king moved at all?)
+//      instead of a move-number assumption -- so it can never recommend
+//      something already done, and it recognises the alternate setups this
+//      app's own badges reward instead of contradicting them.
+const COACHING_BANK = {
+    1: {
+        generic: [
+            "Wit open met {white}. Maak nie saak wat Wit speel nie — ons antwoord is amper altyd d6. Dit hou die deur oop vir sowel die Philidor (teen e4) as die Ou-Indiër (teen d4/c4/Nf3).",
+            "Wit begin met {white}. Ons plan verander nie: d6 eerste, altyd. Dis die een bal wat teen byna elke boulwerk werk."
+        ]
+    },
+    2: {
+        philidor:  ["Wit het die Philidor-deur oopgemaak, en speel nou {white}.", "Ons is in Philidor-gebied na {white}."],
+        oldindian: ["Wit bly by die Ou-Indiër-plan met {white}.", "Na {white} bly ons in Ou-Indiër-gebied."],
+        unknown:   ["Wit hou sy planne geheim met {white} — nog nie duidelik of dit 'n Philidor of 'n Ou-Indiër word nie."]
+    },
+    3: {
+        philidor:  ["Wit speel {white} in hierdie Philidor-lyn.", "Teen {white} bou ons solied voort."],
+        oldindian: ["Wit antwoord met {white} in die Ou-Indiër.", "Na {white} bly die plan dieselfde: stadig en stewig."],
+        unknown:   ["Wit speel {white} en ons bly buigsaam."]
+    },
+    4: {
+        philidor:  ["Wit reageer met {white}.", "Na {white}, steeds in Philidor-gebied."],
+        oldindian: ["Wit speel {white} in die Ou-Indiër.", "Teen {white} bly ons plan stewig."],
+        unknown:   ["Wit speel {white}."]
+    },
+    5: {
+        philidor:  ["Wit antwoord {white}.", "Na {white}, steeds in die Hanham-gees."],
+        oldindian: ["Wit speel {white}.", "Teen {white} bou ons voort."],
+        unknown:   ["Wit speel {white}."]
+    },
+    6: {
+        philidor:  ["Wit speel {white}.", "Na {white} — amper klaar gebou."],
+        oldindian: ["Wit speel {white}.", "Teen {white} — amper klaar."],
+        unknown:   ["Wit speel {white}."]
+    },
+    7: {
+        philidor:  ["Wit speel {white} — Wit se eerste enjin-gedrewe skuif, die Powerplay is verby.",
+                    "Na {white}: die openingsboek is nou agter ons."],
+        oldindian: ["Wit speel {white} — en vanaf hier dink die enjin vir homself.",
+                    "Na {white}: die Powerplay is verby."],
+        unknown:   ["Wit speel {white} — die enjin-oorgang het nou plaasgevind."]
+    }
+};
+
+// Reads the ACTUAL board (not the move counter) to decide what Black still
+// needs to do. bishopOut/kingMoved deliberately check "left home at all"
+// rather than "reached e7"/"reached g8" specifically, so a legitimate
+// alternate development (Bg4, Bf5, a g6+Bg7 fianchetto, queenside castling)
+// is recognised as done instead of being nagged about forever.
+function getCoachingProgress() {
+    const b = game.board();
+    const h = game.history();
+    return {
+        f6:        b[2]?.[5]?.type === 'n' && b[2][5].color === 'b',                    // Nf6 played
+        e5Push:    h.includes('e5'),                                                     // central break attempted
+        bishopOut: !(b[0]?.[2] && b[0][2].type === 'b' && b[0][2].color === 'b'),        // c8-bishop has moved (any square)
+        kingMoved: !(b[0]?.[4] && b[0][4].type === 'k' && b[0][4].color === 'b')         // king left e8 (castled either side, or walked)
+    };
+}
+
+function nextSuggestedIdea() {
+    const p = getCoachingProgress();
+    if (!p.f6)        return "ontwikkel Nf6";
+    if (!p.e5Push)    return "speel Nbd7, met die oog op 'n latere e5-stoot";
+    if (!p.bishopOut) return "ontwikkel jou loper (Be7 is die stewigste, maar Bg4/Bf5/'n fianchetto werk ook)";
+    if (!p.kingMoved) return "rokade (O-O) om jou koning veilig te kry";
+    return "jou eie plan — oorweeg c6 of Re8 om te konsolideer voor die middelspel";
+}
+
+function showProactiveCoaching(guidance) {
+    const el = document.getElementById('coach-line');
+    if (!el) return;
+    const bank = COACHING_BANK[currentMoveNumber];
+    if (!bank) { el.style.display = 'none'; return; }
+    const branch   = getCurrentBranch();
+    const variants = bank[branch] || bank.generic || bank.unknown || Object.values(bank)[0];
+    if (!variants || variants.length === 0) { el.style.display = 'none'; return; }
+    const opener = fillTemplate(variants[Math.floor(Math.random() * variants.length)],
+                                 { white: lastWhiteMoveSan || '...' });
+
+    // Move 1 is forced -- the opener already says it all, no options/idea to add.
+    if (currentMoveNumber === 1) { el.textContent = opener; el.style.display = 'block'; return; }
+
+    const bits = [];
+    if (guidance?.popTop && guidance.popTotal >= MIN_POPULARITY_SAMPLE) bits.push(`gewild: ${guidance.popTop.san}`);
+    if (guidance?.engineTop) bits.push(`enjin verkies: ${guidance.engineTop.san}`);
+    const optionsText = bits.length ? ` (${bits.join(' — ')})` : '';
+
+    el.textContent = `${opener}${optionsText} Ons plan: ${nextSuggestedIdea()}.`;
+    el.style.display = 'block';
+}
+
+function hideCoaching() {
+    const el = document.getElementById('coach-line');
+    if (el) el.style.display = 'none';
 }
 
 // ==================== SIX-CELEBRATION PHOTOS ====================
@@ -909,6 +1055,42 @@ function pickBoardSponsors() {
 
 let celebrationPool = [];
 
+// Warm the browser's image cache for the whole celebration pool up front,
+// rather than letting the first "SES!" trigger a cold fetch. Called once on
+// page load and again at the start of every match -- by the time a six can
+// actually land (move 7+, see the currentMoveNumber gate below), White has
+// already made several moves' worth of "Wit dink..." idle time for these
+// small JPEGs to finish loading quietly in the background, so the polaroid
+// pops in fully rendered instead of painting in half-loaded.
+let preloadedCelebrationImgs = [];
+
+function preloadCelebrationImages() {
+    preloadedCelebrationImgs = CELEBRATION_IMAGES.map(src => {
+        const img = new Image();
+        img.src = src;
+        return img;
+    });
+}
+
+// Shutter sound, primed once up front instead of `new Audio()` per shot --
+// a freshly-constructed Audio element has to start buffering from scratch
+// before it can play, which can desync the click from the visual flash on
+// first use. One persistent element with preload='auto', rewound before
+// each play, avoids that stall. Falls back to the synthesized click if the
+// file itself fails to load (not just if playback is blocked).
+let shutterAudio = null;
+let shutterAudioFailed = false;
+
+function primeShutterSound() {
+    try {
+        shutterAudio = new Audio('camera_sound.mp3');
+        shutterAudio.preload = 'auto';
+        shutterAudio.volume  = 0.7;
+        shutterAudio.addEventListener('error', () => { shutterAudioFailed = true; });
+        shutterAudio.load();
+    } catch (e) { shutterAudioFailed = true; }
+}
+
 function refillCelebrationPool() {
     celebrationPool = [...CELEBRATION_IMAGES];
     // Fisher-Yates shuffle
@@ -929,10 +1111,10 @@ function nextCelebrationImage() {
 // this is a non-essential flourish, so failures are silent and the visual
 // flash always plays regardless.
 function playShutterSound() {
+    if (shutterAudioFailed || !shutterAudio) { playSynthShutterSound(); return; }
     try {
-        const audio = new Audio('camera_sound.mp3');
-        audio.volume = 0.7;
-        const played = audio.play();
+        shutterAudio.currentTime = 0; // rewind the primed element rather than building a new one
+        const played = shutterAudio.play();
         if (played && typeof played.catch === 'function') {
             played.catch(() => playSynthShutterSound());
         }
@@ -960,11 +1142,19 @@ function playSynthShutterSound() {
     } catch (e) { /* non-essential flourish — ignore */ }
 }
 
+let celebrationHideTimer = null;
+
 function showCelebrationPhoto() {
     const backdrop = document.getElementById('camera-flash'); // dim lightbox backdrop, not a white flash
     const wrap      = document.getElementById('celebration-photo');
     const img       = document.getElementById('celebration-photo-img');
     if (!wrap || !img) return;
+
+    // Guard against a stomped transition if this fires again before the
+    // previous photo finished its hide timer (two quick sixes, or a new
+    // game started mid-animation) -- without this the two setTimeouts race
+    // and can yank the class off mid-transition, reading as a flicker.
+    if (celebrationHideTimer) clearTimeout(celebrationHideTimer);
 
     img.src = nextCelebrationImage();
     playShutterSound();
@@ -973,9 +1163,10 @@ function showCelebrationPhoto() {
     // the whole time the photo is up, then both clear together.
     if (backdrop) backdrop.classList.add('show');
     wrap.classList.add('show');
-    setTimeout(() => {
+    celebrationHideTimer = setTimeout(() => {
         if (backdrop) backdrop.classList.remove('show');
         wrap.classList.remove('show');
+        celebrationHideTimer = null;
     }, 2800);
 }
 
@@ -1005,8 +1196,17 @@ async function endGameByCheckmate(matedSide) {
     clearHighlights();
     clearArrows();
     updatePhaseInfo();
+
+    // matedSide === 'w' means Black delivered mate -- the student won the
+    // match outright, on top of whatever move-quality score they'd banked.
+    if (matedSide === 'w') {
+        score += MATE_BONUS;
+        updateDisplay();
+    }
+
     showMateCommentary(matedSide);
-    showMessage(matedSide === 'b' ? "Uitgeboul! Swart is skaakmat." : "Uitgeboul! Wit is skaakmat!",
+    showMessage(matedSide === 'b' ? "Uitgeboul! Swart is skaakmat."
+                                  : `Uitgeboul! Wit is skaakmat! +${MATE_BONUS} bonuslopies!`,
                 matedSide === 'b' ? 'error' : 'info');
     setTimeout(async () => { await showEndGameModal(); }, 3500);
 }
@@ -1036,7 +1236,15 @@ async function processBlackMove(move, fenBeforeBlack) {
     }
 
     isThinking = true;
-    clearArrows(); // clear hint arrows once Black plays
+    clearArrows();   // clear hint arrows once Black plays
+    hideCoaching();  // the proactive tip for this move is done; reactive commentary takes over below
+
+    // scoreMove() below runs the full Lichess+Stockfish eval waterfall, which
+    // can take several seconds with zero other feedback on screen -- give an
+    // immediate acknowledgment so that wait reads as "the app is working",
+    // not "the app is stuck", especially since celebration-eligible positions
+    // (move 7+) are exactly the ones least likely to be Lichess-cloud-cached.
+    showMessage("🎥 Analiseer jou skuif...", "thinking");
 
     // fenBeforeBlack comes from the caller, captured BEFORE game.move() ran — using
     // game.fen() here instead would already reflect the position AFTER Black's move
@@ -1045,6 +1253,14 @@ async function processBlackMove(move, fenBeforeBlack) {
     let moveScore = currentMoveNumber > 1 ? await scoreMove(fenBeforeBlack, move) : 6;
     if (moveScore === 6) perfectMovesThisGame++;
     score += moveScore;
+
+    // Trigger the six-celebration photo as early as possible once the score is
+    // known -- before the heavier synchronous DOM work below (history-list
+    // rebuild, badge board-scans) -- so its opening transition gets a clean
+    // first paint instead of competing with other layout work in the same
+    // frame. Held back during the Powerplay (moves 1-6) — the photo pop-up is
+    // a middlegame flourish, not a distraction during the guided theory phase.
+    if (moveScore === 6 && currentMoveNumber >= 7) showCelebrationPhoto();
 
     positionHistory.push(game.fen());
     moveHistory.push({
@@ -1063,9 +1279,6 @@ async function processBlackMove(move, fenBeforeBlack) {
     updateTargetDisplay();
     checkBadges();
     showCommentary(move, moveScore);
-    // Held back during the Powerplay (moves 1-6) — the photo pop-up is a
-    // middlegame flourish, not a distraction during the guided theory phase.
-    if (moveScore === 6 && currentMoveNumber >= 7) showCelebrationPhoto();
 
     // Black may have just delivered mate (or the position is a draw) — check
     // before running analysis on what would otherwise be a terminal FEN.
@@ -1137,29 +1350,39 @@ async function fetchLichessData(fen) {
 
 // ==================== HINT SYSTEM ====================
 
-// Hints and arrows are available only on moves 3–6 (guided theory window)
+// Hints and arrows are available on moves 1–7 -- widened from 3–6 (2026-08-24)
+// so the student is guided from the very first move through the end of the
+// guided theory window, not just its middle stretch.
 function hintsActiveNow() {
-    return currentMoveNumber >= 3 && currentMoveNumber <= 6;
+    return currentMoveNumber <= 7;
 }
 
-async function fetchBestMove() {
-    if (game.turn() !== 'b') return;
-    if (!hintsActiveNow()) { bestMove = null; return; }
-    const fen = game.fen();
+// Below this many total games in the Lichess pool, popularity data is too
+// thin to trust -- same threshold scoreMove()/scoreByStockfishOnly() already
+// use to decide when to fall back to pure engine ranking.
+const MIN_POPULARITY_SAMPLE = 20;
 
-    // Try Lichess popularity first
+// Single shared fetch for "what's good here" -- top Lichess-popular move and
+// the engine's top choice for one exact FEN. Called once per move (2026-08-25)
+// from makeWhiteMove() and handed to fetchBestMove(), showAutoHints(), AND
+// showProactiveCoaching(), which previously either ran this same query
+// redundantly (the first two) or would have needed a third redundant copy
+// (coaching). One fetch now serves all three, and guarantees they can never
+// disagree with each other since they're reading the same data.
+async function fetchGuidanceData(fen) {
+    let popTop = null, popTotal = 0, engineTop = null;
+
     try {
         const d = await fetchLichessData(fen);
         if (d && d.moves && d.moves.length > 0) {
             const sorted = d.moves.sort((a, b) =>
                 (b.white + b.draws + b.black) - (a.white + a.draws + a.black));
-            const ft = sanToFromTo(fen, sorted[0].san);
-            bestMove = { san: sorted[0].san, from: ft?.from, to: ft?.to, source: 'popularity' };
-            return;
+            popTotal = sorted.reduce((s, m) => s + m.white + m.draws + m.black, 0);
+            const top = sorted[0];
+            popTop = { san: top.san, games: top.white + top.draws + top.black };
         }
-    } catch (e) { /* fallthrough */ }
+    } catch (e) { /* ignore */ }
 
-    // Engine fallback
     try {
         const d = await fetchStockfishEval(fen);
         if (d && d.pvs && d.pvs[0]) {
@@ -1167,10 +1390,37 @@ async function fetchBestMove() {
             const tmp = new Chess(fen);
             const m   = tmp.move({ from: uci.slice(0,2), to: uci.slice(2,4),
                                    promotion: uci.length>4 ? uci[4] : undefined });
-            if (m) { bestMove = { san: m.san, from: m.from, to: m.to, source: 'engine' }; return; }
+            if (m) engineTop = { san: m.san, from: m.from, to: m.to };
         }
     } catch (e) { /* ignore */ }
 
+    return { popTop, popTotal, engineTop };
+}
+
+async function fetchBestMove(guidance) {
+    if (game.turn() !== 'b') return;
+    if (!hintsActiveNow()) { bestMove = null; return; }
+    const fen = game.fen();
+
+    // Move 1 is always forced to d6 (see processBlackMove) regardless of what
+    // popularity/engine data says -- querying either here could suggest a
+    // different move and contradict the forced rule, so short-circuit.
+    if (currentMoveNumber === 1) {
+        const ft = sanToFromTo(fen, 'd6');
+        bestMove = { san: 'd6', from: ft?.from, to: ft?.to, source: 'forced' };
+        return;
+    }
+
+    if (guidance?.popTop) {
+        const ft = sanToFromTo(fen, guidance.popTop.san);
+        bestMove = { san: guidance.popTop.san, from: ft?.from, to: ft?.to, source: 'popularity' };
+        return;
+    }
+    if (guidance?.engineTop) {
+        bestMove = { san: guidance.engineTop.san, from: guidance.engineTop.from,
+                     to: guidance.engineTop.to, source: 'engine' };
+        return;
+    }
     bestMove = null;
 }
 
@@ -1196,35 +1446,24 @@ function clearHighlights() {
 
 // ==================== AUTO-HINTS (board arrows for Black's best moves) ====================
 
-async function showAutoHints() {
+async function showAutoHints(guidance) {
     if (gameOver || game.turn() !== 'b') return;
-    if (!hintsActiveNow()) return; // auto-arrows only on moves 3–6 and 27–28
+    if (!hintsActiveNow()) return; // auto-arrows only on moves 1–7 (guided theory window)
     clearArrows();
 
     const fen = game.fen(); // capture synchronously
 
-    let popMove    = null; // { from, to }
-    let engineMove = null;
+    // Move 1 is forced to d6 -- draw a single confirming arrow rather than
+    // querying popularity/engine data, which could point somewhere else and
+    // contradict the forced rule in processBlackMove().
+    if (currentMoveNumber === 1) {
+        const ft = sanToFromTo(fen, 'd6');
+        if (ft) drawArrow(ft.from, ft.to, 'rgba(255,201,74,0.92)'); // trophy gold
+        return;
+    }
 
-    try {
-        const d = await fetchLichessData(fen);
-        if (d && d.moves && d.moves.length > 0) {
-            const top = d.moves.sort((a, b) =>
-                (b.white + b.draws + b.black) - (a.white + a.draws + a.black))[0];
-            popMove = sanToFromTo(fen, top.san);
-        }
-    } catch (e) { /* ignore */ }
-
-    try {
-        const d = await fetchStockfishEval(fen);
-        if (d && d.pvs && d.pvs[0]) {
-            const uci = d.pvs[0].moves.split(' ')[0];
-            const tmp = new Chess(fen);
-            const m   = tmp.move({ from: uci.slice(0,2), to: uci.slice(2,4),
-                                   promotion: uci.length>4 ? uci[4] : undefined });
-            if (m) engineMove = { from: m.from, to: m.to };
-        }
-    } catch (e) { /* ignore */ }
+    const popMove    = guidance?.popTop    ? sanToFromTo(fen, guidance.popTop.san) : null;
+    const engineMove = guidance?.engineTop ? { from: guidance.engineTop.from, to: guidance.engineTop.to } : null;
 
     if (popMove && engineMove && popMove.from === engineMove.from && popMove.to === engineMove.to) {
         // Both agree → trophy gold
@@ -1601,6 +1840,8 @@ function newGame() {
     lastWhiteFenBefore   = null;
     antoshinExd4Played   = false;
     refillCelebrationPool();
+    preloadCelebrationImages();
+    primeShutterSound();
     pickBoardSponsors();
 
     clearSelection();
@@ -1613,6 +1854,7 @@ function newGame() {
     document.getElementById('history-list').innerHTML       = '';
     document.getElementById('move-score-display').style.display = 'none';
     document.getElementById('commentary-line').style.display = 'none';
+    hideCoaching();
     document.getElementById('celebration-photo').classList.remove('show');
     document.getElementById('branch-row').style.display    = 'none';
     document.getElementById('white-pool').textContent       = 'Top 20 skuiwe';
@@ -1761,6 +2003,8 @@ $(document).ready(function() {
     loadBadges();
     selectRandomWisdom();
     setupBadgeHovers();
+    preloadCelebrationImages();
+    primeShutterSound();
 
     // Arrow canvas must be sized after board renders
     setTimeout(() => {
