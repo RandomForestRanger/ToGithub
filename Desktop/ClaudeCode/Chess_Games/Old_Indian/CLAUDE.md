@@ -910,3 +910,230 @@ which is exactly the content that goes stale; trimmed down to pure scene-setting
 `guidance` object passed in from `makeWhiteMove()`, which already did the one shared fetch) and
 assembles: `{opener}{options in brackets, if any}{Ons plan: nextSuggestedIdea()}.` Move 1 still
 shows just the opener (forced move, no options/idea to add).
+
+---
+
+## 22. Six-Celebration Pool Replaced, New Out/Victory Photos (2026-08-25)
+
+### 32 new candidates reviewed one by one — 14 rejected, this batch was different in kind
+The user replaced the entire previous `six-celebrations/` folder (the 17 files listed in §14/§15)
+with 32 new candidates (`Celebrate6_1.png`–`Celebrate6_32.jpg`, mixed case on `celebrate6_14.jpg`,
+and a genuine duplicate slot — both `Celebrate6_6.jpg` and `Celebrate6_6.png` exist as two
+different, unrelated photos). Unlike every prior batch (§14–§16), which was AI-generated art with
+occasional real logos needing a blur, roughly a third of this batch turned out to be **real,
+mostly-unaltered IPL photography** — a different and more serious problem than anything found
+before, so it's recorded in detail here rather than folded into the `CELEBRATION_IMAGES` comment
+alone (which has the short version):
+
+- **`Celebrate6_20`, `_21`, `_22`, `_23`, `_24`, `_26`**: real photographs (not this app's
+  AI-generated art style — the skin/fabric/crowd rendering is straight photography) of real IPL
+  cheerleaders, fans, and an umpire, with *some* sponsor logos already blob-blurred (matching the
+  yellow-circle technique from §16) but the real team colours, real crowd, and real setting left
+  untouched.
+- **`Celebrate6_25`, `_30`, `_31`, `_32`**: the same, but of an unmistakable, easily-named real
+  international player, in real kit, with real sponsor logos (DHL, slice, Dream11 boarding) left
+  **completely unblurred** — including a real broadcast-commentary-booth photo (`_32`) with the
+  same player on a monitor mid-commentary. No blur pass was even attempted on these four.
+- **`Celebrate6_15`**: a real cheerleader photo (not AI-generated) with a real sponsor "M" logo
+  and a real team crest fully legible, unblurred.
+- **`Celebrate6_16`**: this one *is* the app's AI-generated D6-branded style, but a real "TATA"
+  wordmark is legible on a boundary board (same category of miss as the original C4.jpg fix in
+  §15, just not caught before hand-off this time).
+- **`Celebrate6_7`, `_12`**: AI-generated, correctly D6-branded, no trademark issue at all —
+  excluded on a different axis instead: close-up glamour/cheerleader shots (blown kiss, cleavage
+  framing) don't fit an app whose stated audience is ~8–12-year-old players. This is a judgement
+  call, not a hard rule from §2/§12 — flagged here rather than silently applied so it can be
+  reversed if the user disagrees.
+
+18 passed and were provisionally left live in `CELEBRATION_IMAGES` (`app.js`), with 14 held back
+pending the real-photography question above.
+
+### Correction: it's all the user's own AI art — the 14 were reinstated with blur, not deletion
+The "real photography" read above was wrong. The user confirmed every image in the batch is their
+own AI generation, and that the sponsor-logo blurring already visible on several of them
+(`Celebrate6_20`–`_24`, `_26`) was applied by Claude in an earlier session — i.e. exactly the
+established §14–§16 workflow (generate art, catch an incidental real-looking wordmark, blur it
+tight), not a sign of real underlying photography. The photorealism of this particular generation
+run was just good enough to misread as a genuine broadcast/paparazzi photo, especially on the ones
+still carrying a fully legible sponsor wordmark (`_25`, `_30`, `_31` had none of the earlier blur
+pass; `_32`'s in-frame text turned out to be illegible mosaic noise on closer zoom, not a real word
+at all). Corrected course: reapplied the same tight, discrete blur technique (mosaic + Gaussian,
+feathered rounded-rect mask, sized to just the mark — not the whole jersey/panel) to `_15` (sponsor
+"M" logo + team crest), `_16` ("TATA" wordmark), `_25` (three small sponsor-shaped patches), and
+`_30`/`_31` (one chest-logo cluster plus the boundary-hoarding band each, both boxes checked
+against the batter's face/beard position first — an earlier attempt at the `_30`/`_31` chest patch
+sized from a downscaled preview crop instead of the full-resolution image and ended up covering
+part of a face; redone at full resolution, confirmed clear). Verified per-patch with a
+region-vs-whole-image mean pixel-diff (target regions: ~20–35; everywhere else: ~1–5, i.e. ordinary
+JPEG re-save noise, not a new blur) rather than eyeballing alone. `Celebrate6_7`/`_12` needed no
+blur at all (no trademark issue, ever) and were reinstated as-is; the earlier note flagging them as
+an audience-fit judgement call still stands as something to revisit if the user's read differs.
+
+All **33** files (32 numbered slots plus the genuine `Celebrate6_6.jpg`/`.png` duplicate) are now
+live in `CELEBRATION_IMAGES`, up from 13 in the previous pool. `celebrate6_14.jpg` and
+`Celebrate6_29.jpg` (real stadium name + generic "Cricket India" caption) rely on the same
+venue-name precedent as `Victory.jpg`'s "Rajiv Gandhi Stadium" (§14); `Celebrate6_9` (a stadium
+dance-troupe photo with no D6 branding at all, but no real logos either) was kept for
+atmosphere/variety.
+
+### Case-sensitivity fix: `OUT.jpg`
+The user's replacement "out" photo landed on disk as `Out.jpg` (mixed case) while git's tracked
+path and `app.js`'s string literal are both `OUT.jpg` — invisible locally (macOS's default
+filesystem is case-insensitive), but would 404 on Netlify's case-sensitive Linux hosting. Renamed
+back to exact-case `OUT.jpg` (`mv` through a temp name, since a same-case rename is a no-op on a
+case-insensitive volume). Content itself reviewed clean: a generic AI-rendered umpire, no real
+branding.
+
+### `Victory2.jpg` — a second win photo, picked at random
+A new alternate "game-won" photo (aerial night shot of a stadium under fireworks) was reviewed —
+no legible real sponsor text or identifiable real venue, just AI-generated crowd-block colour and
+illegible board text, unlike the real-photo problem above. `showEndGameModal()`'s outcome-photo
+logic now picks randomly between `Victory.jpg` and `Victory2.jpg` on a win (checkmate delivered by
+Black, or `score >= TARGET_SCORE`) via a small `VICTORY_PHOTOS` array, instead of hardcoding
+`Victory.jpg`; the loss path (`OUT.jpg`) is unchanged.
+
+### Pre-deploy pass: PNG→JPEG, `.gitignore`
+Ahead of a Netlify push, `six-celebrations/Celebrate6_1-8.png` (the 8 files that arrived as raw,
+uncompressed AI-generation output, ~2-2.5MB each) were re-encoded to JPEG quality 88 and the
+originals deleted — spot-checked at full size first (text/logos still sharp, no visible banding).
+Cut the folder from 23MB to 7MB; at this app's 280px-max polaroid display size the pixel
+difference is invisible, but the smaller payload means both a faster git push/Netlify deploy and
+a faster `preloadCelebrationImages()` warm-up in-game. `Celebrate6_6.png` became
+`Celebrate6_6b.jpg`, not `Celebrate6_6.jpg`, to avoid colliding with the pre-existing, unrelated
+photo already at that filename. `CELEBRATION_IMAGES` in `app.js` updated accordingly — still 33
+entries, just 8 with new extensions/names. Also added a `.gitignore` (`.DS_Store`,
+`config.local.js`) — two stray `.DS_Store` files were sitting untracked in the working tree.
+
+---
+
+## 23. Prefetch During Black's Thinking Time, Shared Move-Data Cache (2026-08-26)
+
+### The ask: start Black's scoring fetch before Black moves, not after
+User request: speed up the post-move pause by fetching the Lichess+Stockfish data used to
+score Black's move *while Black is still deciding what to play*, instead of only starting that
+fetch once Black has already moved. This works because the data `scoreMove()` ranks a move
+against — the Lichess popularity list and Stockfish's top lines — is a property of the FEN
+*before* Black moves, not of which move Black actually picks. That FEN is already known and
+fixed the instant White's move lands, so the fetch has no reason to wait for Black.
+
+### Implementation: `getMoveData(fen)` / `prefetchMoveData(fen)`
+A small cache (`moveDataCache = { fen, promise }`, holding only the single most-recent FEN —
+there's only ever one "position awaiting Black's move" at a time) wraps the existing
+`fetchLichessData()`/`fetchStockfishEval()` pair. `prefetchMoveData()` is called from
+`makeWhiteMove()` immediately after White's move lands (right after the checkmate/draw guard,
+before the DOM-update calls), unconditionally for all 30 moves — not just the moves 1–7 guided
+window — so the fetch is in flight for the entire time Black spends thinking, on every move of
+the game. `getMoveData(fen)` returns the cached in-flight/resolved promise on a fen match, or
+starts a fresh fetch otherwise (a safety net, not the expected path during normal play).
+
+### Bonus: this also killed a real pre-existing redundancy, not just added a prefetch
+Auditing every caller of `fetchLichessData`/`fetchStockfishEval` for the pre-Black-move FEN
+found that `fetchGuidanceData()` (hints/coaching, moves 1–7 only), `scoreMove()` (scoring, every
+move), and `showMoveAnalysis()` (the post-move analysis panel, every move) were each already
+running their *own independent* Lichess+Stockfish fetch for the exact same FEN — up to three
+redundant round-trips per position before this change, none of which the prefetch idea alone
+would have removed if each caller had kept fetching independently. All three now read from
+`getMoveData()` instead: `fetchGuidanceData()`'s two separate fetches, `scoreMove()`'s
+`Promise.all([...])`, and `showMoveAnalysis()`'s two separate fetches were each replaced with a
+single `await getMoveData(fen)`. In the normal case this means the *entire* post-move
+scoring+analysis step (for moves 8–30, where no guidance fetch runs) does zero new network
+calls — it's already sitting in cache from the prefetch — and even on moves 1–7 (where guidance
+also reads the same cache) there's only ever one fetch per position, not three.
+
+### What else was checked and left alone
+Every other `fetchStockfishEval`/`fetchLichessData` call site was audited and correctly left as
+a direct, uncached call: White's own move-selection fetches (`makeWhitePopularityMove`,
+`makeWhiteStockfishMove` — a different FEN, White-to-move, not Black's thinking window);
+`scoreByStockfishOnly()`'s centipawn-loss fallback and `updatePositionEval()` (both query the
+FEN *after* Black's actual move — genuinely can't be known ahead of time); `checkEndGameBadges()`
+(once per game, at the end); and `showBestMovesForReview()` (review mode, user-navigated
+historical FENs, no "thinking" window to overlap with). Image/sound preloading
+(`preloadCelebrationImages()`, `primeShutterSound()`) and the local Stockfish worker init
+(`initStockfish()`) were already one-time, game-start/page-load operations rather than
+per-move work, so there was nothing further to move earlier for those.
+
+`moveDataCache` is also cleared in `newGame()` — not required for correctness (a stale cached
+FEN simply wouldn't match and would trigger a fresh fetch), but keeps a new game from starting
+with a leftover promise from the previous one.
+
+---
+
+## 24. Coaching Bug: a Step's Gate Referenced the WRONG Progress Flag
+
+### Real bug, not just staleness — `nextSuggestedIdea()`'s Nbd7 step never closed itself out
+User report: coaching recommended Nbd7 at one move, the student played it, and coaching
+recommended the exact same Nbd7 again two moves later. Root cause in `nextSuggestedIdea()`
+(added in the §21 rewrite specifically to stop this class of bug, but the fix was incomplete):
+
+```js
+if (!p.f6)     return "ontwikkel Nf6";
+if (!p.e5Push) return "speel Nbd7, met die oog op 'n latere e5-stoot";   // <- gated on the WRONG flag
+```
+
+The Nbd7 recommendation was gated on `e5Push` (has e5 been played) instead of on whether Nbd7
+itself had been played — `getCoachingProgress()` never even tracked an `nbd7` flag. So the
+instant the student played Nbd7, the check correctly moved past `f6`, but the very next check
+(`!p.e5Push`) was still `true` (e5 hadn't been played yet — it usually comes *after* Nbd7, not
+before), so the function returned "speel Nbd7" a second time, and would have kept returning it
+on every subsequent move until e5 finally landed — the same "recommend something already done"
+failure §21's rewrite was meant to eliminate, just relocated one step down instead of removed.
+
+### Fix: an explicit `nbd7` flag, and a step for what actually comes next
+Added `nbd7: b[1]?.[3]?.type === 'n' && b[1][3].color === 'b'` (knight on d7 — same
+`game.board()` live-check style as `f6`/`bishopOut`/`kingMoved`) to `getCoachingProgress()`.
+`nextSuggestedIdea()` now has its own step per flag, each gated on its own condition:
+
+```js
+if (!p.f6)                return "ontwikkel Nf6";
+if (!p.nbd7 && !p.e5Push) return "speel Nbd7, met die oog op 'n latere e5-stoot";
+if (!p.e5Push)            return "speel e5 om die middel oop te maak";
+if (!p.bishopOut)         return "...";
+if (!p.kingMoved)         return "...";
+```
+
+The middle two lines matter together: if Nbd7 is done but e5 isn't yet, the student now gets a
+*different* line ("speel e5") instead of the stale repeat. If a student takes a legitimate
+alternate route and pushes e5 without ever playing Nbd7 first, `!p.e5Push` is false and the
+Nbd7 line is skipped entirely too — the fix doesn't just stop the exact reported repeat, it
+makes every step self-gating instead of leaning on a neighbouring step's flag, which is what let
+the bug happen at all. General lesson for this progress tracker: a "what's next" ladder like
+this must gate step N on flag N, never on flag N+1 — reusing a later flag as an early step's
+gate is what silently reintroduces the "recommend something already done" bug this whole design
+exists to prevent.
+
+---
+
+## 25. Hints Could Recommend a Move That Wasn't Actually Worth Full Marks
+
+### The ask, and the real mismatch it uncovered
+User flagged: since an Old Indian book move isn't always the literal #1 Lichess/Stockfish line
+for a given position, following the hint might not score full marks. Auditing confirmed a real
+mismatch, not just a theoretical risk: `fetchBestMove()` (the "Wys Beste Skuif" hint) and
+`showAutoHints()` (the auto-drawn arrows) both used `guidance.popTop` — the single most-played
+move in the Lichess sample — unconditionally, with no check on `guidance.popTotal`. But
+`scoreMove()`/`scoreByStockfishOnly()` only trust popularity ranking at all when
+`totalGames >= MIN_POPULARITY_SAMPLE` (20); below that, they ignore the Lichess data completely
+and score purely against `engineTopMoves` (or the centipawn-loss fallback). Since Old Indian
+sideline positions are exactly where the Lichess sample is thinnest, a student could be shown a
+thin-sample "most popular" move as THE hint, play it exactly, and score well under 6 — because
+scoreMove() wasn't even looking at popularity for that position.
+
+By contrast, `guidance.engineTop` is always rank 0 of `engineTopMoves` — the one list
+`scoreMove()`/`scoreByStockfishOnly()` fall back to in every case — so following it is always
+worth full marks (6), sample size or not.
+
+### Fix: gate popularity's use as a hint on the same threshold scoreMove() uses
+Both `fetchBestMove()` and `showAutoHints()` now compute
+`popReliable = guidance?.popTotal >= MIN_POPULARITY_SAMPLE` and only treat `popTop` as the (or
+a) suggested move when that holds:
+- `fetchBestMove()`: prefers `popTop` when reliable (pedagogically closer to real repertoire
+  choices, and still guaranteed full marks in that case since `pi === 0`); otherwise prefers
+  `engineTop` (always full-marks-safe); falls back to a thin-sample `popTop` only if there's no
+  engine data at all, as a last resort better than no hint.
+- `showAutoHints()`: only draws the teal "popularity" arrow when the sample is reliable, so a
+  thin-sample popularity move never appears visually as authoritative as the (always safe) red
+  engine arrow. Below the threshold, only the engine arrow is drawn.
+
+Net effect: whatever move a student is shown as a hint — button or arrow — is now guaranteed to
+be worth 6/6 if played exactly, matching what `scoreMove()` actually rewards for that specific
+position, regardless of how thin the Lichess sample is for that FEN.

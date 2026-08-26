@@ -602,6 +602,11 @@ async function makeWhiteMove() {
     // check before showing hints for a Black move that will never happen.
     if (await checkGameTermination()) return;
 
+    // Kick off the Lichess+Stockfish fetch for THIS position now, while Black is
+    // still thinking -- scoreMove() will read the result back out of the cache
+    // once Black actually moves, instead of starting the fetch from scratch then.
+    prefetchMoveData(game.fen());
+
     updateBranchInfo();
     updateMoveCounter();
     updateWhitePoolInfo();
@@ -693,7 +698,7 @@ async function makeWhiteStockfishMove() {
 async function scoreMove(fen, move) {
     try {
         const uciMove = move.from + move.to + (move.promotion || '');
-        const [lichessData, sfData] = await Promise.all([fetchLichessData(fen), fetchStockfishEval(fen)]);
+        const { lichessData, sfData } = await getMoveData(fen);
 
         let popularMoves = [], totalGames = 0;
         if (lichessData && lichessData.moves && lichessData.moves.length > 0) {
@@ -953,18 +958,25 @@ function getCoachingProgress() {
     const h = game.history();
     return {
         f6:        b[2]?.[5]?.type === 'n' && b[2][5].color === 'b',                    // Nf6 played
+        nbd7:      b[1]?.[3]?.type === 'n' && b[1][3].color === 'b',                    // Nbd7 played (knight on d7)
         e5Push:    h.includes('e5'),                                                     // central break attempted
         bishopOut: !(b[0]?.[2] && b[0][2].type === 'b' && b[0][2].color === 'b'),        // c8-bishop has moved (any square)
         kingMoved: !(b[0]?.[4] && b[0][4].type === 'k' && b[0][4].color === 'b')         // king left e8 (castled either side, or walked)
     };
 }
 
+// Each check here must reflect a move NOT YET played, or a once-played step keeps getting
+// re-suggested forever (the actual bug reported: Nbd7 was recommended again two moves after
+// the student had already played it, because the gate guarding that recommendation was
+// e5Push -- a DIFFERENT step -- not whether Nbd7 itself had happened). f6/nbd7 each gate their
+// own recommendation now, so no step can be suggested once its own board-state flag is true.
 function nextSuggestedIdea() {
     const p = getCoachingProgress();
-    if (!p.f6)        return "ontwikkel Nf6";
-    if (!p.e5Push)    return "speel Nbd7, met die oog op 'n latere e5-stoot";
-    if (!p.bishopOut) return "ontwikkel jou loper (Be7 is die stewigste, maar Bg4/Bf5/'n fianchetto werk ook)";
-    if (!p.kingMoved) return "rokade (O-O) om jou koning veilig te kry";
+    if (!p.f6)                return "ontwikkel Nf6";
+    if (!p.nbd7 && !p.e5Push) return "speel Nbd7, met die oog op 'n latere e5-stoot";
+    if (!p.e5Push)            return "speel e5 om die middel oop te maak";
+    if (!p.bishopOut)         return "ontwikkel jou loper (Be7 is die stewigste, maar Bg4/Bf5/'n fianchetto werk ook)";
+    if (!p.kingMoved)         return "rokade (O-O) om jou koning veilig te kry";
     return "jou eie plan — oorweeg c6 of Re8 om te konsolideer voor die middelspel";
 }
 
@@ -1002,29 +1014,71 @@ function hideCoaching() {
 // so a long high-scoring game never runs dry, but you never see the same
 // photo twice in a row either.
 //
-// Deliberately excludes three images pending a likeness call (celebrate4_6,
-// Celebrate16__6, Celebrate10_6 — see CLAUDE.md §14): the branding on those
-// is fine, but the batter's face/stance reads as a specific real cricketer.
-// Add their filenames back into this list once that's decided.
+// 2026-08-25: the previous batch (Celebrate_6/C1-C4 etc.) was fully
+// replaced with a new 32-candidate set (Celebrate6_1..32, plus a genuine
+// duplicate slot at 6 — Celebrate6_6.jpg and Celebrate6_6b.jpg are two
+// different photos), all the user's own AI-generated art. All 33 files are
+// listed below. A first pass mistakenly read several of the more
+// photorealistic ones as real, unaltered IPL photography and held them
+// back — corrected: they're this app's own art, same as every other file
+// here, and this project's own history of blurring incidental sponsor
+// logos in generated images (CLAUDE.md §14-§16) already covers what to do
+// when the art renders a real-looking wordmark. Reapplied that same tight,
+// discrete blur (mosaic + gaussian, feathered rounded-rect mask, verified
+// with region-vs-whole-image pixel-diff — see CLAUDE.md §22) to the few
+// that still had one legible: Celebrate6_15 (sponsor "M" logo + team
+// crest), _16 ("TATA" wordmark on a boundary board), _25 (three small
+// sponsor-shaped patches), _30/_31 (a chest sponsor cluster plus the
+// boundary-hoarding band, kept well clear of both players' faces).
+// Celebrate6_20-_24/_26 already carried an earlier blur pass and needed no
+// further touch-up; _32's small in-frame "sponsor" text reads as
+// illegible mosaic noise even under a tight zoom, so it was left alone
+// rather than blurring something that isn't actually legible.
+//
+// The 8 files that arrived as raw PNG (Celebrate6_1-8, ~2-2.5MB each,
+// uncompressed AI-generation output) were re-encoded to JPEG quality 88
+// before this pool was ever wired up — displayed at a 280px-max polaroid,
+// the pixel-level difference is invisible, and it cut six-celebrations/
+// from 23MB to 7MB (per-image: roughly 90% smaller), which matters both
+// for git/Netlify deploy size and for how fast a photo pops in once
+// preloadCelebrationImages() kicks off. Celebrate6_6.png specifically
+// became Celebrate6_6b.jpg (not Celebrate6_6.jpg) to avoid colliding with
+// the pre-existing, unrelated Celebrate6_6.jpg photo at that same number.
 
 const CELEBRATION_IMAGES = [
-    'six-celebrations/Celebrate_6.jpg',
-    'six-celebrations/Celebrate2_6.jpg',
-    'six-celebrations/Celebrate3_6.jpg',
-    'six-celebrations/Celebrate5_6.jpg',
+    'six-celebrations/Celebrate6_1.jpg',
+    'six-celebrations/Celebrate6_2.jpg',
+    'six-celebrations/Celebrate6_3.jpg',
+    'six-celebrations/Celebrate6_4.jpg',
+    'six-celebrations/Celebrate6_5.jpg',
     'six-celebrations/Celebrate6_6.jpg',
-    'six-celebrations/Celebrate7_6.jpg',
-    'six-celebrations/Celebrate8_6.jpg',
-    'six-celebrations/Celebrate9_6.jpg',
-    'six-celebrations/Celebrate11_6.jpg',
-    'six-celebrations/Celebrate12_6.jpg',
-    'six-celebrations/Celebrate13_6.jpg',
-    'six-celebrations/Celebrate14_6.jpg',
-    'six-celebrations/Celebrate15_6.jpg',
-    'six-celebrations/C1.jpg',
-    'six-celebrations/C2.jpg',
-    'six-celebrations/C3.jpg',
-    'six-celebrations/C4.jpg'
+    'six-celebrations/Celebrate6_6b.jpg',
+    'six-celebrations/Celebrate6_7.jpg',
+    'six-celebrations/Celebrate6_8.jpg',
+    'six-celebrations/Celebrate6_9.jpg',
+    'six-celebrations/Celebrate6_10.jpg',
+    'six-celebrations/Celebrate6_11.jpg',
+    'six-celebrations/Celebrate6_12.jpg',
+    'six-celebrations/Celebrate6_13.jpg',
+    'six-celebrations/celebrate6_14.jpg',
+    'six-celebrations/Celebrate6_15.jpg',
+    'six-celebrations/Celebrate6_16.jpg',
+    'six-celebrations/Celebrate6_17.jpg',
+    'six-celebrations/Celebrate6_18.jpg',
+    'six-celebrations/Celebrate6_19.jpg',
+    'six-celebrations/Celebrate6_20.jpg',
+    'six-celebrations/Celebrate6_21.jpg',
+    'six-celebrations/Celebrate6_22.jpg',
+    'six-celebrations/Celebrate6_23.jpg',
+    'six-celebrations/Celebrate6_24.jpg',
+    'six-celebrations/Celebrate6_25.jpg',
+    'six-celebrations/Celebrate6_26.jpg',
+    'six-celebrations/Celebrate6_27.jpg',
+    'six-celebrations/Celebrate6_28.jpg',
+    'six-celebrations/Celebrate6_29.jpg',
+    'six-celebrations/Celebrate6_30.jpg',
+    'six-celebrations/Celebrate6_31.jpg',
+    'six-celebrations/Celebrate6_32.jpg'
 ];
 
 // Boundary-hoarding sponsors — all invented, no real brands. Two are picked
@@ -1298,6 +1352,30 @@ async function processBlackMove(move, fenBeforeBlack) {
 
 // ==================== LICHESS & STOCKFISH FETCH ====================
 
+// Shared cache for "Lichess popularity + Stockfish top lines at this exact FEN" --
+// the data scoreMove() ranks Black's move against depends only on the position
+// BEFORE Black moves, never on which move Black actually plays. That means it can
+// be fetched the moment White's move lands, while Black is still thinking, instead
+// of after Black moves. prefetchMoveData() (called from makeWhiteMove(), unconditionally,
+// for every one of the 30 moves) warms this cache; getMoveData() is what
+// fetchGuidanceData(), scoreMove(), and showMoveAnalysis() all now read from --
+// previously each ran its own independent Lichess+Stockfish fetch for the same FEN, so
+// one position could trigger up to 3 redundant round-trips. Only the most recent FEN is
+// ever kept -- there's only ever one "current position awaiting Black's move" at a time.
+let moveDataCache = null; // { fen, promise } -- promise resolves to { lichessData, sfData }
+
+function getMoveData(fen) {
+    if (moveDataCache && moveDataCache.fen === fen) return moveDataCache.promise;
+    const promise = Promise.all([fetchLichessData(fen), fetchStockfishEval(fen)])
+        .then(([lichessData, sfData]) => ({ lichessData, sfData }));
+    moveDataCache = { fen, promise };
+    return promise;
+}
+
+function prefetchMoveData(fen) {
+    getMoveData(fen); // fire-and-forget -- just warms the cache ahead of time
+}
+
 async function fetchStockfishEval(fen, depth = 12) {
     const ef = encodeURIComponent(fen);
 
@@ -1372,8 +1450,9 @@ const MIN_POPULARITY_SAMPLE = 20;
 async function fetchGuidanceData(fen) {
     let popTop = null, popTotal = 0, engineTop = null;
 
+    const { lichessData: d, sfData } = await getMoveData(fen);
+
     try {
-        const d = await fetchLichessData(fen);
         if (d && d.moves && d.moves.length > 0) {
             const sorted = d.moves.sort((a, b) =>
                 (b.white + b.draws + b.black) - (a.white + a.draws + a.black));
@@ -1384,9 +1463,8 @@ async function fetchGuidanceData(fen) {
     } catch (e) { /* ignore */ }
 
     try {
-        const d = await fetchStockfishEval(fen);
-        if (d && d.pvs && d.pvs[0]) {
-            const uci = d.pvs[0].moves.split(' ')[0];
+        if (sfData && sfData.pvs && sfData.pvs[0]) {
+            const uci = sfData.pvs[0].moves.split(' ')[0];
             const tmp = new Chess(fen);
             const m   = tmp.move({ from: uci.slice(0,2), to: uci.slice(2,4),
                                    promotion: uci.length>4 ? uci[4] : undefined });
@@ -1411,7 +1489,18 @@ async function fetchBestMove(guidance) {
         return;
     }
 
-    if (guidance?.popTop) {
+    // guidance.popTop is rank 0 in the SAME sorted list scoreMove() ranks the played
+    // move against -- but only when totalGames >= MIN_POPULARITY_SAMPLE. Below that,
+    // scoreMove()/scoreByStockfishOnly() ignore popularity entirely and score purely
+    // against engineTop's list, where a thin-sample "most popular" move isn't
+    // necessarily ranked at all. Showing it as THE hint in that case could send a
+    // student who plays it exactly to a sub-6 score despite "following the hint" --
+    // prefer the engine's top move (always rank 0 of the list that's ALWAYS used,
+    // so always worth full marks) whenever the popularity sample is too thin to be
+    // scoreMove()'s actual source of truth.
+    const popReliable = guidance?.popTop && guidance.popTotal >= MIN_POPULARITY_SAMPLE;
+
+    if (popReliable) {
         const ft = sanToFromTo(fen, guidance.popTop.san);
         bestMove = { san: guidance.popTop.san, from: ft?.from, to: ft?.to, source: 'popularity' };
         return;
@@ -1419,6 +1508,14 @@ async function fetchBestMove(guidance) {
     if (guidance?.engineTop) {
         bestMove = { san: guidance.engineTop.san, from: guidance.engineTop.from,
                      to: guidance.engineTop.to, source: 'engine' };
+        return;
+    }
+    // Last resort: a thin-sample popularity move with no engine data at all (e.g.
+    // both Stockfish sources failed) -- better than no hint, but not guaranteed
+    // full marks, since it may not be scoreMove()'s actual top-ranked move.
+    if (guidance?.popTop) {
+        const ft = sanToFromTo(fen, guidance.popTop.san);
+        bestMove = { san: guidance.popTop.san, from: ft?.from, to: ft?.to, source: 'popularity' };
         return;
     }
     bestMove = null;
@@ -1462,7 +1559,12 @@ async function showAutoHints(guidance) {
         return;
     }
 
-    const popMove    = guidance?.popTop    ? sanToFromTo(fen, guidance.popTop.san) : null;
+    // Same MIN_POPULARITY_SAMPLE gate as fetchBestMove() -- below that threshold
+    // scoreMove() ignores popularity entirely, so a thin-sample "popular" move isn't
+    // necessarily worth full marks. Don't draw it as a teal arrow looking just as
+    // authoritative as the (always full-marks-safe) red engine arrow in that case.
+    const popReliable = guidance?.popTotal >= MIN_POPULARITY_SAMPLE;
+    const popMove    = (popReliable && guidance?.popTop) ? sanToFromTo(fen, guidance.popTop.san) : null;
     const engineMove = guidance?.engineTop ? { from: guidance.engineTop.from, to: guidance.engineTop.to } : null;
 
     if (popMove && engineMove && popMove.from === engineMove.from && popMove.to === engineMove.to) {
@@ -1546,9 +1648,13 @@ async function showMoveAnalysis(fenBeforeMove, playedMove) {
 
     let sfMoves = [], lichMoves = [];
 
+    // Same FEN scoreMove() just ranked Black's move against a moment ago -- reads
+    // straight out of the shared cache (see getMoveData) rather than fetching again.
+    const { lichessData: lichD, sfData: sfD } = await getMoveData(fenBeforeMove);
+
     // fenBeforeMove is Black to move; positive cp = good for Black
     try {
-        const d = await fetchStockfishEval(fenBeforeMove);
+        const d = sfD;
         if (d && d.pvs) {
             for (const pv of d.pvs.slice(0, 2)) {
                 const uci = pv.moves.split(' ')[0];
@@ -1566,7 +1672,7 @@ async function showMoveAnalysis(fenBeforeMove, playedMove) {
     } catch (e) { /* ignore */ }
 
     try {
-        const d = await fetchLichessData(fenBeforeMove);
+        const d = lichD;
         if (d && d.moves && d.moves.length > 0) {
             const sorted = d.moves.sort((a, b) =>
                 (b.white + b.draws + b.black) - (a.white + a.draws + a.black));
@@ -1774,19 +1880,24 @@ async function showEndGameModal() {
 
     document.getElementById('modal-title').textContent = MODAL_TITLES[gameEndReason] || MODAL_TITLES.moves;
 
-    // Outcome photo: Victory.jpg on a checkmate win or a perfect score,
-    // OUT.jpg on a checkmate loss. Silent on every other ending (draw, or
-    // just running out of moves without either) — no image is shown.
+    // Outcome photo: Victory.jpg/Victory2.jpg (picked at random, reviewed
+    // 2026-08-25 — an aerial fireworks shot, no legible real branding) on a
+    // checkmate win or a perfect score, OUT.jpg on a checkmate loss. Silent
+    // on every other ending (draw, or just running out of moves without
+    // either) — no image is shown.
     const photoEl = document.getElementById('modal-outcome-photo');
+    const VICTORY_PHOTOS = ['Victory.jpg', 'Victory2.jpg'];
     let outcomePhoto = null;
+    let isVictory = false;
     if (gameEndReason === 'checkmate-black-wins' || score >= TARGET_SCORE) {
-        outcomePhoto = 'Victory.jpg';
+        outcomePhoto = VICTORY_PHOTOS[Math.floor(Math.random() * VICTORY_PHOTOS.length)];
+        isVictory = true;
     } else if (gameEndReason === 'checkmate-white-wins') {
         outcomePhoto = 'OUT.jpg';
     }
     if (outcomePhoto) {
         photoEl.src = outcomePhoto;
-        photoEl.alt = outcomePhoto === 'Victory.jpg' ? 'Victory!' : 'Out!';
+        photoEl.alt = isVictory ? 'Victory!' : 'Out!';
         photoEl.style.display = 'block';
     } else {
         photoEl.style.display = 'none';
@@ -1839,6 +1950,7 @@ function newGame() {
     lastWhiteMoveSan     = null;
     lastWhiteFenBefore   = null;
     antoshinExd4Played   = false;
+    moveDataCache        = null; // stale-fen guard, not strictly needed but keeps a fresh game honest
     refillCelebrationPool();
     preloadCelebrationImages();
     primeShutterSound();
