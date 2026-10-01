@@ -1,12 +1,12 @@
 {
-  "generatedAt": "2026-07-30T06:22:43.226Z",
+  "generatedAt": "2026-10-01T15:11:56.299Z",
   "sections": [
     {
       "name": "0. Dubbel-implementasie-konsekwentheid (build-oracle.js vs orakel-worker.js)",
       "ok": 2,
       "fail": 0,
       "total": 2,
-      "note": "Node: 9.3s, blaaier(vm): 26.2s"
+      "note": "Node: 9.5s, blaaier(vm): 21.8s"
     },
     {
       "name": "1. Posisie-oudit (30 sporte x 8 gedaantes = 240 posisies)",
@@ -59,14 +59,14 @@
     },
     {
       "name": "4d. Regressie: localStorage-migrasie",
-      "ok": 8,
+      "ok": 7,
       "fail": 0,
-      "total": 8,
+      "total": 7,
       "note": ""
     }
   ],
-  "overallOk": 1128,
+  "overallOk": 1127,
   "overallFail": 0,
-  "overallTotal": 1128,
-  "totalMs": 158118
+  "overallTotal": 1127,
+  "totalMs": 74876
 }

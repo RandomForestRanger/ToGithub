@@ -305,6 +305,106 @@ Doelbewus **vermy**: enige `MILESTONE_RUNGS`-sport (3,6,9,12,15\*,18,21,24,27,30
 
 ---
 
+## Kaart 9 / Nabrand-regstellings (2026-10-01): vangsskuif-verdediging, stap-vir-stap-wenk, "Wys my die W" verwyder, volledige-stil-wisselaar
+
+**Status: ✅ Voltooi.** Vyf opeenvolgende regstellings ná 'n kode-oorsig (nie 'n nuwe "kaart" in die oorspronklike Kaarte 1-6-sin nie -- bygevoeg hier in dieselfde deurlopende-dagboek-styl).
+
+1. **Vangsskuif-verdediging-in-diepte (`kruin/app.js`, `speelSwartSkuif`).** 'n Kode-oorsig het aanvanklik beweer dat 'n swart-koning-vangs (loper/ruiter geslaan) nie behoorlik hanteer word nie -- die geslane stuk word nooit uit `huidigePos` verwyder nie. **Empiries nagegaan (die werklike orakel in Node gebou en bevraagteken, nie net gelees nie) voor enigiets verander is:** dit is ONWAAR as 'n bereikbare fout. Die orakel se boutabel merk ENIGE swart-aan-skuif-posisie met 'n beskikbare vangs reeds as REMISE op bou-tyd (`orakel-worker.js`se `hasCapture`-tak) -- dus vang `speelWitSkuif()` se bestaande `Orakel.dtm(naFen)===REMISE`-toets dit reeds 'n volle plie vroeër, voordat `speelSwartSkuif()` ooit geroep word. Die vermeende korrupsie is dus nooit bereikbaar in regte spel nie. Nietemin is 'n eksplisiete wagter by die presiese plek waar `gekies.capture` sou verskyn, bygevoeg as verdediging-in-diepte (indien 'n toekomstige orakel-/beleidswysiging ooit die bostaande onveranderlike breek, sou dit anders stilweg 'n korrupte posisie voortgesit het). Geen gedragsverandering in enige bereikbare speletjie-toestand nie -- bevestig deur die volle Kaart 6-oudit (1128/1128) ná die wysiging weer te loop.
+2. **Wenkstelsel herontwerp: stap-vir-stap tot mat (§2.4).** Voorheen is die 3de-mislukking-wenk EENMALIG by die sport se WORTEL-posisie bereken en toe elke beurt onveranderd weer gewys -- vir enige sport waar die kritieke skuif nie skuif 1 was nie, het die wenk dus stilweg verouderd/sinloos geraak ná die eerste skuif. `berekenWenkVierkant(bank, symIdx)` (vas, wortel-gebaseer) is vervang deur `berekenWenkVierkantVirPos(pos)` (werk op ENIGE posisie), geroep deur `toonWenkGloeiIndienNodig()` elke keer dit weer wit se beurt word, met die speler se WERKLIKE huidige posisie. Die wenk "stap" dus nou saam met die speler die hele oorblywende lyn af, een korrekte skuif op 'n slag, tot mat toe. Geverifieer met 'n regte orakel (Node-opgeboude tabel, nie 'n plekhouer nie) oor sport 17 (Rotse, DTM=17): die wenk-vierkante verander elke skuif (`e3→f3`, dan `e2→g3`, dan `g3→e4`, …) i.p.v. vas te bly.
+3. **"Wys my die W" heeltemal verwyder.** Die opsionele knoppie (buite Rotse, §5.3 se "elders beskikbaar onder 'n knoppie") is heeltemal uit `kruin.html`/`app.js` verwyder, saam met die ou "flits-en-verdwyn"-fout wat dit in een geval (wenk-geslaagde sukses sonder klim) prakties onbruikbaar gemaak het. Die VERPLIGTE Rotse-ná-slaag-oorlegsel (§2.8, Kaart 3-aanvaardingstoets) is ONVERANDER behou -- `toonWOorlegselEnVraag()` het net sy nou-oorbodige `verpligtend`-parameter/-vertakking verloor (dit is nou altyd verpligtend, aangesien dit nêrens anders meer geroep word nie).
+4. **Volledige-stil-wisselaar (`kruin/klank.js`).** `stelStil(true)` het voorheen net TOEKOMSTIGE klanke geblokkeer (elke speel-funksie se `if (stil) return;`) -- enigiets reeds-spelende (veral die lang rivier-agtergrondlus) het eenvoudig voortgespeel tot sy natuurlike einde. `stelStil()` pouseer nou al die gekasde `<audio>`-elemente (`blafElemente`/`omgewingElemente`) plus 'n lopende Web Audio-konteks (`speelMatKlok()`) onmiddellik wanneer na stil geskakel word.
+5. **Twee klein regstellings uit dieselfde oorsig:**
+   - `Kruin._STATE_KEY` (`app.js`) was 'n eenmalige momentopname geneem by module-laai (toe `STATE_KEY` nog altyd `null` was, lank voor `init()` dit stel) -- dus permanent `null`, nooit die werklike sleutel nie. Nou 'n getter (`() => STATE_KEY`), soos die res van die `Kruin._xxx`-toetshake. `kaart6/regressie-toets.js` se twee aanroepe (`localStorage.setItem/removeItem(Kruin._STATE_KEY, ...)`) opgedateer na `Kruin._STATE_KEY()`.
+   - `styles.css` se dooie `@media (max-width: 700px) { #layout { ... } }`-reël (geen `id="layout"`-element bestaan sedert die Kaart 4/7-herstrukturering na `#bergAgtergrond`/`#voorgrond`/`#statusPaneel`/`#bordPaneel` nie) verwyder.
+
+**Verifikasie:** `node --check` op elke `.js`-lêer in die projek (skoon); die volledige Kaart 6-oudit (`node kruin/pyplyn/kaart6/run-alles.js`) weer gedraai ná al die `app.js`-wysigings -- **1128/1128 geslaag**, insluitend die localStorage-migrasie-toets (4d) wat die nuwe `_STATE_KEY()`-getter direk oefen. Die nuwe stap-vir-stap-wenk is onafhanklik met 'n regte (Node-opgeboude) orakel oor 'n werklike Rotse-sport bevestig (sien punt 2 hierbo). **Geen werklike blaaier-toets gedoen nie** (geen blaaier-outomatisering hierdie sessie nie) -- 'n regte speel-deurgang word aanbeveel om te bevestig: (a) die wenk-gloei beweeg werklik saam met die speler se skuiwe op 'n lang sport (bv. 'n 3de-mislukking op sport 20+), (b) "stil" aanskakel terwyl die rivier-agtergrond speel, maak dit werklik dadelik stil.
+
+---
+
+## Kaart 10 (2026-10-01): wenkstelsel heruitgevind — opt-in "Wys my hoe", nooit geforseer nie
+
+**Status: ✅ Voltooi.** Die outomatiese 3de-mislukking-wenk (§2.4, oorspronklike Kaart 3-ontwerp) is op gebruikersversoek heeltemal vervang deur 'n speler-geïnisieerde stelsel: *"On every new rung/level, the user must be able to choose 'Wys my hoe'... it should now be possible to fail 10 times or more at a level, if the user does not ask for the hint, it should not be forced on them."*
+
+**Die nuwe reël (volledig, sien §2.4 vir die bygewerkte spesifikasie):**
+1. 'n Nuwe **"Wys my hoe"-knoppie** staan op ELKE sport se ELKE poging, vanaf die eerste skuif af (nie eers ná herhaalde mislukkings nie).
+2. 'n Kliek, op ENIGE stadium van die poging, skakel die wenk **aan vir die res van daardie poging** (eenrigting-wisselaar — die knoppie raak `disabled`).
+3. Terwyl aan, gloei die wenk-blokke (vertrek + bestemming) op elke daaropvolgende wit-beurt, **vars herbereken vanaf die speler se werklike huidige posisie** (nie 'n stywe een-slag-berekende vierkantpaar nie) — dit stap die speler dus letterlik die hele oorblywende lyn deur tot mat toe.
+4. **'n Mat behaal terwyl die wenk ooit-aan-was-tydens-daardie-poging vorder NOOIT die klim nie** — die bord "herstel" (`beginPoging()` begin 'n nuwe poging op DIESELFDE sport, wenk weer af, knoppie weer beskikbaar). Slegs 'n volledig wenk-vrye mat vorder na die volgende sport.
+5. **Geen gedwonge drempel nie** — 'n speler kan 10 keer of meer op dieselfde sport misluk sonder dat die stelsel ooit 'n wenk aanbied; dit word uitsluitlik op aanvraag gegee.
+
+**Argitektuurvereenvoudiging (nie net 'n nuwe knoppie nie — die onderliggende meganisme is self vereenvoudig):** die ou stelsel het TWEE stukke toestand benodig (`consecFails` — tel agtereenvolgende mislukkings om die outomatiese drempel te bepaal; `pendingCleanAscents` — 'n meerstadium "wag vir een skoon herhaling ná 'n wenk-geslaagde sport"-boekhouding). Albei is **heeltemal verwyder** uit die §6-toestandvorm en `app.js` (`hintAktiefVirPoging`, `verwerkKonsekMislukkings`, die `pendingCleanAscents`-logika in `vorderRung`). Die nuwe reël benodig net een boolean per poging (`hintActiveThisAttempt`, reeds bestaande as 'n module-vlak JS-veranderlike, nie eers in `state` gestoor nie) wat elke `beginPoging()` op `false` begin en slegs deur 'n werklike kliek (`onWysMyHoeKlik()`) op `true` gaan. `vorderRung()` se reël is nou een enkele toets: `if (wenkAktief) return;` ná 'n geslaagde poging, in plaas van die ou meerstadium-vertakking.
+
+**Newe-effek op die klank-/kamera-logika (`voltooiUitkomste` in app.js):** omdat 'n werklike klim (`naRung !== vanRung`) nou NOOIT met die wenk aan kan gebeur nie (dis wiskundig uitgesluit deur die nuwe `vorderRung`-reël), is die ou "was hierdie die kwalifiserende skoon herhaling ná 'n wenk?"-onderskeid (`wasPendingCleanAscent`, en die gepaardgaande tweede "vlak-klaar"-fanfare `Klank.speelVlakKlaarTwee()`) oorbodig geword en verwyder uit die oproep-pad. `speelVlakKlaarTwee()` self bly in `klank.js` gedefinieer (ongebruik, met 'n verklarende kommentaar) ingeval 'n toekomstige ontwerp weer 'n tweede fanfare-oomblik nodig het. `Klank.speelVlakKlaarEen()` bly die klank vir "mat behaal, wenk was aan, geen klim nie."
+
+**Telemetrie (§6 `hints`-veld):** word nou getel elke keer "Wys my hoe" werklik gedruk is binne 'n poging, ongeag of daardie spesifieke poging daarna slaag of misluk (voorheen is dit net getel by 'n suksesvolle wenk-gebruik — 'n stille gaping wat tydens hierdie kaart raakgesien en reggestel is).
+
+**`kaart6/regressie-toets.js` bygewerk:** die twee migrasietoetse wat spesifiek `consecFails`/`pendingCleanAscents` as verwagte velde getoets het, is verwyder (daardie velde bestaan doelbewus nie meer nie); 'n nuwe toets bevestig dat 'n NOG OUER toestand-objek wat daardie verouderde velde dra (bv. 'n speler se localStorage van vóór hierdie kaart) steeds foutloos laai sonder om daarop staat te maak.
+
+**Verifikasie — werklik deurgespeel, nie net gelees nie:** 'n volledige end-tot-end-toets is gebou wat die REGTE `app.js` (nie herskryf nie) in Node `vm` laat loop teen 'n REGTE Node-opgeboude orakel, met 'n minimale maar funksionele DOM-/jQuery-/Chessboard-nabootsing (sluit die egte 250ms swart-antwoord-vertraging via regte `setTimeout` in — nie kortgesluit nie), en speel ses scenario's uit:
+1. 'n skoon mat (geen wenk) vorder die sport (1→2). ✅
+2. "Wys my hoe" gedruk mid-poging → knoppie/vlag dadelik aan; mat behaal; sport bly ONVERANDERD (2→2). ✅
+3. Die daaropvolgende nuwe poging op dieselfde sport begin met wenk weer af, knoppie weer beskikbaar. ✅
+4. **10 opeenvolgende mislukkings sonder ooit die knoppie te druk** — die wenk het GEEN KEER outomaties aangeskakel nie, die sport het korrek by sport 1 gevloer (nooit onder 1 geval nie — "die berg onthou" bly intak). ✅
+5. Telemetrie (`state.hints`) tel presies 1 (die een werklike kliek in stap 2), nie die tien wenk-vrye mislukkings nie. ✅
+6. 'n Skoon klim werk steeds normaalweg ná al daardie mislukkings. ✅
+
+Ook: `node --check` op elke gewysigde lêer, en die volledige Kaart 6-oudit (`run-alles.js`) weer gedraai ná al hierdie wysigings -- **1127/1127 geslaag** (een minder as voorheen se 1128, aangesien twee migrasietoetse verwyder en een bygevoeg is, soos hierbo verduidelik). **Steeds geen werklike blaaier-toets gedoen nie** (geen blaaier-outomatisering hierdie sessie nie) -- die end-tot-end-Node-toets hierbo oefen wel die regte produksiekode-pad (speelWitSkuif/speelSwartSkuif/vorderRung/onWysMyHoeKlik, nie 'n herskryf-weergawe nie) deur 'n regte orakel, maar vervang nie 'n regte Chromium/Playwright-DOM-pas nie (CSS-uitleg van die nuwe knoppie, regte kliek-/toetsenbord-toeganklikheid, visuele gloei-tydsberekening is nooit in 'n regte blaaier bevestig nie).
+
+---
+
+## Kaart 11 (2026-10-01): "die hondjie blaf te veel" — blaf-plafon + volledige klankoudit
+
+**Status: ✅ Voltooi.** Gebruikersklagte: Kapok se blaf (die klank wat speel wanneer die hokkleure intree, §2.7) herhaal te veel. Gevra: plafon dit — <10 skuiwe → 1 blaf, 10-19 → 2, en (letterlik) "meer as 30" → 3.
+
+**Grondoorsaak bevestig voor enigiets verander is:** die `kruin:kleure-aangekom`-gebeurtenis (wat Kapok se bons + `Klank.speelWenkBlaf()` ontlok) vuur op ELKE wit-beurt waar die speler stadiger as die sone se vervaag-tydperk (3-15s) speel — op 'n lang sport (bv. sport 20+, 20-30 skuiwe) kon dit dus letterlik 20+ keer in EEN poging blaf as die speler elke keer lank dink. Presies die oorspronklike gebruikersklagte.
+
+**Die gaping in die versoek self, en hoe dit hanteer is:** die derde grens ("meer as 30 skuiwe") is wiskundig onbereikbaar — die spel gaan net tot sport 30, en DTM (in skuiwe) == sportnommer by ontwerp (geverifieer deur die orakel, Kaart 2). Hertolk as "20 en hoër" (sodat al 30 sporte sonder gaping gedek is): **< 10 → 1 blaf, 10-19 → 2 blafte, ≥ 20 → 3 blafte.** (`kleureBlafMaksVirSport(rungN)` in `app.js`.) Indien hierdie hertolking nie is wat bedoel is nie, is dit 'n eenreël-verandering om reg te stel.
+
+**Implementering:** 'n per-poging-teller (`kleureBlafTellingThisAttempt`, herstel elke `beginPoging()`) tel hoeveel keer die blaf-REAKSIE (bons + klank) reeds hierdie poging gespeel het; die `kruin:kleure-aangekom`-luisteraar in `init()` speel net verder as die teller onder die sport se plafon is. **Die hokkleure self (die pedagogiese meganisme) verskyn steeds elke keer ongeag** — net die blaf-reaksie daarop is beperk, nooit die onderliggende leerhulp nie.
+
+**Tweede, verwante bevinding tydens dieselfde oudit (nie eksplisiet gevra nie, maar dieselfde beginsel — gerapporteer en reggestel):** die sone-geur-eenmaligklanke (`RUNG_SONE_KLANK` — `s_moeras.mp3`/`s_forest.mp3`/`s_kranse.mp3`/drie sneeu-klanke op ses gekose sporte oor die vier sones, elkeen 26-47s lank) het ook op ELKE `beginPoging()` vir daardie spesifieke sport gespeel — dus herhaal die hele klankgreep op ELKE herhaalde poging as 'n speler op een van daardie ses sporte vassit. Dieselfde "te veel"-patroon as die hondjie, net oor 'n langer klankgreep en dus potensieel steuriger. Reggestel: elke sone-geur-klank speel nou net een keer per SESSIE per sport (`gespeelSoneKlankRungs`, 'n stil in-geheue-versameling, herstel by bladsy-laai — nie 'n ewige per-speler-rekord in `localStorage` nie, 'n doelbewuste eenvoud-keuse).
+
+**Volledige klankoudit (soos gevra: konsekwentheid, speletjie-ondersteuning, erkenning, pret) — bevindinge oor elke klank-snellertipe:**
+| Klank | Wanneer | Gereeldheid vóór hierdie kaart | Oordeel |
+|---|---|---|---|
+| `speelAfkomsKlank` | "Klik om te begin" | Een keer per SESSIE | ✅ Gepas — groot, eenmalige oomblik. |
+| `speelWenkBlaf` (kleure-aangekom) | Hokkleure intree | Tot 1x per stadige beurt (ONBEPERK) | ❌ → ✅ **Reggestel hierdie kaart** (bo). |
+| `speelOpgaanBlaf`/`speelAfgaanBlaf`/`speelNuweBioomBlaf` | Elke poging se UITKOMS (klim/daal) | Een keer per poging | ✅ Reeds korrek — dié is die hoofgebeurtenis, verdien sy eie geluid elke slag. |
+| `speelVlakKlaarEen`/`Twee` | Wenk-geslaagde mat | Een keer per relevante uitkoms | ✅ Reeds korrek. |
+| `speelMatKlok` | Seldsame rand-geval (plafon-mat, geen wenk) | Een keer, selde bereik | ✅ Reeds korrek. |
+| `speelRivierAmbient` | Agtergrondlus, sporte 1-3 | Begin/stop by elke poging se begin/einde | ✅ Reeds korrek (atmosferies, nie 'n "erkenning"-klank nie). |
+| Sone-geur-eenmaligklanke | Ses gekose sporte | Op ELKE poging by daardie sport (ONBEPERK herhaling) | ❌ → ✅ **Reggestel hierdie kaart** (bo). |
+
+**Twee verdere, nie-klank-verwante bevindinge wat ONGEWYSIG gelaat is (buite die letterlike versoek, hier net gerapporteer vir die gebruiker se oordeel):**
+1. Terwyl "Wys my hoe" aan is, dispatcheer `toonWenkGloeiIndienNodig()` `kruin:wenk-verskyn` op ELKE beurt, wat Oom Jorka se teks elke keer na dieselfde "wenkAanbieding"-lyn oorskryf — dit oorskryf dus stilweg enige "omweggie" (tempo-verlies)-erkenning wat 'n oomblik vantevore gewys is. 'n Speler wat die wenk gebruik, sien dus nooit meer die omweggie-boodskap nie. Nie noodwendig 'n fout nie (die wenk-teks is ook nuttig), maar 'n erkenning-prioriteit-botsing wat die moeite werd is om op te let.
+2. `wenkBlaf` (die kleure-aangekom-klank) hergebruik doelbewus (Kaart 7-vervolg, reeds gebruikersbesluit) dieselfde opname as `opgaan`-blaf (net sagter) — nou dat die kleure-aangekom-blaf baie skaarser is (geplafon hierbo), is die oorvleueling met die "jy het geklim"-blaf minder waarskynlik om te verwar as voorheen, dus geen aksie geneem nie.
+
+**Verifikasie:** twee onafhanklike end-tot-end-Node-toetse (regte produksie-`app.js` + regte Node-opgeboude orakel, soos Kaart 10 se metode) bevestig: (a) die tier-funksie vir al die grensgevalle (9/10/19/20/30), en dat 20 herhaalde `kruin:kleure-aangekom`-gebeurtenisse binne een geforseerde poging presies die toepaslike 1/2/3 blaf-oproepe gee vir sporte 5/15/25 onderskeidelik; (b) 5 herhaalde `beginPoging()`-oproepe op sport 15 (Rotse-geur) gee presies 1 sone-geur-klank-oproep, en 'n ANDER sone se geur-sport (sport 7, Woud) kry steeds sy eie een-keer-oproep. Volledige Kaart 6-oudit weer gedraai ná al hierdie wysigings — **1127/1127 geslaag**. **Geen werklike blaaier-oudio-toets gedoen nie** (steeds geen manier om klank hierdie sessie te hoor nie) — bevestig self dat 1-3 blaffe per sport (afhangend van lengte) 'n goeie balans voel, nie te stil nie, nie te raserig nie.
+
+---
+
+## Kaart 12 (2026-10-01): Oom Jorka se teksbank hersien deur die gebruiker
+
+**Status: ✅ Voltooi.** Die gebruiker het gevra vir 'n redigeerbare teks-lêer van al Oom Jorka se kwinkslae (`COACH_LINES`), een gebeurtenis per afdeling, genommer, sonder JS-sintaksis — om self deur te werk en reg te stuur. `Jorka_kwinkslae_oudit.txt` (Berg-wortel) is daarvoor gebou; die gebruiker het dit geredigeer en teruggestuur, twee rondtes typo's is per hand uitgewys en opgevolg, en die volledige, finale weergawe (insluitend 'n paar items wat eers as "oop vrae" gevlag is, op uitdruklike instruksie "port everything as-is") is woordeliks in `kruin/jorka.js` ingedra.
+
+**Wat werklik verander het (teenoor die oorspronklike teks, sien git-geskiedenis vir die presiese diff):** byna elke kategorie het nuwe/herformuleerde reëls -- die algehele toon het effens informeler/meer entoesiasties geskuif (meer uitroeptekens, 'n paar meer omgangstaal-agtige frases soos "Ai man" en "Vasbyt!"). Twee veranderinge is doelbewus as noemenswaardig uitgewys voor die oordrag (nie stilweg aanvaar nie):
+- **Die sneeuluiperd se EEN vaste sin** (sport 30 se onthulling, oorspronklik doelbewus 'n enkele stil sin sonder lof) het nou 'n tweede sin: "Kyk. Sy het jou die hele pad dopgehou. **Wel gedaan, reisiger.**" Bly steeds EEN string (nie 'n lys nie) -- die "moenie 'n lys maak nie"-reël is gehoorsaam, net nie die "net een onbeklemtoonde sin"-gevoel nie.
+- **Kruin-lys, reël 3:** "jy't die hele berg **oorwin**" vervang "jy't die hele berg **geken**" -- 'n moontlike spanning met die spel se eie ontwerpfilosofie (§0: die berg is nooit 'n vyand om te verslaan nie, "die berg onthou"/vergewe eerder as om beveg te word). Uitdruklik aan die gebruiker uitgewys voor oordrag; op uitdruklike instruksie ("port everything as-is") nietemin ingedra.
+
+**Ander oop vrae wat op dieselfde "port as-is"-instruksie ingedra is, nie verder bevraagteken nie:** misluk-reël 4 se "val een, klim weer twee" (die spel se eie reël is ±1, nooit +2 nie -- bly as geskrewe, digterlike oordrywing); die REMISE-kategorie bly een saamgegooide lys (pat- en stukverlies-snellers deel steeds dieselfde vier reëls, nie opgesplit nie); "min mense" vervang "min kinders" in kruin-reël 1.
+
+**Twee regte tikfoute (nie smaakvrae nie) is self raakgesien, aan die gebruiker uitgewys, en op hul instruksie self rekonstrueer:**
+- Omweggie #2: `'n Ompad. weggie.` (klaarblyklik 'n gebreekte redigering) → **`'n Ompad.`** (gelees as 'n vervanging van die oorspronklike "'n Omweggie." met die eenvoudiger "Ompad," wat deur 'n dwalende punt in twee geknip is).
+- Wenk-aanbieding #3: `Ek ek Kapok sal jou help.` → **`Ek en Kapok sal jou help.`** (gelees as 'n vertikpte "en").
+
+Twee kleiner, ondubbelsinnige tikfoute (konsentreer/kontentreer, 'n ontbrekende apostroof in "'n stilstaan") is sonder bespreking reggestel toe hulle raakgesien is, soos deur die gebruiker gevra.
+
+**JS-string-aanhalingskeuse (Kaart 12, nie deur die gebruiker gespesifiseer nie — self besluit):** elke reël met enige apostroof (`'n`, `jy't`, `Daai's`, ens.) kry dubbele aanhalingstekens; reëls sonder apostrowe kry enkele aanhalingstekens. Die oorspronklike lêer het dieselfde patroon inkonsekwent gemeng (party apostroof-reëls dubbel-aangehaal, ander enkel-aangehaal met 'n ontsnapte `\'`) — hierdie herskrywing is deurgaans konsekwent, sonder enige ontsnap-karakters nodig.
+
+**Verifikasie:** `node --check` op `jorka.js`; 'n programmatiese toets (Node, laai die werklike lêer) bevestig al 17 `kies(...)`-paaie (al die kategorieë + subkategorieë wat `app.js` werklik gebruik) presies 4 variante lewer (behalwe sneeuluiperd, presies 1 string). Volledige Kaart 6-oudit weer gedraai ná hierdie wysiging -- **1127/1127 geslaag**. **Geen werklike blaaier-toets gedoen nie** (steeds geen blaaier-outomatisering hierdie sessie nie) -- die teks is nooit werklik op die skerm/in konteks gesien nie, net masjienleesbaar bevestig dat dit korrek laai en kies.
+
+---
+
 ## Kaart 8 (toekomstig) — gekommissioneerde illustreerder-weergawe / weergawe-keuse
 
 'n Menslike illustreerder word vroeg-Augustus 2026 gekontrakteer om die berg met die hand te teken — sien `Berg/kunstenaar-brief.txt` (deur die gebruiker in 'n Word-dokument aangepas voor dit gestuur is; die `.txt` weerspieël dus nie noodwendig die finale weergawe wat die kunstenaar ontvang nie). Vier landskap-A4-blaaie (Sneeu bo, dan Rotse, Woud, Moeras onder), regstreeks op mekaar gestapel — presies dieselfde stapelvolgorde as die kinders-kolaz hierbo.
@@ -391,9 +491,12 @@ Die sport eindig dadelik, ongeag begroting, wanneer die orakel een van dié waar
 Tempo-verliese (DTM-styging van +1 tot +7 kumulatief binne begroting) word slegs gemerk: Oom Jorka: *"'n Omweggie."* Kapok se ore roer. Geen straf buiten die begroting self nie.
 
 ### 2.4 Wenkstelsel (die muur-oplossing)
-- **Derde mislukking op dieselfde sport** → by die kritieke oomblik gloei **twee** blokke sag (spookblok-gloed, blou — `#3498db`, dieselfde familie-standaard-wenkblou as elders): die **vertrekblok** (watter stuk moet trek) én die **bestemmingsblok**. (Herroep 2026-08-14, op gebruikersversoek: was voorheen net die bestemming, geel — dikwels dubbelsinnig, aangesien meer as een stuk soms na dieselfde bestemming kan trek.) Kapok draf soontoe en sit.
-- 'n Sport wat **met 'n wenk** geslaag word, vereis **een skoon styging** van daardie sport voordat die klim voortgaan. (Herroep 2026-08-14: was voorheen twee.) Die kind verdien steeds die sport; hy word net nie alleen teen 'n geslote deur gelos nie.
-- Wenkgebruik word per sport aangeteken (§6) — dit is telemetrie, nooit skande nie.
+**Herroep 2026-10-01 (gebruiker-versoek, Kaart 10) — die wenk is nou suiwer opt-in, nooit outomaties nie:**
+- **"Wys my hoe"**, 'n knoppie beskikbaar op **elke sport, op enige stadium van elke poging** (nie net ná herhaalde mislukkings nie — reeds vanaf die eerste skuif van 'n splinternuwe poging). 'n Kliek skakel die wenk **aan vir die res van daardie poging** (eenrigting; kan nie weer afgeskakel word voor die volgende poging begin nie).
+- Terwyl aan, gloei **twee** blokke sag (spookblok-gloed, blou — `#3498db`, dieselfde familie-standaard-wenkblou as elders) op **elke** beurt wat weer wit s'n word: die **vertrekblok** (watter stuk moet trek) én die **bestemmingsblok**, vars herbereken vanaf die speler se **werklike huidige posisie** (nie net die sport se wortelposisie nie) — die wenk **stap die speler so letterlik die hele oorblywende lyn deur, een korrekte skuif op 'n slag, tot mat toe.** (Die "twee blokke, nie net een nie"-besluit is self 'n herroep van 2026-08-14, op gebruikersversoek: was voorheen net die bestemming, geel — dikwels dubbelsinnig, aangesien meer as een stuk soms na dieselfde bestemming kan trek.) Kapok draf soontoe en sit.
+- **'n Mat behaal terwyl die wenk ooit-aan-was-tydens-hierdie-poging vorder NOOIT die klim nie** — die sport tel as geslaag (telemetries), maar die speler bly op dieselfde sport; die bord "herstel" en 'n nuwe poging begin, met die wenk weer af en die knoppie weer beskikbaar. Slegs 'n volledig wenk-vrye mat vorder die klim na die volgende sport. (Dit vervang die vorige tweeledige "een-skoon-styging-ná-'n-outomatiese-wenk"-reël heeltemal — geen meerstadium-boekhouding meer nodig nie, net hierdie een reël per poging.)
+- **Geen gedwonge drempel meer nie:** 'n speler mag so dikwels as hy wil op dieselfde sport misluk (10 keer of meer) sonder dat die stelsel ooit ongevraagd 'n wenk aanbied of forseer — dit word net gegee wanneer "Wys my hoe" werklik gedruk word.
+- Wenkgebruik word per sport aangeteken (§6) elke keer die knoppie werklik gedruk is, ongeag of daardie spesifieke poging daarna slaag of misluk — dit is telemetrie, nooit skande nie.
 
 ### 2.5 Verdedigingsbeleid
 - **Verstek: orakel-optimaal** (maksimeer DTM). Gelukkig pedagogies korrek: optimale verdediging vlug na die verkeerde hoek — presies die verdediging wat gedril moet word. By gelyke DTM, kies pseudo-ewekansig (gesaai per poging) sodat herhaalde pogings nie identies verloop nie.
@@ -406,7 +509,7 @@ Tempo-verliese (DTM-styging van +1 tot +7 kumulatief binne begroting) word slegs
 
 ### 2.7 Hokkleuring en die vervaag-in
 - **Hokkleuring:** skakeer die blokke wat die verdedigende koning **nie kan betree nie** — die loper se diagonale muur, die ruiter se gedekte gate, die eie koning se veld. Wat oorbly, is visueel die huidige insluitingsdriehoek: Delétang se driehoeke sonder om dit ooit as aparte metode te onderrig.
-- **Vervaag-in wanneer dit die speler se beurt is:** Moeras ná **3 s**, Woud **5 s**, Rotse **10 s**, Sneeu **15 s**. Sagte 400 ms vervaging; Kapok blaf een keer wanneer die kleure aankom.
+- **Vervaag-in wanneer dit die speler se beurt is:** Moeras ná **3 s**, Woud **5 s**, Rotse **10 s**, Sneeu **15 s**. Sagte 400 ms vervaging; Kapok blaf wanneer die kleure aankom. **Herroep (2026-10-01, Kaart 11):** "een keer" was oorspronklik bedoel per AANKOMS-gebeurtenis, maar 'n aankoms-gebeurtenis herhaal op élke beurt wat die speler te stadig speel -- op 'n lang sport kon Kapok dus tot 17+ keer in een poging blaf. Nou geplafon **per poging**, skalend met die sport se lengte (dtm_moves): < 10 skuiwe → 1 blaf, 10–19 → 2 blafte, ≥ 20 → 3 blafte (die hokkleure self verskyn steeds elke keer ongeag — net die blaf-reaksie is beperk).
 - **Spoorafdruk:** 'n skuif gespeel vóór die kleure aankom, verdien 'n klein pootafdruk-ikoon vir daardie skuif. Dit is die kern-telemetrie van internalisering (§6) én die brandstof vir Kapok se kunsies (§5.4). Niks word daardeur gehek nie — die sukkelende kind verloor niks; die vlot kind kry 'n rede om die vervaging te klop eerder as om dit te melk.
 
 ### 2.8 Die W-oorlegsel (die leerplan sigbaar gemaak)
@@ -498,7 +601,7 @@ Alle afrigtingsteks in een `COACH_LINES`-objek, gesorteer per gebeurtenis (welko
 Die Web Worker bereken die orakel terwyl die kinematika speel. Indien die orakel klaar is voor die kinematika: niks verander nie. Indien nie: die klimmer "vang sy asem" by die landing (Kapok sit) tot gereed — die metafoor absorbeer die wagtyd.
 
 ### 5.3 Kontrolevraag-vloei
-Slegs in die Rotse verpligtend ná slaag; elders beskikbaar onder 'n "Wys my die W"-knoppie. Nooit 'n hek nie (§2.8).
+Slegs in die Rotse verpligtend ná slaag. Nooit 'n hek nie (§2.8). **Herroep (2026-10-01, Kaart 9):** die vorige "elders beskikbaar onder 'n 'Wys my die W'-knoppie"-opsionele-pad is heeltemal verwyder (die knoppie self het 'n egte bruikbaarheidsfout gehad). **Verwar dit nie met "Wys my hoe" (§2.4) nie** — dis 'n ánder, nuwer knoppie (Kaart 10): "Wys my die W" het die ruiter se afgelegde W-pad agterna gewys (net Rotse); "Wys my hoe" is die opt-in-wenkstelsel self (gloeiblokke wat die speler voorentoe deur 'n sport stap, op elke sone).
 
 ### 5.4 Kapok se kunsies (spoorafdruk-beloning)
 'n **Skoon-pote-styging** van 'n volle sone (elke slaag-skuif binne daardie styging vóór die vervaag-in gespeel) leer Kapok een nuwe kunsie-animasie: Moeras — modder skud; Woud — stok gaan haal; Rotse — klip-tot-klip spring; Sneeu — sneeuengel. Kunsies speel daarna lukraak by matte. Suiwer kosmeties; niks hek nie.
@@ -555,6 +658,8 @@ Slegs in die Rotse verpligtend ná slaag; elders beskikbaar onder 'n "Wys my die
 - Spoorafdruk slegs vir skuiwe vóór vervaag-in; teller per sone akkuraat.
 - Wenk verskyn slegs by 3de mislukking; twee-skoon-stygings-reël afdwingbaar en getoets.
 - W-oorlegsel vertoon werklike ruiterpad vs. ideaal; kontrolevraag hek nooit.
+
+> **Herroep (2026-10-01, Kaart 10):** die wenkstelsel-bou/-aanvaarding hierbo beskryf die OORSPRONKLIKE outomatiese "3de mislukking → gloeiblok"-ontwerp. Dit is op gebruikersversoek vervang deur 'n opt-in "Wys my hoe"-knoppie wat die speler regdeur tot mat toe stap, nooit forseer nie. Die huidige, geldende reël staan in §2.4; hierdie blok bly as historiese rekord van die oorspronklike Kaart 3-plan.
 
 ### Kaart 4 — Die Berg
 **Bou:** die volledige gelaagde SVG (§4.1); kamera-enjin (viewBox-interpolasie); openingsafkoms, klim/daal-bewegings, bewoner-onthullings; responsiewe uitleg; `prefers-reduced-motion`.

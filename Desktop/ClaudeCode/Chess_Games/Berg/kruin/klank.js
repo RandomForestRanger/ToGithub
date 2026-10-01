@@ -20,6 +20,11 @@
 // sport om na te klim nie -- én geen wenk betrokke nie; sien app.js se
 // voltooiUitkomste()). Regte opnames gebruik gewone <audio>-elemente. Almal
 // demp-baar, voorkeur oorleef 'n herlaai.
+// Kaart 9-regstelling (bug-verslag): stelStil(true) het voorheen net nuwe
+// klanke geblokkeer -- iets wat reeds speel (die rivier-agtergrondlus veral)
+// het eenvoudig voortgespeel tot sy natuurlike einde. stelStil() pouseer nou
+// ALLES wat reeds geskep is (sien die funksie self hieronder) sodat die
+// stil-wisselaar werklik onmiddellik alles stilmaak.
 (function (root) {
   'use strict';
 
@@ -183,9 +188,21 @@
     el.currentTime = 0;
   }
 
+  // Kaart 9-regstelling: 'n toggle na stil het voorheen net TOEKOMSTIGE
+  // klanke geblokkeer (speelBlafLeer/speelEenmaligOmgewing se "if (stil)
+  // return;") -- enigiets wat REEDS speel (veral die lang rivier-
+  // agtergrondlus) het eenvoudig uitgespeel. Nou pouseer 'n toggle na stil
+  // dadelik alles wat al geskep is (blafElemente + omgewingElemente, plus 'n
+  // lopende Web Audio-konteks vir speelMatKlok()), sodat "stil" werklik
+  // onmiddellik stil beteken.
   function stelStil(v) {
     stil = !!v;
     localStorage.setItem(STIL_SLEUTEL, stil ? '1' : '0');
+    if (stil) {
+      for (const el of Object.values(blafElemente)) { try { el.pause(); } catch (e) { /* stilweg ignoreer */ } }
+      for (const el of Object.values(omgewingElemente)) { try { el.pause(); } catch (e) { /* stilweg ignoreer */ } }
+      if (ctx && ctx.state === 'running') { try { ctx.suspend(); } catch (e) { /* stilweg ignoreer */ } }
+    }
   }
   function isStil() { return stil; }
 
@@ -204,10 +221,16 @@
   function speelSneeuEenKlank() { speelEenmaligOmgewing('sneeuEen'); }
   function speelSneeuTweeKlank() { speelEenmaligOmgewing('sneeuTwee'); }
   function speelSneeuDrieKlank() { speelEenmaligOmgewing('sneeuDrie'); }
-  // Kaart 7-vervolg: die twee "vlak-klaar"-fanfares (wenk-geslaag /
-  // skoon-herhaling ná 'n wenk) -- vervang Kapok se blaf in daardie twee
-  // spesifieke gevalle, sien app.js se voltooiUitkomste().
+  // Kaart 7-vervolg: "vlak-klaar"-fanfare -- vervang Kapok se blaf wanneer 'n
+  // mat met "Wys my hoe" (die wenk) aan behaal word (geen klim gebeur dan
+  // nie, sien app.js se voltooiUitkomste()).
   function speelVlakKlaarEen() { speelEenmaligOmgewing('vlakKlaarEen'); }
+  // Kaart 10-nota: speelVlakKlaarTwee() se oorspronklike rol (die "tweede
+  // stadium" van 'n nou-laat-vaar-de twee-stadium skoon-herhaling-reël ná 'n
+  // wenk) bestaan nie meer nie -- die wenkstelsel is vereenvoudig na een
+  // enkele reël (enige wenk-aangeholpe mat vorder nie; sien vorderRung in
+  // app.js). Nie meer vanuit app.js geroep nie, maar hier behou (ongebruik)
+  // ingeval 'n toekomstige ontwerp weer 'n tweede fanfare-oomblik nodig het.
   function speelVlakKlaarTwee() { speelEenmaligOmgewing('vlakKlaarTwee'); }
 
   // Kaart 7-vervolg (2026-08-20, herroep): mat-klokkie teruggebring as

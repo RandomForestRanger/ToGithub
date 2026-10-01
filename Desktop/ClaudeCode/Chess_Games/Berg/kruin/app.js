@@ -27,6 +27,24 @@
   // Kaart 3: sone-vertraagde vervaag-in (§2.7).
   const ZONE_FADE_MS = { moeras: 3000, woud: 5000, rotse: 10000, sneeu: 15000 };
 
+  // Kaart 11 (gebruiker-versoek: "die hondjie blaf te veel"): die
+  // kleure-aangekom-blaf (Kapok se bons + die wenkBlaf-klank) het voorheen
+  // ELKE keer gespeel wanneer die hokkleure intree -- op 'n lang, stadig-
+  // gespeelde sport dus potensieel een keer per beurt (tot 17+ kere in een
+  // poging). Nou geplafon PER POGING, skalend met die sport se lengte
+  // (dtm_moves === rung, by ontwerp altyd gelyk -- sien posisiebank.js):
+  //   < 10 skuiwe  -> 1 blaf
+  //   10-19 skuiwe -> 2 blafte
+  //   >= 20 skuiwe -> 3 blafte
+  // Die gebruiker se oorspronklike derde grens ("meer as 30") is onbereikbaar
+  // (die spel gaan net tot sport 30) -- hier hertolk as "20 en hoër" sodat
+  // die drie bande saam al 30 sporte dek, geen gaping nie.
+  function kleureBlafMaksVirSport(rungN) {
+    if (rungN < 10) return 1;
+    if (rungN < 20) return 2;
+    return 3;
+  }
+
   function zoneOf(rungN) {
     if (rungN <= 6) return 'moeras';
     if (rungN <= 14) return 'woud';
@@ -60,8 +78,6 @@
     }
     // Kaart 3-uitbreiding op die §6-vorm (agterwaarts-versoenbaar met
     // Kaart-2-toestand wat reeds in localStorage kan wees).
-    if (!raw.consecFails) raw.consecFails = {};
-    if (!raw.pendingCleanAscents) raw.pendingCleanAscents = {};
     if (!raw._zoneSkoonVanaf) raw._zoneSkoonVanaf = {}; // sien merkZoneSkoonToets()
     raw.lastVisit = new Date().toISOString();
     return raw;
@@ -75,44 +91,34 @@
     if (geslaag) state.attempts[key].passes++;
   }
 
-  // Kaart 3: wenkstelsel-telling. Faal -> tel op; slaag -> herstel na 0 sodra
-  // die sport werklik agtergelaat word (nie tydens 'n hangende skoon-styging nie).
-  function hintAktiefVirPoging(state, rungN) {
-    return (state.consecFails[String(rungN)] || 0) >= 2; // dit sou die 3de (of verdere) poging wees
-  }
-  function verwerkKonsekMislukkings(state, rungN, geslaag) {
-    const key = String(rungN);
-    if (geslaag) delete state.consecFails[key];
-    else state.consecFails[key] = (state.consecFails[key] || 0) + 1;
-  }
-
+  // Kaart 10 (gebruiker-versoek): die wenk is nie meer outomaties ná 'n
+  // drempel-telling mislukkings nie -- dit is nou 'n suiwer OPT-IN-knoppie
+  // ("Wys my hoe", sien die wysMyHoeKnop-hantering hieronder). 'n Speler mag
+  // dus so dikwels as wat hy wil misluk (10 keer of meer) sonder dat enigiets
+  // hom na 'n wenk forseer -- die stelsel bied dit nooit ongevraagd aan nie.
+  // `registreerWenkGebruik` word steeds geroep elke keer die knoppie werklik
+  // gedruk is (ongeag of die poging daarna slaag of misluk) -- dit bly
+  // suiwer telemetrie (§2.4: "nooit skande nie").
   function registreerWenkGebruik(state, rungN) {
     const key = String(rungN);
     state.hints[key] = (state.hints[key] || 0) + 1;
   }
 
-  // Kaart 3-vervolg (2026-08-14, gebruiker-versoek): een-skoon-styging-reël
-  // (§2.4, herroep vanaf oorspronklik twee). 'n Sport MET 'n wenk geslaag
-  // pouseer die klim op DIESELFDE sport vir presies een verdere poging;
-  // slaag daardie volgende poging sonder 'n wenk, gaan die klim voort. 'n
-  // Mislukking tussenin herstel nie die reeds-opgeboude skoon-telling na nul
-  // nie (bevestig deur die gebruiker, Kaart 3).
+  // Kaart 10 (gebruiker-versoek, vervang die Kaart 3-vervolg "een-skoon-
+  // styging-reël" heeltemal): die wenk ("Wys my hoe") help die speler nou
+  // regdeur tot mat toe, MAAR 'n sport wat met die wenk ooit-aan-tydens-
+  // hierdie-poging geslaag word, vorder NOOIT die klim nie -- die bord
+  // "herstel" bloot ('n nuwe poging op DIESELFDE sport begin, met die wenk
+  // weer af; sien beginPoging()). Slegs 'n volledig wenk-vrye mat vorder die
+  // klim. Geen meerstadium-"wag vir een skoon herhaling"-boekhouding meer
+  // nodig nie (geen pendingCleanAscents nie) -- die reël is nou net een
+  // eenvoudige toets per poging.
   function vorderRung(state, rungN, geslaag, wenkAktief) {
     if (!geslaag) {
       state.currentRung = Math.max(1, state.currentRung - 1);
       return;
     }
-    const key = String(rungN);
-    if (state.pendingCleanAscents[key] > 0) {
-      if (wenkAktief) return; // wenk weer gebruik -- geen vordering in die skoon-telling nie
-      state.pendingCleanAscents[key]--;
-      if (state.pendingCleanAscents[key] > 0) return; // nog nie klaar nie
-      delete state.pendingCleanAscents[key];
-      // val deur na normale bevordering hieronder
-    } else if (wenkAktief) {
-      state.pendingCleanAscents[key] = 1;
-      return; // bly op dieselfde sport totdat die reël bevredig is
-    }
+    if (wenkAktief) return; // mat behaal MET die wenk aan -- tel as 'n sukses, maar vorder nie
     state.currentRung = Math.min(N_RUNGS, state.currentRung + 1);
     if (MILESTONE_RUNGS.includes(state.currentRung) && !state.residents.includes(state.currentRung)) {
       state.residents.push(state.currentRung);
@@ -153,13 +159,35 @@
   let state, board, huidigeSport, huidigePos, symIdx, turn, whiteMovesPlayed;
   let posisieGeskiedenis, selected, gedaanteInfo, sportGeslaagOfMislukEnigste;
   let swindleTransformed; // getransformeerde slinkse-lyn-inligting vir hierdie poging
+  // Kaart 11 (gebruiker-versoek, oorspronklike bevinding tydens dieselfde
+  // oorsig as die hondjie-blaf-plafon): die sone-geur-eenmaligklanke
+  // (RUNG_SONE_KLANK) het voorheen op ELKE beginPoging() vir daardie sport
+  // gespeel -- dus herhaal op ELKE herhaalde poging as 'n speler op een van
+  // daardie spesifieke sporte vassit (dieselfde soort "te veel" as die
+  // hondjie, net oor 'n langer klankgreep). Nou een keer per SESSIE per
+  // sport (nie per toestel-ewige geskiedenis nie -- 'n stil, in-geheue
+  // versameling, herstel by elke bladsy-laai).
+  const gespeelSoneKlankRungs = new Set();
 
-  // Kaart 3: hokkleuring/vervaag-in, spoorafdruk, wenk, W-oorlegsel.
+  // Kaart 3/Kaart 9: hokkleuring/vervaag-in, spoorafdruk, wenk, W-oorlegsel.
   let fadeTimerHandle = null, fadeArrived = false;
   let knightPath = [];               // getransformeerde ruiter-vierkante hierdie poging
-  let hintSquareThisAttempt = null;  // { van, na } (getransformeerde blokke), of null
-  let hintActiveThisAttempt = false; // was consecFails>=2 toe hierdie poging begin het
+  // Kaart 9 (gebruiker-versoek): die wenk is nie meer 'n eenmalige, vanaf-
+  // die-sport-se-WORTEL-posisie berekende vierkantpaar nie -- dit word nou
+  // elke keer dit weer wit se beurt word, VARS herbereken vanaf die speler se
+  // WERKLIKE huidige posisie (sien berekenWenkVierkantVirPos/
+  // toonWenkGloeiIndienNodig). Dit stap die speler dus deur die hele
+  // oorblywende lyn, een skuif op 'n slag, tot mat toe -- nie net die eerste
+  // skuif van die sport nie.
+  // Kaart 10 (gebruiker-versoek): hintActiveThisAttempt is nou 'n suiwer
+  // OPT-IN-vlag -- dit begin ELKE poging op `false` (beginPoging) en word
+  // net `true` deur 'n werklike kliek op "Wys my hoe" (onWysMyHoeKlik). Nooit
+  // outomaties/forseerd nie, ongeag hoeveel agtereenvolgende mislukkings.
+  let hintActiveThisAttempt = false;
   let alleSkuiweWasSpoorafdrukke = true; // vir sone-skoon-styging-opsporing
+  // Kaart 11: hoeveel keer Kapok reeds (bons + klank) geblaf het vir die
+  // kleure-aangekom-gebeurtenis HIERDIE poging -- sien kleureBlafMaksVirSport.
+  let kleureBlafTellingThisAttempt = 0;
 
   function posTuple(p, t) { return `${p.wK},${p.wB},${p.wN},${p.bK},${t}`; }
 
@@ -251,19 +279,21 @@
 
   function toonWenkGloeiIndienNodig() {
     clearHintGlow();
-    if (!hintActiveThisAttempt || hintSquareThisAttempt === null) return;
+    if (!hintActiveThisAttempt) return;
     if (turn !== Core.TURN_WHITE || sportGeslaagOfMislukEnigste) return;
+    // Kaart 9: vars herbereken vanaf die WERKLIKE huidige posisie (nie die
+    // sport se wortel nie) -- stap die speler dus deur die hele oorblywende
+    // lyn tot mat toe, een korrekte skuif op 'n slag, i.p.v. net die eerste
+    // skuif van die sport een keer te wys.
+    const wenk = berekenWenkVierkantVirPos(huidigePos);
+    if (!wenk) return; // behoort nie te gebeur op 'n wenbare (nie-REMISE) posisie nie
     // Albei blokke gloei: die vertrekblok (watter stuk moet trek -- dikwels
     // dubbelsinnig, aangesien meer as een stuk soms na dieselfde bestemming
     // kan trek) EN die bestemmingsblok.
-    $(`#board .square-${sqAlg(hintSquareThisAttempt.van)}`).addClass('wenk-gloei');
-    $(`#board .square-${sqAlg(hintSquareThisAttempt.na)}`).addClass('wenk-gloei');
+    $(`#board .square-${sqAlg(wenk.van)}`).addClass('wenk-gloei');
+    $(`#board .square-${sqAlg(wenk.na)}`).addClass('wenk-gloei');
     document.dispatchEvent(new CustomEvent('kruin:wenk-verskyn', {
-      detail: {
-        rung: huidigeSport.rung,
-        van: sqAlg(hintSquareThisAttempt.van),
-        na: sqAlg(hintSquareThisAttempt.na),
-      },
+      detail: { rung: huidigeSport.rung, van: sqAlg(wenk.van), na: sqAlg(wenk.na) },
     }));
   }
 
@@ -386,6 +416,25 @@
     huidigePos = { wK: huidigePos.wK, wB: huidigePos.wB, wN: huidigePos.wN, bK: algToSq(gekies.to) };
     turn = Core.TURN_WHITE;
     verversBord();
+
+    // Regstelling: 'n vangsskuif (die swart koning slaan wit se loper/ruiter)
+    // is self reeds §2.3.1 se "stuk word geslaan/verloor" -- 'n onmiddellike
+    // konseptuele mislukking, nie 'n posisie om verder mee te speel nie. In
+    // die huidige orakel-tabel word enige swart-aan-skuif-posisie met 'n
+    // beskikbare vangs reeds by speelWitSkuif() se Orakel.dtm(naFen)===REMISE-
+    // toets gevang, 'n plie vroeër, voordat hierdie funksie ooit geroep word
+    // (bevestig: 'n vrye stuk maak die HELE posisie REMISE in die orakel se
+    // boutabel, nie net daardie een skuif nie) -- hierdie tak behoort dus
+    // nooit in gewone spel te vuur nie. Dit staan hier as verdediging-in-
+    // diepte: sonder dit sou 'n vangs wat hier tog beland (bv. ná 'n
+    // toekomstige orakel-/beleidswysiging) stilweg voortgespeel het met 'n
+    // korrupte posisie (die geslane stuk nooit van huidigePos verwyder nie,
+    // dus twee stukke op een blok) -- 'n regte fout wat hier uitgesluit word.
+    if (gekies.capture) {
+      verwerkUitkomste(false, 'konseptueleFout.remise');
+      return;
+    }
+
     posisieGeskiedenis.push(posTuple(huidigePos, turn));
     if (herhalingsToets()) { verwerkUitkomste(false, 'konseptueleFout.herhaling'); return; }
     verversStatus();
@@ -416,7 +465,7 @@
 
     const gaanVoort = () => voltooiUitkomste(geslaag, kategoriePad);
     if (geslaag && huidigeSport.zone === 'rotse') {
-      toonWOorlegselEnVraag(gaanVoort, true);
+      toonWOorlegselEnVraag(gaanVoort);
     } else {
       gaanVoort();
     }
@@ -424,10 +473,6 @@
 
   function voltooiUitkomste(geslaag, kategoriePad) {
     const vanRung = huidigeSport.rung;
-    // Kaart 7-vervolg: vasgevang VOOR finaliseerPoging (wat vorderRung roep,
-    // wat state.pendingCleanAscents muteer) -- was hierdie sport reeds op
-    // "wag vir 'n skoon herhaling ná 'n wenk" toe hierdie poging begin het?
-    const wasPendingCleanAscent = (state.pendingCleanAscents[String(vanRung)] || 0) > 0;
     const residenteVoor = state.residents.length;
     const boodskap = jorkaKiesVirKategorie(kategoriePad);
     finaliseerPoging(geslaag, boodskap);
@@ -435,28 +480,25 @@
 
     let kameraP = Promise.resolve();
     if (naRung !== vanRung) {
+      // Kaart 10: 'n werklike klim (naRung !== vanRung) kan nou NOOIT gebeur
+      // met die wenk aan nie -- vorderRung hou 'n wenk-geslaagde sukses altyd
+      // op dieselfde sport (sien vorderRung hierbo), dus is dit hier altyd
+      // óf 'n volledig wenk-vrye sukses óf 'n mislukking.
       if (geslaag) {
-        // Kaart 7-vervolg: die kwalifiserende skoon herhaling ná 'n wenk (die
-        // rede vir die klim ditkeer) kry die tweede "vlak-klaar"-fanfare
-        // i.p.v. Kapok se blaf (gebruiker-versoek: "dan speel ons nie Kapok
-        // se blaf nie, maar die trompet-fanfare"). Andersins die gewone
-        // opgaan-blaf, of 'n eie blaf as die klim 'n nuwe sone binnegaan.
-        if (wasPendingCleanAscent && !hintActiveThisAttempt) {
-          Klank.speelVlakKlaarTwee();
-        } else {
-          const naZone = (POSITION_BANK.rungs.find((r) => r.rung === naRung) || {}).zone;
-          if (naZone && naZone !== huidigeSport.zone) Klank.speelNuweBioomBlaf();
-          else Klank.speelOpgaanBlaf();
-        }
+        const naZone = (POSITION_BANK.rungs.find((r) => r.rung === naRung) || {}).zone;
+        if (naZone && naZone !== huidigeSport.zone) Klank.speelNuweBioomBlaf();
+        else Klank.speelOpgaanBlaf();
       } else {
         Klank.speelAfgaanBlaf();
       }
       kameraP = geslaag ? BergEngine.klim(vanRung, naRung) : BergEngine.daal(vanRung, naRung);
     } else if (geslaag && hintActiveThisAttempt) {
-      // Kaart 7-vervolg: 'n wenk-geslaagde poging vorder nie die sport nie
-      // (vorderRung hou dit op dieselfde sport totdat 'n skoon herhaling
-      // volg) -- geen klim-animasie, geen Kapok-blaf, net die eerste
-      // "vlak-klaar"-fanfare om die (voorwaardelike) sukses te merk.
+      // Kaart 10: 'n wenk-geslaagde poging vorder nie die sport nie
+      // (vorderRung hou dit op dieselfde sport) -- geen klim-animasie, geen
+      // Kapok-blaf, net die "vlak-klaar"-fanfare om die (voorwaardelike)
+      // sukses te merk. "Die bord herstel": die eersvolgende beginPoging()
+      // hieronder begin 'n nuwe poging op DIESELFDE sport met die wenk weer
+      // af (gebruiker-versoek).
       Klank.speelVlakKlaarEen();
     } else if (geslaag) {
       // Kaart 7-vervolg (2026-08-20): oorblywende leemte -- geslaag, geen
@@ -518,14 +560,14 @@
   function finaliseerPoging(geslaag, boodskap) {
     sportGeslaagOfMislukEnigste = true;
     registreerPoging(state, huidigeSport.rung, geslaag);
-    verwerkKonsekMislukkings(state, huidigeSport.rung, geslaag);
-    if (geslaag && hintActiveThisAttempt) registreerWenkGebruik(state, huidigeSport.rung);
+    // Kaart 10: tel elke keer "Wys my hoe" werklik gedruk is, ongeag of
+    // hierdie spesifieke poging daarna slaag of misluk (suiwer telemetrie).
+    if (hintActiveThisAttempt) registreerWenkGebruik(state, huidigeSport.rung);
     merkZoneSkoonToets(state, huidigeSport, geslaag);
     vorderRung(state, huidigeSport.rung, geslaag, hintActiveThisAttempt);
     stoorToestand(state);
     setJorkaTeks(boodskap);
     setBoodskap(geslaag ? 'Sport ' + (state.currentRung) + ' is nou oop.' : 'Terug na sport ' + state.currentRung + '.', geslaag ? 'goed' : 'sleg');
-    document.getElementById('wysWKnop').style.display = geslaag && huidigeSport.zone !== 'rotse' ? 'inline-block' : 'none';
   }
 
   // Kaart 3: 'n skoon sone-styging (§5.4/§6 cleanZoneAscents) beteken elke
@@ -556,7 +598,12 @@
     // rivier-agtergrondlus, maar net op die eerste drie moeras-sporte (sien
     // RIVIER_LAASTE_SPORT). Word op enige uitkoms gestop (verwerkUitkomste).
     if (rungN <= RIVIER_LAASTE_SPORT) Klank.speelRivierAmbient();
-    if (RUNG_SONE_KLANK[rungN]) Klank[RUNG_SONE_KLANK[rungN]]();
+    // Kaart 11: net een keer per sport per sessie (nie elke herhaalde
+    // poging as die speler hier vassit nie) -- sien gespeelSoneKlankRungs.
+    if (RUNG_SONE_KLANK[rungN] && !gespeelSoneKlankRungs.has(rungN)) {
+      gespeelSoneKlankRungs.add(rungN);
+      Klank[RUNG_SONE_KLANK[rungN]]();
+    }
     symIdx = Math.floor(Math.random() * 8);
     const canonical = parseFEN(bank.fen);
     huidigePos = transformPos(canonical, symIdx);
@@ -582,10 +629,14 @@
     if (rungN === EERSTE_SPORT_VAN_SONE[bank.zone]) state._zoneSkoonVanaf[bank.zone] = true;
     knightPath = [huidigePos.wN];
     alleSkuiweWasSpoorafdrukke = true;
-    hintActiveThisAttempt = hintAktiefVirPoging(state, rungN);
-    hintSquareThisAttempt = hintActiveThisAttempt ? berekenWenkVierkant(bank, symIdx) : null;
+    kleureBlafTellingThisAttempt = 0; // Kaart 11: blaf-plafon herstel elke nuwe poging
+    // Kaart 10: "Wys my hoe" is 'n suiwer opt-in-knoppie -- elke nuwe poging
+    // (op ENIGE sport, ongeag hoeveel vorige pogings misluk het) begin met
+    // die wenk af en die knoppie weer beskikbaar.
+    hintActiveThisAttempt = false;
+    const wysMyHoeKnop = document.getElementById('wysMyHoeKnop');
+    if (wysMyHoeKnop) wysMyHoeKnop.disabled = false;
 
-    document.getElementById('wysWKnop').style.display = 'none';
     document.getElementById('wOorlegsel').style.display = 'none';
     setBoodskap('', '');
     // Kaart 5: welkom-per-sone net wanneer die sone se eerste sport betree word.
@@ -596,27 +647,52 @@
     toonWenkGloeiIndienNodig();
   }
 
-  // Kaart 3: hint_square_logic="oracle" (§3.3) -- die orakel-optimale eerste
-  // skuif uit die sport se WORTEL-posisie. Vir al 30 sporte word hierdie
-  // verstek gebruik (geen handoorheersings nog nie). Gee beide die vertrek-
-  // (watter stuk moet trek) en bestemmingsblok terug -- meer as een stuk kan
-  // dikwels na dieselfde blok trek, so die bestemming alleen is dikwels
-  // dubbelsinnig oor WATTER stuk moet trek.
-  function berekenWenkVierkant(bank, symIdx0) {
-    const canonical = parseFEN(bank.fen);
-    const pos0 = transformPos(canonical, symIdx0);
-    const voorDTM = Orakel.dtm(orakelFen(pos0, Core.TURN_WHITE));
-    for (const m of Core.whiteMoves(pos0.wK, pos0.wB, pos0.wN, pos0.bK)) {
-      const nwK = m.piece === 'K' ? m.to : pos0.wK;
-      const nwB = m.piece === 'B' ? m.to : pos0.wB;
-      const nwN = m.piece === 'N' ? m.to : pos0.wN;
-      const succFen = orakelFen({ wK: nwK, wB: nwB, wN: nwN, bK: pos0.bK }, Core.TURN_BLACK);
+  // Kaart 10 (gebruiker-versoek): "Wys my hoe" -- 'n knoppie wat op ENIGE
+  // sport, op ENIGE stadium van 'n poging (nie net ná herhaalde mislukkings
+  // nie), die wenk vir die REIS VAN DIE PUNT dadelik aanskakel. Eenrigting
+  // binne 'n poging (kan nie weer afgeskakel word tot die volgende poging
+  // nie) -- vandaar `disabled = true` hier en die herstel in beginPoging().
+  // 'n Mat behaal terwyl hierdie ooit-aan was, vorder nie die sport nie
+  // (sien vorderRung) -- die speler moet dit nog 'n slag, wenk-vry, self doen.
+  function onWysMyHoeKlik() {
+    if (sportGeslaagOfMislukEnigste || hintActiveThisAttempt) return;
+    hintActiveThisAttempt = true;
+    const knop = document.getElementById('wysMyHoeKnop');
+    if (knop) knop.disabled = true;
+    toonWenkGloeiIndienNodig();
+  }
+
+  // Kaart 3/Kaart 9: hint_square_logic="oracle" (§3.3) -- die orakel-optimale
+  // skuif uit 'n GEGEWE posisie. Gee beide die vertrek- (watter stuk moet
+  // trek) en bestemmingsblok terug -- meer as een stuk kan dikwels na
+  // dieselfde blok trek, so die bestemming alleen is dikwels dubbelsinnig
+  // oor WATTER stuk moet trek.
+  //
+  // Kaart 9 (gebruiker-versoek, "ontwikkel die wenk-reeks sodat dit die
+  // speler deur die hele reeks lei tot hy kan mat gee"): hierdie is nou die
+  // kern-herbruikbare funksie -- dit werk op ENIGE posisie, nie net die
+  // sport se wortel nie, sodat toonWenkGloeiIndienNodig() dit elke beurt
+  // weer kan roep met die speler se werklike huidige posisie.
+  function berekenWenkVierkantVirPos(pos) {
+    const voorDTM = Orakel.dtm(orakelFen(pos, Core.TURN_WHITE));
+    if (typeof voorDTM !== 'number') return null; // remise/ongeldig -- behoort nie te gebeur nie
+    for (const m of Core.whiteMoves(pos.wK, pos.wB, pos.wN, pos.bK)) {
+      const nwK = m.piece === 'K' ? m.to : pos.wK;
+      const nwB = m.piece === 'B' ? m.to : pos.wB;
+      const nwN = m.piece === 'N' ? m.to : pos.wN;
+      const succFen = orakelFen({ wK: nwK, wB: nwB, wN: nwN, bK: pos.bK }, Core.TURN_BLACK);
       if (Orakel.dtm(succFen) === voorDTM - 1) {
-        const van = m.piece === 'K' ? pos0.wK : m.piece === 'B' ? pos0.wB : pos0.wN;
+        const van = m.piece === 'K' ? pos.wK : m.piece === 'B' ? pos.wB : pos.wN;
         return { van, na: m.to };
       }
     }
     return null;
+  }
+  // Gerieflikheidsvorm vir die sport-WORTEL-geval (die W-oorlegsel se
+  // eerste-skuif-kontrolevraag, en die Kaart 3-toetshaak hieronder).
+  function berekenWenkVierkant(bank, symIdx0) {
+    const canonical = parseFEN(bank.fen);
+    return berekenWenkVierkantVirPos(transformPos(canonical, symIdx0));
   }
 
   // === Kaart 3: W-oorlegsel + kontrolevraag (§2.8) ===
@@ -657,7 +733,12 @@
     return pad;
   }
 
-  function toonWOorlegselEnVraag(voltooiCallback, verpligtend) {
+  // Kaart 9 (gebruiker-versoek): die op-aanvraag "Wys my die W"-knoppie is
+  // heeltemal verwyder -- hierdie oorlegsel verskyn nou net nog in sy
+  // oorspronklike VERPLIGTE geval (ná 'n geslaagde Rotse-sport, §2.8/§5.3),
+  // dus is die vroeëre `verpligtend`-vertakking (en die bykomstige "Gaan
+  // voort sonder outo-voltooiing"-pad) laat vaar.
+  function toonWOorlegselEnVraag(voltooiCallback) {
     const idealePad = berekenIdealePad(huidigeSport.fen, symIdx);
     const werkliktePad = knightPath;
     const paaieVerskil = JSON.stringify(werkliktePad) !== JSON.stringify(idealePad);
@@ -723,11 +804,9 @@
     gaanVoortKnop.textContent = 'Gaan voort';
     gaanVoortKnop.addEventListener('click', () => {
       container.style.display = 'none';
-      if (verpligtend) voltooiCallback();
+      voltooiCallback();
     });
     container.appendChild(gaanVoortKnop);
-
-    if (!verpligtend) return; // "Wys my die W" is op-aanvraag; geen outo-voltooiing nie
   }
 
   function verifieerPosisiebankTeenOrakel() {
@@ -770,9 +849,15 @@
     initBord();
     setBoodskap('', '');
 
-    // Kaart 5 (§5.1 hoak): Kapok blaf een keer wanneer die hokkleure aankom;
-    // die wenk-verskyn-gebeurtenis kry Oom Jorka se wenk-aanbieding-teks.
+    // Kaart 5 (§5.1 hoak), geplafon sedert Kaart 11 (§2.7/kleureBlafMaksVirSport):
+    // Kapok blaf (bons + klank) wanneer die hokkleure aankom, maar nie meer
+    // as die sport se toegelate aantal per poging nie -- die hokkleure self
+    // verskyn steeds elke keer (dis die pedagogiese meganisme); net die blaf-
+    // REAKSIE word geplafon sodat 'n lang, stadig-gespeelde sport nie Kapok
+    // laat raas nie.
     document.addEventListener('kruin:kleure-aangekom', () => {
+      if (kleureBlafTellingThisAttempt >= kleureBlafMaksVirSport(huidigeSport.rung)) return;
+      kleureBlafTellingThisAttempt++;
       BergEngine.kapokBlaf();
       Klank.speelWenkBlaf();
     });
@@ -829,9 +914,7 @@
           }
           beginPoging();
           document.getElementById('weerBeginKnop').addEventListener('click', beginPoging);
-          document.getElementById('wysWKnop').addEventListener('click', () => {
-            toonWOorlegselEnVraag(null, false);
-          });
+          document.getElementById('wysMyHoeKnop').addEventListener('click', onWysMyHoeKlik);
         }).catch((err) => {
           setBoodskap('FOUT: orakel kon nie laai nie -- ' + (err && err.message ? err.message : err), 'sleg');
         });
@@ -866,8 +949,8 @@
     swindleTransformed = null;
     knightPath = [huidigePos.wN];
     alleSkuiweWasSpoorafdrukke = true;
+    kleureBlafTellingThisAttempt = 0;
     hintActiveThisAttempt = opts.hintActiveThisAttempt || false;
-    hintSquareThisAttempt = opts.hintSquareThisAttempt !== undefined ? opts.hintSquareThisAttempt : null;
     verversBord();
     verversStatus();
     startFadeTimer();
@@ -876,15 +959,25 @@
 
   // Kaart 3-toetshake.
   Kruin.ZONE_FADE_MS = ZONE_FADE_MS;
+  // Kaart 9: hintSquareThisAttempt is nie meer 'n los veranderlike nie (die
+  // wenk word elke beurt vars uit huidigePos herbereken) -- hierdie veld
+  // bly om bestaande toetse se vorm te behou, nou lewendig bereken.
   Kruin._kaart3Debug = () => ({
     fadeArrived, knightPath: knightPath.slice(),
-    hintActiveThisAttempt, hintSquareThisAttempt,
+    hintActiveThisAttempt,
+    hintSquareThisAttempt: hintActiveThisAttempt ? berekenWenkVierkantVirPos(huidigePos) : null,
     alleSkuiweWasSpoorafdrukke,
+    kleureBlafTellingThisAttempt,
   });
   Kruin._forseerKleureAangekom = showCageOverlay; // vir vinnige toetse sonder om regte sekondes te wag
+  Kruin._kleureBlafMaksVirSport = kleureBlafMaksVirSport; // Kaart 11-toetshaak
   Kruin._verwerkUitkomste = verwerkUitkomste;
   Kruin._berekenIdealePad = berekenIdealePad;
   Kruin._berekenWenkVierkant = berekenWenkVierkant;
+  Kruin._berekenWenkVierkantVirPos = berekenWenkVierkantVirPos;
+  // Kaart 10-toetshaak: "Wys my hoe"-knoppie se kliek-hanteraar, direk
+  // oproepbaar sonder om 'n werklike DOM-kliek te simuleer.
+  Kruin._onWysMyHoeKlik = onWysMyHoeKlik;
 
   // Kaart 5-toetshake.
   Kruin._init = init;
@@ -893,5 +986,12 @@
 
   // Kaart 6-toetshaak: §6-toestandmigrasie (DOM-vry, toets laaiToestand direk).
   Kruin._laaiToestand = laaiToestand;
-  Kruin._STATE_KEY = STATE_KEY;
+  // Kaart 9-regstelling: was voorheen `Kruin._STATE_KEY = STATE_KEY;` -- 'n
+  // eenmalige momentopname geneem by module-laai, toe STATE_KEY nog altyd
+  // `null` was (dit word eers binne init() gestel, ná die speler-toets). Die
+  // hoak was dus permanent `null`, nooit die werklike sleutel wat laaiToestand
+  // ()/stoorToestand() gebruik nie. Nou 'n getter, soos die res van die
+  // Kruin._xxx-toetshake wat op lewendige modultoestand lees (bv.
+  // Kruin._state).
+  Kruin._STATE_KEY = () => STATE_KEY;
 })();

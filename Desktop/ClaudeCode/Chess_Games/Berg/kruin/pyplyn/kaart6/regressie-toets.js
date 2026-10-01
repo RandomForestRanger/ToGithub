@@ -134,21 +134,29 @@ function runLocalStorageMigration(H) {
     attempts: { '17': { tries: 3, passes: 1 } },
     lastVisit: '2026-01-01T00:00:00Z',
   };
-  localStorage.setItem(Kruin._STATE_KEY, JSON.stringify(oud));
+  localStorage.setItem(Kruin._STATE_KEY(), JSON.stringify(oud));
 
   const gelaai = Kruin._laaiToestand();
-  push('migrasie: consecFails bygevoeg', typeof gelaai.consecFails === 'object' && gelaai.consecFails !== null, JSON.stringify(gelaai.consecFails));
-  push('migrasie: pendingCleanAscents bygevoeg', typeof gelaai.pendingCleanAscents === 'object' && gelaai.pendingCleanAscents !== null, JSON.stringify(gelaai.pendingCleanAscents));
   push('migrasie: _zoneSkoonVanaf bygevoeg', typeof gelaai._zoneSkoonVanaf === 'object' && gelaai._zoneSkoonVanaf !== null, JSON.stringify(gelaai._zoneSkoonVanaf));
   push('migrasie: ou velde onveranderd bewaar (currentRung)', gelaai.currentRung === 17, `currentRung=${gelaai.currentRung}`);
   push('migrasie: ou velde onveranderd bewaar (residents)', JSON.stringify(gelaai.residents) === JSON.stringify(oud.residents), JSON.stringify(gelaai.residents));
   push('migrasie: ou velde onveranderd bewaar (attempts)', JSON.stringify(gelaai.attempts) === JSON.stringify(oud.attempts), JSON.stringify(gelaai.attempts));
 
+  // Kaart 10: 'n nóg ouer toestand (van vóór die wenkstelsel-herontwerp) kan
+  // 'n verouderde `consecFails`/`pendingCleanAscents` dra -- laaiToestand()
+  // moet dit eenvoudig ongemoeid laat deurgaan (niks lees dit meer nie,
+  // niks moet daaroor struikel nie), nie probeer skoonmaak of daarop staatmaak nie.
+  const nogOuer = Object.assign({}, oud, { consecFails: { '17': 2 }, pendingCleanAscents: { '17': 1 } });
+  localStorage.setItem(Kruin._STATE_KEY(), JSON.stringify(nogOuer));
+  const gelaaiNogOuer = Kruin._laaiToestand();
+  push('migrasie: verouderde consecFails/pendingCleanAscents veroorsaak geen fout nie, currentRung bly korrek',
+    gelaaiNogOuer.currentRung === 17, `currentRung=${gelaaiNogOuer.currentRung}`);
+
   // 'n Vars (geen-localStorage) laai kry die volle §6-verstekvorm.
-  localStorage.removeItem(Kruin._STATE_KEY);
+  localStorage.removeItem(Kruin._STATE_KEY());
   const vars = Kruin._laaiToestand();
   push('vars laai (geen kas): currentRung=1', vars.currentRung === 1, `currentRung=${vars.currentRung}`);
-  push('vars laai: al die Kaart-3-velde teenwoordig van die staanspoor af', !!vars.consecFails && !!vars.pendingCleanAscents && !!vars._zoneSkoonVanaf);
+  push('vars laai: _zoneSkoonVanaf teenwoordig van die staanspoor af', !!vars._zoneSkoonVanaf, JSON.stringify(vars._zoneSkoonVanaf));
 
   return { ok, fail, checks, total: ok + fail };
 }
