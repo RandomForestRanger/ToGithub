@@ -1,0 +1,19 @@
+// All tunable numbers (CLAUDE.md section 15).
+export const TOP2_TOLERANCE_CP = 30;
+export const BLACK_ENGINE_DEPTH = 6;
+export const BLACK_MULTIPV = 3;
+export const BLACK_WINDOW_CP = 50;
+export const ANALYSIS_DEPTH = 14;
+export const ANALYSIS_MAX_MS = 2500;
+export const ANALYSIS_MIN_DEPTH = 10;
+export const FINAL_EVAL_DEPTH = 16;
+export const GOLD_EVAL = 1.0; // pawns
+export const POINT_BANDS_CP = [25, 60, 120] as const;
+export const CLASS_ODDS = { grey: 0.7, green: 0.25, gold: 0.05 } as const;
+export const FAMOUS_WEIGHT = 3;
+export const RECENT_EXCLUDE = 2;
+export const MOVES_PER_ROUND = 20;
+export const STEAM_SMOOTHING = 0.5;
+export const MATE_CP = 10000;
+export const THINK_MIN_MS = 400;
+export const THINK_MAX_MS = 900;
