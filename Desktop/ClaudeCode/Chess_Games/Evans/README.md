@@ -61,7 +61,7 @@ STRONG=1 node tools/smoke.mjs 3        # Stockfish-guided White (reaches move 20
 
 ## Not done yet / open
 
-- Not deployed to Netlify, not committed to git.
+- Not deployed to Netlify yet. See `NEXT_STEPS.md` for the full to-do list.
 - No real-device touch test (pinch-zoom was written but only tested with a mouse and in headless Chrome).
 - `GOLD_EVAL` is uncalibrated against real play. In the bot runs, gold never happened, because Black's engine play at depth 6 is quite strong against a random White.
 - The "pulse + bubbles" after a round work; the colour does not yet "fill in" gradually.
