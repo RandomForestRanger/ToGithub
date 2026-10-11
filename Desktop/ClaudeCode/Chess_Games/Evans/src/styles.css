@@ -44,25 +44,38 @@ body {
 .kelp-bottom { position: absolute; bottom: calc(14px + env(safe-area-inset-bottom, 0px)); left: 0; right: 0; display: flex; justify-content: center; align-items: center; gap: 12px; z-index: 2; flex-wrap: wrap; padding: 0 16px; }
 .lights { background: rgba(0,0,0,.45); padding: 8px 12px; border-radius: 12px; font-size: 15px; }
 
-.kelp { transform-box: view-box; animation: sway 9s ease-in-out infinite alternate; transform-origin: 50% 100%; }
-.stipe { fill: none; stroke-width: 5; stroke-linecap: round; }
-.famous .stipe { stroke-width: 8; }
-.frond { fill: none; stroke-width: 7; stroke-linecap: round; opacity: .8; }
-.s-grey .stipe, .s-grey .frond { stroke: #6f7d74; opacity: .45; }
-.s-green .stipe, .s-green .frond { stroke: var(--kelp); }
-.s-gold .stipe, .s-gold .frond { stroke: #c9a227; }
-.reef .stipe { stroke-dasharray: 3 2; outline: none; }
-.reef .stipe, .reef .bulb { filter: drop-shadow(0 0 0 #a0522d); }
-.reef .bulb { stroke: #b5532c !important; stroke-width: 3 !important; stroke-dasharray: 2 2; }
+/* sea bamboo: colours per state */
+.s-grey  { --k-stipe: #5f6d68; --k-blade: #74837c; --k-bulb: #84918a; --k-rib: #4c5854; }
+.s-green { --k-stipe: #3d6b2a; --k-blade: #5a9636; --k-bulb: #79b84a; --k-rib: #2c5220; }
+.s-gold  { --k-stipe: #9c7712; --k-blade: #cfa224; --k-bulb: #ffd23f; --k-rib: #85620c; }
+.kelp.s-grey, .fronds.s-grey, .bulb-g.s-grey .bulb { opacity: .55; }
+.stipe { fill: var(--k-stipe); }
+.stipe-hl { fill: none; stroke: #fff; stroke-opacity: .16; stroke-linecap: round; }
+.fill-in { fill: none; stroke: var(--k-stipe); stroke-dasharray: 1; stroke-dashoffset: 0; animation: fillUp 1.6s ease-in-out .7s both; }
+.fronds { transform-box: view-box; animation: swayFrond 7s ease-in-out infinite alternate; }
+.blade { fill: var(--k-blade); opacity: .85; }
+.rib { fill: none; stroke: var(--k-rib); stroke-width: 1.2; opacity: .6; }
+.fronds.changed { animation: fadeFill .9s ease-out 2s both, swayFrond 7s ease-in-out 2.9s infinite alternate; }
+.holdfast path { fill: none; stroke: var(--k-stipe); stroke-width: 4.5; stroke-linecap: round; }
+.holdfast ellipse { fill: var(--k-stipe); }
+.ripple { fill: none; stroke: #e6d4ab; stroke-opacity: .35; stroke-width: 2; }
+/* reef lines: rust outline and barnacles, whatever their state */
+.reef .stipe { stroke: #b5532c; stroke-width: 1.5; }
+.barnacle circle { fill: #e9dfc8; stroke: #7d6247; stroke-width: .8; }
+.barnacle .barnacle-hole { fill: #3b2e22; stroke: none; }
+.reef .bulb { stroke: #b5532c !important; stroke-width: 2.5 !important; stroke-dasharray: 3 2; }
 .bulb-g { cursor: pointer; }
-.bulb { stroke: rgba(0,0,0,.4); stroke-width: 1.5; }
-.s-grey .bulb { fill: #7d8a82; opacity: .55; }
-.s-green .bulb { fill: #6cb24f; }
-.s-gold .bulb { fill: var(--gold); animation: shimmer 3s ease-in-out infinite; }
+.hit { fill: transparent; }
+.bulb { fill: var(--k-bulb); stroke: rgba(0,0,0,.45); stroke-width: 1.2; }
+.crown { fill: var(--k-rib); stroke: rgba(0,0,0,.35); stroke-width: .8; pointer-events: none; }
+.bulb-g.s-grey .crown { opacity: .55; }
+.shine { fill: #fff; opacity: .45; pointer-events: none; }
+.s-gold .bulb { animation: shimmer 3s ease-in-out infinite; }
 .bulb-g.sel .bulb { stroke: #fff; stroke-width: 3; }
-.bulb-g.changed .bulb { animation: pulseBulb 1.2s ease-in-out 3; transform-box: fill-box; transform-origin: center; }
-.kelp-label { fill: #fff; font-size: 13px; text-anchor: middle; paint-order: stroke; stroke: rgba(0,0,0,.7); stroke-width: 3px; opacity: 0; pointer-events: none; transition: opacity .2s; }
-.famous .kelp-label, .bulb-g:hover .kelp-label, .bulb-g.sel .kelp-label { opacity: 1; }
+.bulb-g.changed .bulb { animation: fadeFill .6s ease-out 2s both, pulseBulb 1.2s ease-in-out 2.2s 3; transform-box: fill-box; transform-origin: center; }
+.kelp-label { fill: #fff; paint-order: stroke; stroke: rgba(0,0,0,.75); stroke-linejoin: round; opacity: 0; pointer-events: none; transition: opacity .2s; }
+.lbl-on .kelp-label, .bulb-g:hover .kelp-label, .bulb-g.sel .kelp-label { opacity: 1; }
+.bulb-g:hover, .bulb-g.sel { isolation: isolate; }
 .bubble { fill: rgba(255,255,255,.6); animation: rise 2.4s ease-out both; }
 
 .line-card { position: absolute; left: 50%; bottom: 90px; transform: translateX(-50%); width: min(420px, calc(100% - 32px)); z-index: 3; }
@@ -137,7 +150,9 @@ body {
   .panel { flex: none; }
 }
 
-@keyframes sway { from { transform: rotate(-0.6deg); } to { transform: rotate(0.6deg); } }
+@keyframes swayFrond { from { transform: rotate(-3deg); } to { transform: rotate(4deg); } }
+@keyframes fillUp { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }
+@keyframes fadeFill { from { filter: grayscale(1) brightness(.8); opacity: .55; } to { filter: none; opacity: 1; } }
 @keyframes shimmer { 0%, 100% { filter: brightness(1); } 50% { filter: brightness(1.35) drop-shadow(0 0 6px #ffd700); } }
 @keyframes pulseBulb { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.5); } }
 @keyframes rise { from { transform: translateY(0); opacity: .9; } to { transform: translateY(-120px); opacity: 0; } }
