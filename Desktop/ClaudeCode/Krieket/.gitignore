@@ -1,0 +1,6 @@
+# FAK Krieketterme publication and everything derived from it stay local (public repo).
+# Rebuild the CSV/JSON with: python3 extract_krieketterme.py
+Krieketterme-E-publikasie-finaal.pdf
+krieketterme.csv
+krieketterme.json
+.DS_Store

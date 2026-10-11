@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="af">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Krieketveldbeplanning</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: Arial, sans-serif; background: #ffffff; color: #1a4a1a; padding: 20px; }
+.page-header { text-align: center; margin-bottom: 24px; }
+.page-header h1 { font-size: 28px; font-weight: bold; color: #1a4a1a; margin-bottom: 6px; }
+.page-header h2 { font-size: 15px; font-weight: normal; color: #1a4a1a; margin-bottom: 0; }
+.page-header hr { border: none; border-top: 1px solid #2d6a2d; width: 60%; margin: 12px auto; }
+.attribution { font-style: italic; color: #888; font-size: 12px; }
+.diagram-container { display: flex; flex-direction: column; align-items: center; gap: 32px; }
+.diagram-wrapper { text-align: center; width: 100%; }
+.diagram-heading { font-size: 15px; font-weight: bold; color: #1a4a1a; text-align: center; margin-bottom: 4px; }
+.diagram-note { font-style: italic; color: #888; font-size: 12px; text-align: center; margin-bottom: 8px; }
+.diagram-wrapper svg { width: 100%; max-width: 520px; display: block; margin: 0 auto; }
+/* Field-coloured halo so the dashed ring and other lines never cut through label text */
+.diagram-wrapper svg .lbl { paint-order: stroke; stroke: #dff5d8; stroke-width: 3px; stroke-linejoin: round; }
+.legend-container { max-width: 600px; margin: 32px auto 0 auto; text-align: center; }
+.legend-heading { font-size: 16px; font-weight: bold; color: #1a4a1a; margin-bottom: 8px; }
+.legend-note { font-style: italic; color: #888; font-size: 12px; margin-bottom: 12px; }
+table { border-collapse: collapse; width: 100%; font-size: 13px; border: 1px solid #2d6a2d; page-break-inside: avoid; }
+th { background: #1a4a1a; color: white; padding: 8px 12px; text-align: left; }
+td { padding: 6px 12px; border-bottom: 1px solid #cccccc; }
+tr:nth-child(even) td { background: #eaf4ea; }
+footer { font-size: 11px; color: #888; text-align: center; margin-top: 32px; padding-bottom: 16px; }
+@media print {
+  footer { display: none; }
+  @page { size: A4 portrait; margin: 10mm; }
+  .diagram-container { flex-direction: column; align-items: center; gap: 16px; }
+  .diagram-wrapper svg { max-width: 360px; }
+  table { page-break-inside: avoid; }
+}
+</style>
+</head>
+<body>
+
+<div class="page-header">
+  <h1>KRIEKETVELDBEPLANNING</h1>
+  <h2>Veldwerkposisies &mdash; Regshandig &amp; Linkshandig</h2>
+  <hr>
+  <p class="attribution"><em>Gebaseer op die FAK Krieketterme-publikasie (2021)</em></p>
+</div>
+
+<div class="diagram-container">
+
+  <!-- REGSHANDIGE KOLWER (batsman at top, bowler at bottom, off side = LEFT) -->
+  <div class="diagram-wrapper">
+    <div class="diagram-heading">Regshandige Kolwer / Right-Handed Batsman</div>
+    <div class="diagram-note"><em>Bouler onderkant &#x2191; | Wegkant = links | Bykant = regs</em></div>
+    <svg viewBox="0 0 600 620" xmlns="http://www.w3.org/2000/svg">
+      <!-- Outer oval: very light green -->
+      <ellipse cx="300" cy="310" rx="270" ry="290" fill="#dff5d8" stroke="#1a4a1a" stroke-width="3"/>
+      <!-- 30-yard ring: dark green dashed -->
+      <circle cx="300" cy="310" r="150" fill="none" stroke="#2d6a2d" stroke-width="1.5" stroke-dasharray="6,4"/>
+      <!-- Pitch -->
+      <rect x="294" y="265" width="12" height="90" fill="#c8a96e" rx="1"/>
+      <!-- Top stumps (batsman's end) -->
+      <line x1="295" y1="255" x2="295" y2="265" stroke="#5a3a1a" stroke-width="1.5"/>
+      <line x1="300" y1="255" x2="300" y2="265" stroke="#5a3a1a" stroke-width="1.5"/>
+      <line x1="305" y1="255" x2="305" y2="265" stroke="#5a3a1a" stroke-width="1.5"/>
+      <line x1="292" y1="255" x2="308" y2="255" stroke="#5a3a1a" stroke-width="1.5"/>
+      <!-- Bottom stumps (bowler's end) -->
+      <line x1="295" y1="355" x2="295" y2="365" stroke="#5a3a1a" stroke-width="1.5"/>
+      <line x1="300" y1="355" x2="300" y2="365" stroke="#5a3a1a" stroke-width="1.5"/>
+      <line x1="305" y1="355" x2="305" y2="365" stroke="#5a3a1a" stroke-width="1.5"/>
+      <line x1="292" y1="355" x2="308" y2="355" stroke="#5a3a1a" stroke-width="1.5"/>
+      <!-- Crease lines: dark green -->
+      <line x1="288" y1="267" x2="312" y2="267" stroke="#2d6a2d" stroke-width="1.5"/>
+      <line x1="288" y1="353" x2="312" y2="353" stroke="#2d6a2d" stroke-width="1.5"/>
+      <!-- Batsman indicator (TOP, at the crease in front of the stumps) -->
+      <circle cx="300" cy="278" r="6" fill="white" stroke="#1a4a1a" stroke-width="1.5"/>
+      <text class="lbl" x="312" y="282" text-anchor="start" fill="#1a4a1a" font-size="10" font-family="Arial,sans-serif">Kolwer</text>
+      <!-- Bowler indicator (BOTTOM) -->
+      <circle cx="300" cy="390" r="5" fill="#888888"/>
+      <text class="lbl" x="300" y="404" text-anchor="middle" fill="#1a4a1a" font-size="10" font-family="Arial,sans-serif">Bouler &#x2191;</text>
+
+      <!-- 1. Paaltjiewagter / Wicket-keeper (300,190) — ABOVE -->
+      <circle cx="300" cy="190" r="10" fill="white" stroke="#1a4a1a" stroke-width="2"/>
+      <text x="300" y="194" text-anchor="middle" fill="black" font-weight="bold" font-size="10" font-family="Arial,sans-serif">1</text>
+      <text class="lbl" x="300" y="166" text-anchor="middle" fill="black" font-size="10" font-weight="bold" font-family="Arial,sans-serif">Paaltjiewagter</text>
+      <text class="lbl" x="300" y="177" text-anchor="middle" fill="black" font-size="9" font-style="italic" font-family="Arial,sans-serif">(Wicket-keeper)</text>
+
+      <!-- 2. Eerste Glip / First Slip (242,202) — UPPERLEFT -->
+      <circle cx="242" cy="202" r="10" fill="white" stroke="#1a4a1a" stroke-width="2"/>
+      <text x="242" y="206" text-anchor="middle" fill="black" font-weight="bold" font-size="10" font-family="Arial,sans-serif">2</text>
+      <text class="lbl" x="228" y="186" text-anchor="end" fill="black" font-size="10" font-weight="bold" font-family="Arial,sans-serif">Eerste Glip</text>
+      <text class="lbl" x="228" y="197" text-anchor="end" fill="black" font-size="9" font-style="italic" font-family="Arial,sans-serif">(First Slip)</text>
+
+      <!-- 3. Tweede Glip / Second Slip (212,220) — LEFT -->
+      <circle cx="212" cy="220" r="10" fill="white" stroke="#1a4a1a" stroke-width="2"/>
+      <text x="212" y="224" text-anchor="middle" fill="black" font-weight="bold" font-size="10" font-family="Arial,sans-serif">3</text>
+      <text class="lbl" x="198" y="216" text-anchor="end" fill="black" font-size="10" font-weight="bold" font-family="Arial,sans-serif">Tweede Glip</text>
+      <text class="lbl" x="198" y="227" text-anchor="end" fill="black" font-size="9" font-style="italic" font-family="Arial,sans-serif">(Second Slip)</text>
+
+      <!-- 4. Gang(etjie) / Gully (185,248) — LEFT -->
+      <circle cx="185" cy="248" r="10" fill="white" stroke="#1a4a1a" stroke-width="2"/>
+      <text x="185" y="252" text-anchor="middle" fill="black" font-weight="bold" font-size="10" font-family="Arial,sans-serif">4</text>
+      <text class="lbl" x="171" y="244" text-anchor="end" fill="black" font-size="10" font-weight="bold" font-family="Arial,sans-serif">Gang(etjie)</text>
+      <text class="lbl" x="171" y="255" text-anchor="end" fill="black" font-size="9" font-style="italic" font-family="Arial,sans-serif">(Gully)</text>
+
+      <!-- 5. Punt / Point (160,282) — RIGHT -->
+      <circle cx="160" cy="282" r="10" fill="white" stroke="#1a4a1a" stroke-width="2"/>
+      <text x="160" y="286" text-anchor="middle" fill="black" font-weight="bold" font-size="10" font-family="Arial,sans-serif">5</text>
+      <text class="lbl" x="174" y="278" text-anchor="start" fill="black" font-size="10" font-weight="bold" font-family="Arial,sans-serif">Punt</text>
+      <text class="lbl" x="174" y="289" text-anchor="start" fill="black" font-size="9" font-style="italic" font-family="Arial,sans-serif">(Point)</text>
+
+      <!-- 6. Dekpunt / Cover Point (158,368) — RIGHT -->
+      <circle cx="158" cy="368" r="10" fill="white" stroke="#1a4a1a" stroke-width="2"/>
+      <text x="158" y="372" text-anchor="middle" fill="black" font-weight="bold" font-size="10" font-family="Arial,sans-serif">6</text>
+      <text class="lbl" x="172" y="364" text-anchor="start" fill="black" font-size="10" font-weight="bold" font-family="Arial,sans-serif">Dekpunt</text>
+      <text class="lbl" x="172" y="375" text-anchor="start" fill="black" font-size="9" font-style="italic" font-family="Arial,sans-serif">(Cover Point)</text>
+
+      <!-- 7. Halfweg / Mid-Off (240,450) — BELOW -->
+      <circle cx="240" cy="450" r="10" fill="white" stroke="#1a4a1a" stroke-width="2"/>
+      <text x="240" y="454" text-anchor="middle" fill="black" font-weight="bold" font-size="10" font-family="Arial,sans-serif">7</text>
+      <text class="lbl" x="240" y="472" text-anchor="middle" fill="black" font-size="10" font-weight="bold" font-family="Arial,sans-serif">Halfweg</text>
+      <text class="lbl" x="240" y="483" text-anchor="middle" fill="black" font-size="9" font-style="italic" font-family="Arial,sans-serif">(Mid-Off)</text>
+
+      <!-- 8. Halfby / Mid-On (360,450) — BELOW -->
+      <circle cx="360" cy="450" r="10" fill="white" stroke="#1a4a1a" stroke-width="2"/>
+      <text x="360" y="454" text-anchor="middle" fill="black" font-weight="bold" font-size="10" font-family="Arial,sans-serif">8</text>
+      <text class="lbl" x="360" y="472" text-anchor="middle" fill="black" font-size="10" font-weight="bold" font-family="Arial,sans-serif">Halfby</text>
+      <text class="lbl" x="360" y="483" text-anchor="middle" fill="black" font-size="9" font-style="italic" font-family="Arial,sans-serif">(Mid-On)</text>
+
+      <!-- 9. Regby / Square Leg (440,282) — LEFT -->
+      <circle cx="440" cy="282" r="10" fill="white" stroke="#1a4a1a" stroke-width="2"/>
+      <text x="440" y="286" text-anchor="middle" fill="black" font-weight="bold" font-size="10" font-family="Arial,sans-serif">9</text>
+      <text class="lbl" x="426" y="278" text-anchor="end" fill="black" font-size="10" font-weight="bold" font-family="Arial,sans-serif">Regby</text>
+      <text class="lbl" x="426" y="289" text-anchor="end" fill="black" font-size="9" font-style="italic" font-family="Arial,sans-serif">(Square Leg)</text>
+
+      <!-- 10. Kortby / Short Leg (350,230) — ABOVE -->
+      <circle cx="350" cy="230" r="10" fill="white" stroke="#1a4a1a" stroke-width="2"/>
+      <text x="350" y="234" text-anchor="middle" fill="black" font-weight="bold" font-size="10" font-family="Arial,sans-serif">10</text>
+      <text class="lbl" x="350" y="206" text-anchor="middle" fill="black" font-size="10" font-weight="bold" font-family="Arial,sans-serif">Kortby</text>
+      <text class="lbl" x="350" y="217" text-anchor="middle" fill="black" font-size="9" font-style="italic" font-family="Arial,sans-serif">(Short Leg)</text>
+
+      <!-- 11. Derdeman / Third Man (225,110) — BELOW -->
+      <circle cx="225" cy="110" r="10" fill="white" stroke="#1a4a1a" stroke-width="2"/>
+      <text x="225" y="114" text-anchor="middle" fill="black" font-weight="bold" font-size="10" font-family="Arial,sans-serif">11</text>
+      <text class="lbl" x="225" y="132" text-anchor="middle" fill="black" font-size="10" font-weight="bold" font-family="Arial,sans-serif">Derdeman</text>
+      <text class="lbl" x="225" y="143" text-anchor="middle" fill="black" font-size="9" font-style="italic" font-family="Arial,sans-serif">(Third Man)</text>
+
+      <!-- 12. Skerpby / Fine Leg (385,105) — BELOW -->
+      <circle cx="385" cy="105" r="10" fill="white" stroke="#1a4a1a" stroke-width="2"/>
+      <text x="385" y="109" text-anchor="middle" fill="black" font-weight="bold" font-size="10" font-family="Arial,sans-serif">12</text>
+      <text class="lbl" x="385" y="127" text-anchor="middle" fill="black" font-size="10" font-weight="bold" font-family="Arial,sans-serif">Skerpby</text>
+      <text class="lbl" x="385" y="138" text-anchor="middle" fill="black" font-size="9" font-style="italic" font-family="Arial,sans-serif">(Fine Leg)</text>
+
+      <!-- 13. Diep Regby / Deep Square Leg (512,290) — BELOW -->
+      <circle cx="512" cy="290" r="10" fill="white" stroke="#1a4a1a" stroke-width="2"/>
+      <text x="512" y="294" text-anchor="middle" fill="black" font-weight="bold" font-size="10" font-family="Arial,sans-serif">13</text>
+      <text class="lbl" x="512" y="312" text-anchor="middle" fill="black" font-size="10" font-weight="bold" font-family="Arial,sans-serif">Diep Regby</text>
+      <text class="lbl" x="512" y="323" text-anchor="middle" fill="black" font-size="9" font-style="italic" font-family="Arial,sans-serif">(Deep Square Leg)</text>
+
+      <!-- 14. Diepby / Long-On (385,530) — ABOVE -->
+      <circle cx="385" cy="530" r="10" fill="white" stroke="#1a4a1a" stroke-width="2"/>
+      <text x="385" y="534" text-anchor="middle" fill="black" font-weight="bold" font-size="10" font-family="Arial,sans-serif">14</text>
+      <text class="lbl" x="385" y="506" text-anchor="middle" fill="black" font-size="10" font-weight="bold" font-family="Arial,sans-serif">Diepby</text>
+      <text class="lbl" x="385" y="517" text-anchor="middle" fill="black" font-size="9" font-style="italic" font-family="Arial,sans-serif">(Long-On)</text>
+
+      <!-- 15. Diepweg / Long-Off (210,530) — ABOVE -->
+      <circle cx="210" cy="530" r="10" fill="white" stroke="#1a4a1a" stroke-width="2"/>
+      <text x="210" y="534" text-anchor="middle" fill="black" font-weight="bold" font-size="10" font-family="Arial,sans-serif">15</text>
+      <text class="lbl" x="210" y="506" text-anchor="middle" fill="black" font-size="10" font-weight="bold" font-family="Arial,sans-serif">Diepweg</text>
+      <text class="lbl" x="210" y="517" text-anchor="middle" fill="black" font-size="9" font-style="italic" font-family="Arial,sans-serif">(Long-Off)</text>
+
+      <!-- 16. Diep Dekpunt / Deep Cover (92,392) — LOWERRIGHT -->
+      <circle cx="92" cy="392" r="10" fill="white" stroke="#1a4a1a" stroke-width="2"/>
+      <text x="92" y="396" text-anchor="middle" fill="black" font-weight="bold" font-size="10" font-family="Arial,sans-serif">16</text>
+      <text class="lbl" x="106" y="402" text-anchor="start" fill="black" font-size="10" font-weight="bold" font-family="Arial,sans-serif">Diep Dekpunt</text>
+      <text class="lbl" x="106" y="413" text-anchor="start" fill="black" font-size="9" font-style="italic" font-family="Arial,sans-serif">(Deep Cover)</text>
+    </svg>
+  </div>
+
+  <!-- LINKSHANDIGE KOLWER (batsman at top, bowler at bottom, off side = RIGHT) -->
+  <div class="diagram-wrapper">
+    <div class="diagram-heading">Linkshandige Kolwer / Left-Handed Batsman</div>
+    <div class="diagram-note"><em>Bouler onderkant &#x2191; | Wegkant = regs | Bykant = links</em></div>
+    <svg viewBox="0 0 600 620" xmlns="http://www.w3.org/2000/svg">
+      <!-- Outer oval: very light green -->
+      <ellipse cx="300" cy="310" rx="270" ry="290" fill="#dff5d8" stroke="#1a4a1a" stroke-width="3"/>
+      <!-- 30-yard ring: dark green dashed -->
+      <circle cx="300" cy="310" r="150" fill="none" stroke="#2d6a2d" stroke-width="1.5" stroke-dasharray="6,4"/>
+      <!-- Pitch -->
+      <rect x="294" y="265" width="12" height="90" fill="#c8a96e" rx="1"/>
+      <!-- Top stumps (batsman's end) -->
+      <line x1="295" y1="255" x2="295" y2="265" stroke="#5a3a1a" stroke-width="1.5"/>
+      <line x1="300" y1="255" x2="300" y2="265" stroke="#5a3a1a" stroke-width="1.5"/>
+      <line x1="305" y1="255" x2="305" y2="265" stroke="#5a3a1a" stroke-width="1.5"/>
+      <line x1="292" y1="255" x2="308" y2="255" stroke="#5a3a1a" stroke-width="1.5"/>
+      <!-- Bottom stumps (bowler's end) -->
+      <line x1="295" y1="355" x2="295" y2="365" stroke="#5a3a1a" stroke-width="1.5"/>
+      <line x1="300" y1="355" x2="300" y2="365" stroke="#5a3a1a" stroke-width="1.5"/>
+      <line x1="305" y1="355" x2="305" y2="365" stroke="#5a3a1a" stroke-width="1.5"/>
+      <line x1="292" y1="355" x2="308" y2="355" stroke="#5a3a1a" stroke-width="1.5"/>
+      <!-- Crease lines: dark green -->
+      <line x1="288" y1="267" x2="312" y2="267" stroke="#2d6a2d" stroke-width="1.5"/>
+      <line x1="288" y1="353" x2="312" y2="353" stroke="#2d6a2d" stroke-width="1.5"/>
+      <!-- Batsman indicator (TOP, at the crease in front of the stumps) -->
+      <circle cx="300" cy="278" r="6" fill="white" stroke="#1a4a1a" stroke-width="1.5"/>
+      <text class="lbl" x="312" y="282" text-anchor="start" fill="#1a4a1a" font-size="10" font-family="Arial,sans-serif">Kolwer</text>
+      <!-- Bowler indicator (BOTTOM) -->
+      <circle cx="300" cy="390" r="5" fill="#888888"/>
+      <text class="lbl" x="300" y="404" text-anchor="middle" fill="#1a4a1a" font-size="10" font-family="Arial,sans-serif">Bouler &#x2191;</text>
+
+      <!-- 1. Paaltjiewagter / Wicket-keeper (300,190) — ABOVE -->
+      <circle cx="300" cy="190" r="10" fill="white" stroke="#1a4a1a" stroke-width="2"/>
+      <text x="300" y="194" text-anchor="middle" fill="black" font-weight="bold" font-size="10" font-family="Arial,sans-serif">1</text>
+      <text class="lbl" x="300" y="166" text-anchor="middle" fill="black" font-size="10" font-weight="bold" font-family="Arial,sans-serif">Paaltjiewagter</text>
+      <text class="lbl" x="300" y="177" text-anchor="middle" fill="black" font-size="9" font-style="italic" font-family="Arial,sans-serif">(Wicket-keeper)</text>
+
+      <!-- 2. Eerste Glip / First Slip (358,202) — UPPERRIGHT -->
+      <circle cx="358" cy="202" r="10" fill="white" stroke="#1a4a1a" stroke-width="2"/>
+      <text x="358" y="206" text-anchor="middle" fill="black" font-weight="bold" font-size="10" font-family="Arial,sans-serif">2</text>
+      <text class="lbl" x="372" y="186" text-anchor="start" fill="black" font-size="10" font-weight="bold" font-family="Arial,sans-serif">Eerste Glip</text>
+      <text class="lbl" x="372" y="197" text-anchor="start" fill="black" font-size="9" font-style="italic" font-family="Arial,sans-serif">(First Slip)</text>
+
+      <!-- 3. Tweede Glip / Second Slip (388,220) — RIGHT -->
+      <circle cx="388" cy="220" r="10" fill="white" stroke="#1a4a1a" stroke-width="2"/>
+      <text x="388" y="224" text-anchor="middle" fill="black" font-weight="bold" font-size="10" font-family="Arial,sans-serif">3</text>
+      <text class="lbl" x="402" y="216" text-anchor="start" fill="black" font-size="10" font-weight="bold" font-family="Arial,sans-serif">Tweede Glip</text>
+      <text class="lbl" x="402" y="227" text-anchor="start" fill="black" font-size="9" font-style="italic" font-family="Arial,sans-serif">(Second Slip)</text>
+
+      <!-- 4. Gang(etjie) / Gully (415,248) — RIGHT -->
+      <circle cx="415" cy="248" r="10" fill="white" stroke="#1a4a1a" stroke-width="2"/>
+      <text x="415" y="252" text-anchor="middle" fill="black" font-weight="bold" font-size="10" font-family="Arial,sans-serif">4</text>
+      <text class="lbl" x="429" y="244" text-anchor="start" fill="black" font-size="10" font-weight="bold" font-family="Arial,sans-serif">Gang(etjie)</text>
+      <text class="lbl" x="429" y="255" text-anchor="start" fill="black" font-size="9" font-style="italic" font-family="Arial,sans-serif">(Gully)</text>
+
+      <!-- 5. Punt / Point (440,282) — LEFT -->
+      <circle cx="440" cy="282" r="10" fill="white" stroke="#1a4a1a" stroke-width="2"/>
+      <text x="440" y="286" text-anchor="middle" fill="black" font-weight="bold" font-size="10" font-family="Arial,sans-serif">5</text>
+      <text class="lbl" x="426" y="278" text-anchor="end" fill="black" font-size="10" font-weight="bold" font-family="Arial,sans-serif">Punt</text>
+      <text class="lbl" x="426" y="289" text-anchor="end" fill="black" font-size="9" font-style="italic" font-family="Arial,sans-serif">(Point)</text>
+
+      <!-- 6. Dekpunt / Cover Point (442,368) — LEFT -->
+      <circle cx="442" cy="368" r="10" fill="white" stroke="#1a4a1a" stroke-width="2"/>
+      <text x="442" y="372" text-anchor="middle" fill="black" font-weight="bold" font-size="10" font-family="Arial,sans-serif">6</text>
+      <text class="lbl" x="428" y="364" text-anchor="end" fill="black" font-size="10" font-weight="bold" font-family="Arial,sans-serif">Dekpunt</text>
+      <text class="lbl" x="428" y="375" text-anchor="end" fill="black" font-size="9" font-style="italic" font-family="Arial,sans-serif">(Cover Point)</text>
+
+      <!-- 7. Halfweg / Mid-Off (360,450) — BELOW -->
+      <circle cx="360" cy="450" r="10" fill="white" stroke="#1a4a1a" stroke-width="2"/>
+      <text x="360" y="454" text-anchor="middle" fill="black" font-weight="bold" font-size="10" font-family="Arial,sans-serif">7</text>
+      <text class="lbl" x="360" y="472" text-anchor="middle" fill="black" font-size="10" font-weight="bold" font-family="Arial,sans-serif">Halfweg</text>
+      <text class="lbl" x="360" y="483" text-anchor="middle" fill="black" font-size="9" font-style="italic" font-family="Arial,sans-serif">(Mid-Off)</text>
+
+      <!-- 8. Halfby / Mid-On (240,450) — BELOW -->
+      <circle cx="240" cy="450" r="10" fill="white" stroke="#1a4a1a" stroke-width="2"/>
+      <text x="240" y="454" text-anchor="middle" fill="black" font-weight="bold" font-size="10" font-family="Arial,sans-serif">8</text>
+      <text class="lbl" x="240" y="472" text-anchor="middle" fill="black" font-size="10" font-weight="bold" font-family="Arial,sans-serif">Halfby</text>
+      <text class="lbl" x="240" y="483" text-anchor="middle" fill="black" font-size="9" font-style="italic" font-family="Arial,sans-serif">(Mid-On)</text>
+
+      <!-- 9. Regby / Square Leg (160,282) — RIGHT -->
+      <circle cx="160" cy="282" r="10" fill="white" stroke="#1a4a1a" stroke-width="2"/>
+      <text x="160" y="286" text-anchor="middle" fill="black" font-weight="bold" font-size="10" font-family="Arial,sans-serif">9</text>
+      <text class="lbl" x="174" y="278" text-anchor="start" fill="black" font-size="10" font-weight="bold" font-family="Arial,sans-serif">Regby</text>
+      <text class="lbl" x="174" y="289" text-anchor="start" fill="black" font-size="9" font-style="italic" font-family="Arial,sans-serif">(Square Leg)</text>
+
+      <!-- 10. Kortby / Short Leg (250,230) — ABOVE -->
+      <circle cx="250" cy="230" r="10" fill="white" stroke="#1a4a1a" stroke-width="2"/>
+      <text x="250" y="234" text-anchor="middle" fill="black" font-weight="bold" font-size="10" font-family="Arial,sans-serif">10</text>
+      <text class="lbl" x="250" y="206" text-anchor="middle" fill="black" font-size="10" font-weight="bold" font-family="Arial,sans-serif">Kortby</text>
+      <text class="lbl" x="250" y="217" text-anchor="middle" fill="black" font-size="9" font-style="italic" font-family="Arial,sans-serif">(Short Leg)</text>
+
+      <!-- 11. Derdeman / Third Man (375,110) — BELOW -->
+      <circle cx="375" cy="110" r="10" fill="white" stroke="#1a4a1a" stroke-width="2"/>
+      <text x="375" y="114" text-anchor="middle" fill="black" font-weight="bold" font-size="10" font-family="Arial,sans-serif">11</text>
+      <text class="lbl" x="375" y="132" text-anchor="middle" fill="black" font-size="10" font-weight="bold" font-family="Arial,sans-serif">Derdeman</text>
+      <text class="lbl" x="375" y="143" text-anchor="middle" fill="black" font-size="9" font-style="italic" font-family="Arial,sans-serif">(Third Man)</text>
+
+      <!-- 12. Skerpby / Fine Leg (215,105) — BELOW -->
+      <circle cx="215" cy="105" r="10" fill="white" stroke="#1a4a1a" stroke-width="2"/>
+      <text x="215" y="109" text-anchor="middle" fill="black" font-weight="bold" font-size="10" font-family="Arial,sans-serif">12</text>
+      <text class="lbl" x="215" y="127" text-anchor="middle" fill="black" font-size="10" font-weight="bold" font-family="Arial,sans-serif">Skerpby</text>
+      <text class="lbl" x="215" y="138" text-anchor="middle" fill="black" font-size="9" font-style="italic" font-family="Arial,sans-serif">(Fine Leg)</text>
+
+      <!-- 13. Diep Regby / Deep Square Leg (88,290) — BELOW -->
+      <circle cx="88" cy="290" r="10" fill="white" stroke="#1a4a1a" stroke-width="2"/>
+      <text x="88" y="294" text-anchor="middle" fill="black" font-weight="bold" font-size="10" font-family="Arial,sans-serif">13</text>
+      <text class="lbl" x="88" y="312" text-anchor="middle" fill="black" font-size="10" font-weight="bold" font-family="Arial,sans-serif">Diep Regby</text>
+      <text class="lbl" x="88" y="323" text-anchor="middle" fill="black" font-size="9" font-style="italic" font-family="Arial,sans-serif">(Deep Square Leg)</text>
+
+      <!-- 14. Diepby / Long-On (215,530) — ABOVE -->
+      <circle cx="215" cy="530" r="10" fill="white" stroke="#1a4a1a" stroke-width="2"/>
+      <text x="215" y="534" text-anchor="middle" fill="black" font-weight="bold" font-size="10" font-family="Arial,sans-serif">14</text>
+      <text class="lbl" x="215" y="506" text-anchor="middle" fill="black" font-size="10" font-weight="bold" font-family="Arial,sans-serif">Diepby</text>
+      <text class="lbl" x="215" y="517" text-anchor="middle" fill="black" font-size="9" font-style="italic" font-family="Arial,sans-serif">(Long-On)</text>
+
+      <!-- 15. Diepweg / Long-Off (390,530) — ABOVE -->
+      <circle cx="390" cy="530" r="10" fill="white" stroke="#1a4a1a" stroke-width="2"/>
+      <text x="390" y="534" text-anchor="middle" fill="black" font-weight="bold" font-size="10" font-family="Arial,sans-serif">15</text>
+      <text class="lbl" x="390" y="506" text-anchor="middle" fill="black" font-size="10" font-weight="bold" font-family="Arial,sans-serif">Diepweg</text>
+      <text class="lbl" x="390" y="517" text-anchor="middle" fill="black" font-size="9" font-style="italic" font-family="Arial,sans-serif">(Long-Off)</text>
+
+      <!-- 16. Diep Dekpunt / Deep Cover (508,392) — LOWERLEFT -->
+      <circle cx="508" cy="392" r="10" fill="white" stroke="#1a4a1a" stroke-width="2"/>
+      <text x="508" y="396" text-anchor="middle" fill="black" font-weight="bold" font-size="10" font-family="Arial,sans-serif">16</text>
+      <text class="lbl" x="494" y="402" text-anchor="end" fill="black" font-size="10" font-weight="bold" font-family="Arial,sans-serif">Diep Dekpunt</text>
+      <text class="lbl" x="494" y="413" text-anchor="end" fill="black" font-size="9" font-style="italic" font-family="Arial,sans-serif">(Deep Cover)</text>
+    </svg>
+  </div>
+
+</div>
+
+<!-- SHARED LEGEND TABLE -->
+<div class="legend-container">
+  <p class="legend-heading">Sleutel / Key &mdash; Alle 16 Veldwerkposisies</p>
+  <p class="legend-note"><em>Posisies wissel na die teenoorgestelde kant vir &rsquo;n linkshandige kolwer. / Positions mirror to the opposite side for a left-handed batsman.</em></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Nr</th>
+        <th>Afrikaans</th>
+        <th>Engels (English)</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td>1</td><td>Paaltjiewagter</td><td>Wicket-keeper</td></tr>
+      <tr><td>2</td><td>Eerste Glip</td><td>First Slip</td></tr>
+      <tr><td>3</td><td>Tweede Glip</td><td>Second Slip</td></tr>
+      <tr><td>4</td><td>Gang(etjie)</td><td>Gully</td></tr>
+      <tr><td>5</td><td>Punt</td><td>Point</td></tr>
+      <tr><td>6</td><td>Dekpunt</td><td>Cover Point</td></tr>
+      <tr><td>7</td><td>Halfweg</td><td>Mid-Off</td></tr>
+      <tr><td>8</td><td>Halfby</td><td>Mid-On</td></tr>
+      <tr><td>9</td><td>Regby</td><td>Square Leg</td></tr>
+      <tr><td>10</td><td>Kortby</td><td>Short Leg</td></tr>
+      <tr><td>11</td><td>Derdeman</td><td>Third Man</td></tr>
+      <tr><td>12</td><td>Skerpby</td><td>Fine Leg</td></tr>
+      <tr><td>13</td><td>Diep Regby</td><td>Deep Square Leg</td></tr>
+      <tr><td>14</td><td>Diepby</td><td>Long-On</td></tr>
+      <tr><td>15</td><td>Diepweg</td><td>Long-Off</td></tr>
+      <tr><td>16</td><td>Diep Dekpunt</td><td>Deep Cover</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<footer>
+  <p>Veldposisies gebaseer op die FAK Krieketterme-publikasie. Alle terme is goedgekeurde Afrikaanse krieketterminologie.</p>
+</footer>
+
+</body>
+</html>
