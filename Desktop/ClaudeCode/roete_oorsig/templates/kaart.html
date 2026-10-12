@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+
+{% block inhoud %}
+<div class="kaart-bladsy">
+
+  <div class="kaart-beheer">
+    <a href="/" class="terug-skakel">&larr; Nuwe Roete</a>
+    <button onclick="window.print()" class="druk-knoppie">Druk Kaart</button>
+  </div>
+
+  <!-- Progressive loading status bar — hidden once all stages complete -->
+  <div id="stadium-balk" class="stadium-balk" role="status" aria-live="polite">
+    <span class="stadium-wentel" aria-hidden="true"></span>
+    <span id="stadium-teks" class="stadium-teks">Kaart word saamgestel…</span>
+    <span id="stadium-stap" class="stadium-stap">Stap 1 van 3</span>
+  </div>
+
+  <div id="kaart-wrapper">
+    {{ svg | safe }}
+  </div>
+
+</div>
+
+<script>
+(function () {
+  const jobId = {{ job_id | tojson }};
+
+  const stadiums = [
+    {
+      url:  `/api/update/${jobId}/dorpe`,
+      teks: "Dorpe en stede word gesoek…",
+      stap: "Stap 1 van 3",
+    },
+    {
+      url:  `/api/update/${jobId}/riviere`,
+      teks: "Riviere word geïdentifiseer…",
+      stap: "Stap 2 van 3",
+    },
+    {
+      url:  `/api/update/${jobId}/munisipaliteite`,
+      teks: "Munisipaliteite word bepaal… (±60 sekondes)",
+      stap: "Stap 3 van 3",
+    },
+  ];
+
+  const wrapper = document.getElementById('kaart-wrapper');
+  const balk    = document.getElementById('stadium-balk');
+  const teksEl  = document.getElementById('stadium-teks');
+  const stapEl  = document.getElementById('stadium-stap');
+
+  function updateBalk(teks, stap) {
+    teksEl.textContent = teks;
+    stapEl.textContent = stap;
+  }
+
+  function updateSvg(svg) {
+    // Replace only the SVG element inside the wrapper, keeping wrapper intact
+    wrapper.innerHTML = svg;
+  }
+
+  async function laaiStadiums() {
+    for (const stadium of stadiums) {
+      updateBalk(stadium.teks, stadium.stap);
+      try {
+        const resp = await fetch(stadium.url);
+        if (resp.ok) {
+          const data = await resp.json();
+          updateSvg(data.svg);
+        } else {
+          console.warn('Stadium het fout teruggegee:', stadium.url, resp.status);
+        }
+      } catch (e) {
+        // Network error or server failure — keep current map, move to next stage
+        console.warn('Stadium misluk, gaan voort:', stadium.url, e);
+      }
+    }
+    // All stages complete
+    balk.style.opacity = '0';
+    setTimeout(() => { balk.style.display = 'none'; }, 400);
+  }
+
+  laaiStadiums();
+})();
+</script>
+{% endblock %}

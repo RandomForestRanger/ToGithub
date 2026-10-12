@@ -1,0 +1,289 @@
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: Arial, sans-serif;
+  background: #f5f5f0;
+  color: #222;
+  min-height: 100vh;
+}
+
+/* Flash messages */
+.flits-boodskappe {
+  background: #fff3cd;
+  border-left: 4px solid #e0a000;
+  padding: 12px 20px;
+}
+
+.flits {
+  font-size: 14px;
+  color: #7a5800;
+}
+
+/* Index page */
+.vorm-bladsy {
+  max-width: 480px;
+  margin: 80px auto;
+  background: #fff;
+  border-radius: 8px;
+  padding: 40px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+}
+
+.vorm-bladsy h1 {
+  font-size: 28px;
+  color: #2c5f2e;
+  margin-bottom: 8px;
+}
+
+.subtitel {
+  font-size: 14px;
+  color: #666;
+  margin-bottom: 28px;
+}
+
+.roete-vorm {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.veld-groep {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.veld-groep label {
+  font-size: 13px;
+  font-weight: bold;
+  color: #444;
+}
+
+.veld-groep input {
+  padding: 10px 14px;
+  font-size: 15px;
+  border: 1.5px solid #ccc;
+  border-radius: 5px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.veld-groep input:focus {
+  border-color: #2c5f2e;
+}
+
+.wys-knoppie {
+  padding: 12px;
+  background: #2c5f2e;
+  color: #fff;
+  font-size: 16px;
+  font-weight: bold;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.wys-knoppie:hover {
+  background: #1e4420;
+}
+
+.vars-nota {
+  font-size: 12px;
+  color: #8a4a00;
+  background: #fdf1e0;
+  border-radius: 4px;
+  padding: 6px 10px;
+}
+
+/* ── Countdown overlay ──────────────────────────────────────────────────── */
+#laai-oorleg {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(245, 245, 240, 0.96);
+  z-index: 100;
+  align-items: center;
+  justify-content: center;
+}
+
+#laai-oorleg.sigbaar {
+  display: flex;
+}
+
+.laai-boks {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  position: relative;
+}
+
+.laai-ring {
+  width: 180px;
+  height: 180px;
+}
+
+.laai-ring-agtergrond {
+  fill: none;
+  stroke: #d8e8d8;
+  stroke-width: 8;
+}
+
+.laai-ring-voorgrond {
+  fill: none;
+  stroke: #2c5f2e;
+  stroke-width: 8;
+  stroke-linecap: round;
+  transform: rotate(-90deg);
+  transform-origin: 60px 60px;
+  transition: stroke-dashoffset 0.9s linear;
+}
+
+.laai-getal {
+  position: absolute;
+  top: 50px;
+  width: 180px;
+  text-align: center;
+  font-size: 52px;
+  font-weight: bold;
+  color: #2c5f2e;
+  line-height: 80px;
+}
+
+.laai-hoofteks {
+  font-size: 18px;
+  font-weight: bold;
+  color: #333;
+  margin-top: 8px;
+}
+
+.laai-subteks {
+  font-size: 13px;
+  color: #888;
+  text-align: center;
+  max-width: 300px;
+  min-height: 1.4em;
+  transition: opacity 0.4s;
+}
+
+/* ── Progressive loading status bar ────────────────────────────────────── */
+.stadium-balk {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 794px;
+  max-width: 100%;
+  padding: 8px 14px;
+  background: #f0f7f0;
+  border: 1px solid #b8d8b8;
+  border-radius: 5px;
+  font-size: 13px;
+  color: #2c5f2e;
+  transition: opacity 0.4s;
+}
+
+.stadium-wentel {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border: 2px solid #b8d8b8;
+  border-top-color: #2c5f2e;
+  border-radius: 50%;
+  animation: wentel 0.8s linear infinite;
+  flex-shrink: 0;
+}
+
+@keyframes wentel {
+  to { transform: rotate(360deg); }
+}
+
+.stadium-teks {
+  flex: 1;
+}
+
+.stadium-stap {
+  color: #888;
+  font-size: 12px;
+  flex-shrink: 0;
+}
+
+/* Kaart page */
+.kaart-bladsy {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 24px 16px;
+  gap: 16px;
+}
+
+.kaart-beheer {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  width: 794px;
+  max-width: 100%;
+}
+
+.terug-skakel {
+  color: #2c5f2e;
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: bold;
+}
+
+.terug-skakel:hover {
+  text-decoration: underline;
+}
+
+.druk-knoppie {
+  margin-left: auto;
+  padding: 9px 22px;
+  background: #2c5f2e;
+  color: #fff;
+  font-size: 14px;
+  font-weight: bold;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.druk-knoppie:hover {
+  background: #1e4420;
+}
+
+#kaart-wrapper {
+  border: 1px solid #ddd;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+}
+
+/* Print styles */
+@media print {
+  /* #kaart-wrapper lives inside .kaart-bladsy, so keep that container and
+     hide its siblings and its other children instead. */
+  body > *:not(.kaart-bladsy) { display: none; }
+  .kaart-bladsy > *:not(#kaart-wrapper) { display: none; }
+  .kaart-bladsy { display: block; padding: 0; }
+  body { background: #fff; }
+  #kaart-wrapper {
+    display: block;
+    margin: 0;
+    padding: 0;
+    border: none;
+    box-shadow: none;
+  }
+  svg {
+    width: 210mm;
+    height: 297mm;
+    page-break-after: avoid;
+  }
+  @page {
+    size: A4 portrait;
+    margin: 0;
+  }
+}

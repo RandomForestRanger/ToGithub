@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="af">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Roete Oorsig</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  {% with messages = get_flashed_messages() %}
+    {% if messages %}
+      <div class="flits-boodskappe">
+        {% for boodskap in messages %}
+          <p class="flits">{{ boodskap }}</p>
+        {% endfor %}
+      </div>
+    {% endif %}
+  {% endwith %}
+
+  {% block inhoud %}{% endblock %}
+</body>
+</html>

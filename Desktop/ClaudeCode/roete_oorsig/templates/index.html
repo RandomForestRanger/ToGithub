@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+
+{% block inhoud %}
+<main class="vorm-bladsy">
+  <h1>Roete Oorsig</h1>
+  <p class="subtitel">Voer jou vertrekpunt en bestemming in om 'n padkaart te kry.</p>
+
+  <form method="POST" action="/kaart" class="roete-vorm" id="roete-vorm">
+    <div class="veld-groep">
+      <label for="vertrekpunt">Vertrekpunt</label>
+      <input type="text" id="vertrekpunt" name="vertrekpunt"
+             placeholder="bv. Kaapstad" required autofocus>
+    </div>
+    <div class="veld-groep">
+      <label for="bestemming">Bestemming</label>
+      <input type="text" id="bestemming" name="bestemming"
+             placeholder="bv. Johannesburg" required>
+    </div>
+    {% if vars_data %}
+    <input type="hidden" name="vars" value="1">
+    <p class="vars-nota">Vars data: gestoorde data word vir hierdie roete geïgnoreer.</p>
+    {% endif %}
+    <button type="submit" class="wys-knoppie" id="wys-knoppie">Wys Roete</button>
+  </form>
+</main>
+
+<!-- Countdown overlay — shown while the POST is in flight -->
+<div id="laai-oorleg">
+  <div class="laai-boks">
+    <svg class="laai-ring" viewBox="0 0 120 120">
+      <circle class="laai-ring-agtergrond" cx="60" cy="60" r="52"/>
+      <circle class="laai-ring-voorgrond" cx="60" cy="60" r="52" id="laai-sirkel"/>
+    </svg>
+    <div class="laai-getal" id="laai-getal">20</div>
+    <p class="laai-hoofteks">Roete word bereken…</p>
+    <p class="laai-subteks" id="laai-subteks">Plekname word opgespoor…</p>
+  </div>
+</div>
+
+<script>
+(function () {
+  const TOTAAL = 20;
+  const SIRKOMTREK = 2 * Math.PI * 52; // r=52
+
+  const boodskappe = [
+    [0,  "Plekname word opgespoor…"],
+    [8,  "Roete word bereken…"],
+    [15, "Byna klaar…"],
+  ];
+
+  const oorleg   = document.getElementById('laai-oorleg');
+  const getal    = document.getElementById('laai-getal');
+  const sirkel   = document.getElementById('laai-sirkel');
+  const subteks  = document.getElementById('laai-subteks');
+  const knoppie  = document.getElementById('wys-knoppie');
+
+  sirkel.style.strokeDasharray  = SIRKOMTREK;
+  sirkel.style.strokeDashoffset = SIRKOMTREK; // starts empty
+
+  let interval = null;
+
+  // Browsers restore this page from the back/forward cache with the overlay
+  // still showing and the button disabled — reset both when that happens.
+  window.addEventListener('pageshow', function (e) {
+    if (!e.persisted) return;
+    clearInterval(interval);
+    oorleg.classList.remove('sigbaar');
+    knoppie.disabled = false;
+    getal.textContent = TOTAAL;
+    sirkel.style.strokeDashoffset = SIRKOMTREK;
+    subteks.textContent = boodskappe[0][1];
+  });
+
+  document.getElementById('roete-vorm').addEventListener('submit', function () {
+    oorleg.classList.add('sigbaar');
+    knoppie.disabled = true;
+
+    let verstreke = 0;
+    interval = setInterval(function () {
+      verstreke++;
+      const oor = Math.max(0, TOTAAL - verstreke);
+      getal.textContent = oor > 0 ? oor : '…';
+
+      // Arc progress (fills as time passes, empties as countdown decreases — visual choice)
+      const vordering = Math.min(verstreke / TOTAAL, 1);
+      sirkel.style.strokeDashoffset = SIRKOMTREK * (1 - vordering);
+
+      // Rotate message at milestones
+      for (let i = boodskappe.length - 1; i >= 0; i--) {
+        if (verstreke >= boodskappe[i][0]) {
+          subteks.textContent = boodskappe[i][1];
+          break;
+        }
+      }
+
+      if (verstreke >= TOTAAL) {
+        clearInterval(interval);
+        getal.textContent = '…';
+      }
+    }, 1000);
+  });
+})();
+</script>
+{% endblock %}
