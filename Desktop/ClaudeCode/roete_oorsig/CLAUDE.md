@@ -6,6 +6,9 @@
 point and a destination, fetches the driving route via OpenRouteService, and renders it as a
 **print-optimised A4 diagram** — a straight vertical line (like a train/metro schematic) with
 ~10 prominent towns marked as dots, plus river crossings and provincial border markers.
+Each town shows its distance from the start; a strip in the left margin shows the
+distance of each leg (town to town), and a strip in the right margin shows the
+municipalities passed through.
 The target audience is a 10-year-old following progress during a road trip.
 
 ---
@@ -312,6 +315,14 @@ a **straight vertical line** regardless of the route's actual geographic shape.
 - Departure dot at `y = 170`; destination dot at `y = 1060`.
 
 **Drawing layers (bottom to top):**
+0. Margin strips: municipality zones on the right (x=635–662, see 4c) and **leg
+   distances on the left** (`BEEN_X1`–`BEEN_X2` = x=123–159, mirroring the municipality
+   strip at 238 px from the route line).  The leg strip has one band per leg —
+   departure → town 1 → … → destination (`_bene`) — whose edges are level with the dots,
+   alternating between two soft greens (`BEEN_KLEURE`), with the leg's km (bold 9 px,
+   white `HALO`) centred horizontally in it when the band is ≥ 12 px tall.  Legs are
+   differences of the integer `afstand_km` values, so they always sum to the total.
+   The cumulative "x km" under each town name stays as is.
 1. Province border lines — full-width dashed horizontal lines (`stroke="#7b241c"`,
    `stroke-dasharray="6 4"`).  Both province names sit at the **far left margin**
    (`x=44`, clear of the right-aligned town labels): the departing province just
@@ -356,7 +367,8 @@ a **straight vertical line** regardless of the route's actual geographic shape.
 
 **Legend (below header):**
 - Small row of colour-coded symbols: green dot = stad/dorp, blue line = rivier,
-  dashed red line = provinsie grens.
+  dashed red line = provinsie grens, yellow square = munisipaliteit, pale green
+  square = afstand tussen dorpe.
 
 **Header (top of page):**
 - App name: **"Roete Oorsig"** — large, bold, centred, 28px.

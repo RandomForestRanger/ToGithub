@@ -51,6 +51,15 @@ SONE_KLEUR_ONBEKEND = ("#e0e0e0", "#999999")   # neutral grey
 SONE_X1 = 635
 SONE_X2 = 662
 
+# Leg-distance strip (left margin) mirrors the municipality strip: both sit
+# 238 px from the route line.  x=123–159 lies between the province labels
+# (x≥44, ~65 px wide) and the right-aligned town labels (ending at x=377).
+BEEN_X1 = 123
+BEEN_X2 = 159
+# Alternating bands so consecutive legs are told apart; (fill, stroke, text)
+BEEN_KLEURE = [("#eef4ee", "#b8d0b8", "#2c5f2e"),
+               ("#dbe8db", "#a6c4a6", "#2c5f2e")]
+
 
 def _verkort_muni(naam):
     """Strip common SA municipality suffixes (English and Afrikaans) for compact strip labels."""
@@ -265,6 +274,11 @@ def bou_svg(dorpe, riviere, grense, munisipaliteit_sones,
         f'fill="{SONE_KLEURE[0][0]}" stroke="{SONE_KLEURE[0][1]}" stroke-width="0.5" rx="2"/>'
     )
     svg.append(f'<text x="{lx+286}" y="{ly}" font-size="10" fill="{KLEUR_SUBTEKS}">Munisipaliteit</text>')
+    svg.append(
+        f'<rect x="{lx+370}" y="{ly-10}" width="12" height="12" '
+        f'fill="{BEEN_KLEURE[1][0]}" stroke="{BEEN_KLEURE[1][1]}" stroke-width="0.5" rx="2"/>'
+    )
+    svg.append(f'<text x="{lx+386}" y="{ly}" font-size="10" fill="{KLEUR_SUBTEKS}">Afstand tussen dorpe</text>')
 
     # ── Municipality zone strip (right margin, x=635–662) ─────────────────
     for sone in munisipaliteit_sones:
@@ -295,6 +309,24 @@ def bou_svg(dorpe, riviere, grense, munisipaliteit_sones,
                 f'font-size="8" fill="{teks_kleur}" '
                 f'transform="rotate(-90 {x_midden:.1f} {y_midden:.1f})">'
                 f'{kort}</text>'
+            )
+
+    # ── Leg-distance strip (left margin, x=123–159) ──────────────────────
+    # One band per leg — departure → town 1 → … → destination — with its edges
+    # level with the dots and the leg's km centred in it.  Legs come from the
+    # integer afstand_km values, so they always add up to the total.
+    for van_km, tot_km, i in _bene(dorpe, totale_km):
+        y_van, y_tot = y_van_km(van_km), y_van_km(tot_km)
+        vul, rand, teks_kleur = BEEN_KLEURE[i % 2]
+        svg.append(
+            f'<rect x="{BEEN_X1}" y="{y_van:.1f}" width="{BEEN_X2 - BEEN_X1}" '
+            f'height="{y_tot - y_van:.1f}" fill="{vul}" stroke="{rand}" stroke-width="0.5" rx="2"/>'
+        )
+        if y_tot - y_van >= 12:
+            svg.append(
+                f'<text x="{(BEEN_X1 + BEEN_X2) / 2:.1f}" y="{(y_van + y_tot) / 2:.1f}" '
+                f'text-anchor="middle" dominant-baseline="middle" font-size="9" '
+                f'font-weight="bold" fill="{teks_kleur}" {HALO}>{tot_km - van_km} km</text>'
             )
 
     # ── Province border lines (background) ────────────────────────────────
@@ -387,6 +419,12 @@ def bou_svg(dorpe, riviere, grense, munisipaliteit_sones,
 
     svg.append('</svg>')
     return "\n".join(svg)
+
+
+def _bene(dorpe, totale_km):
+    """[(van_km, tot_km, indeks)] for each leg between consecutive stops."""
+    stoppe = [0] + [d["afstand_km"] for d in dorpe] + [totale_km]
+    return [(van, tot, i) for i, (van, tot) in enumerate(zip(stoppe, stoppe[1:])) if tot > van]
 
 
 def _dorp_label(lyn_x, y, naam, afstand_km):
