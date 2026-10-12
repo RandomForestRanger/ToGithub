@@ -77,8 +77,9 @@ Load env vars in `config.py` using `python-dotenv`.
 ## Core Features & Behaviour
 
 ### 1. Input Form (`index.html`)
-- Two text fields: **Vertrekpunt** (departure) and **Bestemming** (destination).
-- Both fields support free-text entry (city names, addresses).
+- Three text fields: **Vertrekpunt** (departure), **Via (opsioneel)** (optional
+  intermediate place) and **Bestemming** (destination).
+- All fields support free-text entry (city names, addresses).
 - A single **"Wys Roete"** ("Show Route") submit button.
 - Form submits via POST to `/kaart`.
 
@@ -98,10 +99,28 @@ Load env vars in `config.py` using `python-dotenv`.
   - Endpoint: `https://api.openrouteservice.org/v2/directions/driving-car`
   - Request format: GeoJSON (`format=geojson`)
   - Pass `Authorization: <ORS_API_KEY>` header.
+- `haal_roete(vertrek, bestemming, via=None)` sends 2 or 3 coordinates (cached; the
+  key is the `|`-joined points, so direct routes keep their old key).
 - Extract from the response:
   - The full list of route geometry coordinates (polyline).
   - Total route distance in kilometres.
   - Total estimated duration.
+  - With a via: `routes[0].segments[0].distance` = exact distance from the departure
+    to the via (`via_afstand_m`).
+- Returns `(koordinate, afstand_m, tyd_s, via_afstand_m)`; all `None` on failure.
+
+#### Via and route limits (`app.py` `/kaart`)
+- With a via, the **direct** route is fetched as well (it is the yardstick), then the
+  via route.
+- **Doubling rule**: if the direct route is longer than `VIA_MIN_DIREK_KM = 100`, the
+  via route may not exceed `VIA_MAKS_FAKTOR = 2` × the direct route.  Short routes are
+  exempt (a detour from a 68 km route easily doubles it legitimately).
+- **Hard cap**: no route — via or not — may exceed `MAKS_ROETE_KM = 2000` km.
+- The via is stored in the job (`via`, `via_km`) and added to the town selection as a
+  **fixed town** (`_via_dorp`: radius 14 like the endpoints, `"via": True`).
+  `_kies_dorpe_met_spasiering(..., vaste=...)` starts from the fixed towns and spaces
+  every other town around them; `vul_aan_met_steekproef` ignores fixed towns when
+  deciding whether Overpass found anything.
 
 ### 4. Geographical Features (`services/overpass.py`)
 
@@ -372,7 +391,7 @@ a **straight vertical line** regardless of the route's actual geographic shape.
 
 **Header (top of page):**
 - App name: **"Roete Oorsig"** — large, bold, centred, 28px.
-- Subtitle: `"<Vertrekpunt> na <Bestemming>"` — 16px, centred.
+- Subtitle: `"<Vertrekpunt> na <Bestemming>"`, plus `" via <Via>"` when given — 16px, centred.
 - Total distance + estimated time — 13px, centred, muted colour.
 
 **Footer (bottom of page):**
@@ -401,6 +420,10 @@ a **straight vertical line** regardless of the route's actual geographic shape.
   `"Kon nie die plek '<naam>' vind nie. Probeer asseblief 'n meer spesifieke naam."`
 - If ORS routing fails (no route found, API error): flash:
   `"Kon nie 'n roete vind nie. Kontroleer asseblief die plekname en probeer weer."`
+- Via too long (doubling rule): `"Die roete via '<via>' (<n> km) is meer as dubbel so
+  lank as die direkte roete (<m> km). Kies asseblief 'n plek nader aan die pad."`
+- Route over 2 000 km: `"Die roete is <n> km lank — die maksimum is 2 000 km. Kies
+  asseblief plekke nader aan mekaar."`  (km use a space as thousands separator.)
 - All errors redirect back to the index form with the error message displayed.
 - Log full exception details server-side via Python's `logging` module.
 

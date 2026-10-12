@@ -8,18 +8,22 @@ logger = logging.getLogger(__name__)
 ORS_URL = "https://api.openrouteservice.org/v2/directions/driving-car"
 
 
-def haal_roete(vertrek_koord, bestemming_koord):
-    """Fetch route from ORS (cached). Returns (koordinate, totale_afstand_m, totale_tyd_s)."""
-    lon1, lat1 = vertrek_koord[1], vertrek_koord[0]
-    lon2, lat2 = bestemming_koord[1], bestemming_koord[0]
-
-    sleutel = f"{lat1:.5f},{lon1:.5f}|{lat2:.5f},{lon2:.5f}"
+def haal_roete(vertrek_koord, bestemming_koord, via_koord=None):
+    """
+    Fetch route from ORS (cached), optionally via an intermediate point.
+    Returns (koordinate, totale_afstand_m, totale_tyd_s, via_afstand_m), where
+    via_afstand_m is the distance from the departure to the via point (from
+    ORS's per-leg segments) or None without a via.  All None on failure.
+    """
+    punte = [vertrek_koord] + ([via_koord] if via_koord else []) + [bestemming_koord]
+    # Same key format as before for two points, so cached direct routes stay valid.
+    sleutel = "|".join(f"{lat:.5f},{lon:.5f}" for lat, lon in punte)
     gekas = kas.kry("ors_roete", sleutel)
     if gekas:
-        return gekas["koordinate"], gekas["afstand_m"], gekas["tyd_s"]
+        return gekas["koordinate"], gekas["afstand_m"], gekas["tyd_s"], gekas.get("via_afstand_m")
 
     payload = {
-        "coordinates": [[lon1, lat1], [lon2, lat2]],
+        "coordinates": [[lon, lat] for lat, lon in punte],
     }
     headers = {
         "Authorization": ORS_API_KEY,
@@ -39,14 +43,16 @@ def haal_roete(vertrek_koord, bestemming_koord):
         else:
             koordinate = geometry["coordinates"]  # list of [lon, lat]
             koordinate = [[c[1], c[0]] for c in koordinate]  # to [lat, lon]
+        # segments[i] is the leg from waypoint i to waypoint i+1
+        via_afstand_m = route["segments"][0]["distance"] if via_koord else None
         kas.stoor("ors_roete", sleutel, {"koordinate": koordinate,
                                           "afstand_m": summary["distance"],
-                                          "tyd_s": summary["duration"]})
-        return koordinate, summary["distance"], summary["duration"]
+                                          "tyd_s": summary["duration"],
+                                          "via_afstand_m": via_afstand_m})
+        return koordinate, summary["distance"], summary["duration"], via_afstand_m
     except Exception as e:
         logger.exception("ORS route fetch failed: %s", e)
-        return None, None, None
-
+        return None, None, None, None
 
 
 def _dekodeer_polyline(encoded):

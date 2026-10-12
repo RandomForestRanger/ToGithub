@@ -216,7 +216,7 @@ def _versprei(gewens, spasie, y_min, y_max):
 
 
 def bou_svg(dorpe, riviere, grense, munisipaliteit_sones,
-            vertrekpunt, bestemming, totale_km, tyd_sekondes):
+            vertrekpunt, bestemming, totale_km, tyd_sekondes, via=None):
     # Apply river spacing filter before drawing (2 % of route = min gap)
     riviere = _filter_riviere(riviere, totale_km)
 
@@ -250,7 +250,8 @@ def bou_svg(dorpe, riviere, grense, munisipaliteit_sones,
     )
     svg.append(
         f'<text x="{breedte//2}" y="75" text-anchor="middle" '
-        f'font-size="16" fill="{KLEUR_KOPTEKS}">{_esc(vertrekpunt)} na {_esc(bestemming)}</text>'
+        f'font-size="16" fill="{KLEUR_KOPTEKS}">{_esc(vertrekpunt)} na {_esc(bestemming)}'
+        f'{" via " + _esc(pas_korreksies_toe(via)) if via else ""}</text>'
     )
     svg.append(
         f'<text x="{breedte//2}" y="97" text-anchor="middle" '

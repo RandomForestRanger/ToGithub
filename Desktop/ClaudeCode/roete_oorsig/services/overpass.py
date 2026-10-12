@@ -250,9 +250,10 @@ def _vul_gate(gekies, kandidate, totale_km, min_km, top_n):
     return gekies
 
 
-def _kies_dorpe_met_spasiering(kandidate, totale_km, top_n=25):
+def _kies_dorpe_met_spasiering(kandidate, totale_km, top_n=25, vaste=()):
     """
-    Two-phase selection:
+    Two-phase selection, starting from the `vaste` (fixed) towns — the via town —
+    which are always kept; every other town is spaced around them:
       Phase 1 — greedy by prominence: iterate candidates by _prominensie (type,
                 then population, then closeness to the route);
                 skip any town within min_km of an already-chosen town or of the
@@ -262,11 +263,11 @@ def _kies_dorpe_met_spasiering(kandidate, totale_km, top_n=25):
     raises it per pair on long routes so that dots never overlap.
     Returns list sorted by afstand_km, capped at top_n.
     """
+    gekies = list(vaste)
     if not kandidate:
-        return []
+        return sorted(gekies, key=lambda x: x["afstand_km"])
     min_km = _min_spasiering(totale_km)
 
-    gekies = []
     for k in sorted(kandidate, key=_prominensie, reverse=True):
         if not _te_naby(k, gekies, totale_km, min_km):
             gekies.append(k)
@@ -282,8 +283,8 @@ def vul_aan_met_steekproef(dorpe, steekproef, koordinate, totale_afstand_m, top_
     """
     Supplement Overpass towns with the Nominatim-derived sample towns from stage 3.
 
-      - No Overpass towns at all → the sample towns go through the full
-        spacing-aware selection.
+      - No Overpass towns at all (the via town, if any, does not count) → the
+        sample towns go through the full spacing-aware selection around the via.
       - Otherwise → only gaps > MAX_GAT_KM are filled; existing towns are never
         displaced.
 
@@ -297,8 +298,10 @@ def vul_aan_met_steekproef(dorpe, steekproef, koordinate, totale_afstand_m, top_
     if not steekproef:
         return dorpe
     totale_km = round(totale_afstand_m / 1000)
+    vaste = [d for d in dorpe if d.get("via")]
+    gewone = [d for d in dorpe if not d.get("via")]
 
-    if dorpe:
+    if gewone:
         ankerpunte = sorted([0] + [d["afstand_km"] for d in dorpe] + [totale_km])
         gate = [(van, tot) for van, tot in zip(ankerpunte, ankerpunte[1:]) if tot - van > MAX_GAT_KM]
         if not gate:
@@ -321,8 +324,8 @@ def vul_aan_met_steekproef(dorpe, steekproef, koordinate, totale_afstand_m, top_
         verfyn.append({**k, "afstand_km": round(langs_km), "perp_m": perp_km * 1000,
                        "rang": PLEK_RANG.get(k["tipe"], 0)})
 
-    if not dorpe:
-        return _kies_dorpe_met_spasiering(verfyn, totale_km, top_n)
+    if not gewone:
+        return _kies_dorpe_met_spasiering(verfyn, totale_km, top_n, vaste)
     gekies = _vul_gate(list(dorpe), verfyn, totale_km,
                        _min_spasiering(totale_km), top_n)
     gekies.sort(key=lambda d: d["afstand_km"])
@@ -333,13 +336,14 @@ def vul_aan_met_steekproef(dorpe, steekproef, koordinate, totale_afstand_m, top_
 # Public API
 # ---------------------------------------------------------------------------
 
-def haal_dorpe(koordinate, totale_afstand_m, top_n=25):
+def haal_dorpe(koordinate, totale_afstand_m, top_n=25, vaste=()):
     """
     Query Overpass for cities/towns/villages/hamlets near the route.
     Returns (dorpe, volledig): dorpe sorted by route distance after spacing-aware
     selection; volledig is False if some tiles could not be fetched from
     Overpass (the selection then covers only the tiles that were available).
-    Each dict: {naam, tipe, stip_radius, afstand_km}
+    Each dict: {naam, tipe, stip_radius, afstand_km}.  `vaste` towns (the via)
+    are always included and the rest are spaced around them.
 
     Selection rules:
       - No two towns closer than _min_spasiering() (prefer prominent ones),
@@ -382,7 +386,7 @@ def haal_dorpe(koordinate, totale_afstand_m, top_n=25):
             gesien[k["naam"]] = k
     uniek = list(gesien.values())
 
-    return _kies_dorpe_met_spasiering(uniek, totale_km, top_n), volledig
+    return _kies_dorpe_met_spasiering(uniek, totale_km, top_n, vaste), volledig
 
 
 def haal_riviere(koordinate, totale_afstand_m):

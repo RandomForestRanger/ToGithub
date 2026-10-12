@@ -26,9 +26,19 @@ app.secret_key = SECRET_KEY
 # ---------------------------------------------------------------------------
 _JOB_TTL_S = 30 * 60
 
+# Abuse limits
+MAKS_ROETE_KM    = 2000   # no route may be longer than this, via or not
+VIA_MIN_DIREK_KM = 100    # the doubling rule applies to routes longer than this…
+VIA_MAKS_FAKTOR  = 2      # …where a via may not make the route more than 2× as long
+
+
+def _km_teks(km):
+    """1399 → '1 399' (Afrikaans thousands separator)."""
+    return f"{km:,}".replace(",", " ")
+
 
 def _nuwe_job(koordinate, totale_afstand_m, totale_tyd_s,
-              vertrekpunt, bestemming, totale_km, vars_data):
+              vertrekpunt, bestemming, totale_km, vars_data, via=None, via_km=None):
     kas.ruim_op()
     jid = str(uuid.uuid4())
     _stoor_job(jid, {
@@ -40,6 +50,8 @@ def _nuwe_job(koordinate, totale_afstand_m, totale_tyd_s,
         "vertrekpunt":      vertrekpunt,
         "bestemming":       bestemming,
         "vars":             vars_data,
+        "via":              via,
+        "via_km":           via_km,
         "dorpe":            [],
         "riviere":          [],
         "grense":           [],
@@ -83,6 +95,7 @@ def _bou_svg(job):
         bestemming=job["bestemming"],
         totale_km=job["totale_km"],
         tyd_sekondes=job["totale_tyd_s"],
+        via=job.get("via"),
     )
 
 
@@ -106,6 +119,7 @@ def kaart():
     """
     vertrekpunt = request.form.get("vertrekpunt", "").strip()
     bestemming  = request.form.get("bestemming",  "").strip()
+    via         = request.form.get("via", "").strip() or None
     vars_data   = request.form.get("vars") == "1"
 
     if not vertrekpunt or not bestemming:
@@ -113,24 +127,39 @@ def kaart():
         return redirect(url_for("indeks"))
 
     with kas.omseil(vars_data):
-        vertrek_koord = geocodeer(vertrekpunt)
-        if not vertrek_koord:
-            flash(f"Kon nie die plek '{vertrekpunt}' vind nie. Probeer asseblief 'n meer spesifieke naam.")
-            return redirect(url_for("indeks"))
+        koords = {}
+        for plek in filter(None, (vertrekpunt, via, bestemming)):
+            koords[plek] = geocodeer(plek)
+            if not koords[plek]:
+                flash(f"Kon nie die plek '{plek}' vind nie. Probeer asseblief 'n meer spesifieke naam.")
+                return redirect(url_for("indeks"))
 
-        bestemming_koord = geocodeer(bestemming)
-        if not bestemming_koord:
-            flash(f"Kon nie die plek '{bestemming}' vind nie. Probeer asseblief 'n meer spesifieke naam.")
-            return redirect(url_for("indeks"))
-
-        koordinate, totale_afstand_m, totale_tyd_s = haal_roete(vertrek_koord, bestemming_koord)
+        # The direct route is needed either way: it is the route without a via,
+        # and the yardstick for the doubling rule with one.
+        koordinate, totale_afstand_m, totale_tyd_s, _ = haal_roete(
+            koords[vertrekpunt], koords[bestemming])
+        via_afstand_m = None
+        if koordinate is not None and via:
+            direk_km = round(totale_afstand_m / 1000)
+            koordinate, totale_afstand_m, totale_tyd_s, via_afstand_m = haal_roete(
+                koords[vertrekpunt], koords[bestemming], koords[via])
     if koordinate is None:
         flash("Kon nie 'n roete vind nie. Kontroleer asseblief die plekname en probeer weer.")
         return redirect(url_for("indeks"))
 
     totale_km = round(totale_afstand_m / 1000)
-    job_id    = _nuwe_job(koordinate, totale_afstand_m, totale_tyd_s,
-                          vertrekpunt, bestemming, totale_km, vars_data)
+    if via and direk_km > VIA_MIN_DIREK_KM and totale_km > VIA_MAKS_FAKTOR * direk_km:
+        flash(f"Die roete via '{via}' ({_km_teks(totale_km)} km) is meer as dubbel so lank as "
+              f"die direkte roete ({_km_teks(direk_km)} km). Kies asseblief 'n plek nader aan die pad.")
+        return redirect(url_for("indeks"))
+    if totale_km > MAKS_ROETE_KM:
+        flash(f"Die roete is {_km_teks(totale_km)} km lank — die maksimum is "
+              f"{_km_teks(MAKS_ROETE_KM)} km. Kies asseblief plekke nader aan mekaar.")
+        return redirect(url_for("indeks"))
+
+    via_km = round(via_afstand_m / 1000) if via_afstand_m is not None else None
+    job_id = _nuwe_job(koordinate, totale_afstand_m, totale_tyd_s,
+                       vertrekpunt, bestemming, totale_km, vars_data, via, via_km)
 
     # Initial SVG: route line + departure/destination dots only
     svg = _bou_svg(_kry_job(job_id))
@@ -149,9 +178,19 @@ def kaart():
 # Staged update API  (called sequentially by the browser after page load)
 # ---------------------------------------------------------------------------
 
+def _via_dorp(job):
+    """The via as a fixed town (always drawn, big dot), or None."""
+    if not job.get("via"):
+        return None
+    return {"naam": job["via"], "tipe": "city", "rang": 5, "bevolking": 0, "perp_m": 0,
+            "stip_radius": 14, "afstand_km": job["via_km"], "via": True}
+
+
 def _laai_dorpe(job):
     """Fetch Overpass towns into the job.  Returns False if some tiles could not be fetched."""
-    dorpe, volledig = haal_dorpe(job["koordinate"], job["totale_afstand_m"])
+    via_dorp = _via_dorp(job)
+    dorpe, volledig = haal_dorpe(job["koordinate"], job["totale_afstand_m"],
+                                 vaste=[via_dorp] if via_dorp else ())
     job["dorpe"] = dorpe   # endpoint clearance is part of the spacing rule
     return volledig
 
