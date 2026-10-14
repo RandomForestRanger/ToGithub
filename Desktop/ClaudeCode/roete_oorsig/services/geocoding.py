@@ -4,12 +4,13 @@ import time
 import threading
 import requests
 import logging
+from config import USER_AGENT
 from services import kas
 
 logger = logging.getLogger(__name__)
 
 NOMINATIM_URL = "https://nominatim.openstreetmap.org"
-HEADERS = {"User-Agent": "RoeteOorsig/1.0"}
+HEADERS = {"User-Agent": USER_AGENT}
 
 # Restrict place search to South Africa and its road-trip neighbours; without
 # this "Worcester", "Middelburg" and "Wellington" resolve to the USA, the

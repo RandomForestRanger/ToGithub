@@ -81,6 +81,21 @@ body {
   border-color: #2c5f2e;
 }
 
+.merk-groep {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: #444;
+  cursor: pointer;
+}
+
+.merk-groep input {
+  width: 16px;
+  height: 16px;
+  accent-color: #2c5f2e;
+}
+
 .wys-knoppie {
   padding: 12px;
   background: #2c5f2e;

@@ -12,7 +12,7 @@
   <div id="stadium-balk" class="stadium-balk" role="status" aria-live="polite">
     <span class="stadium-wentel" aria-hidden="true"></span>
     <span id="stadium-teks" class="stadium-teks">Kaart word saamgestel…</span>
-    <span id="stadium-stap" class="stadium-stap">Stap 1 van 3</span>
+    <span id="stadium-stap" class="stadium-stap"></span>
   </div>
 
   <div id="kaart-wrapper">
@@ -25,23 +25,16 @@
 (function () {
   const jobId = {{ job_id | tojson }};
 
+  const histories = {{ histories_aan | tojson }};
   const stadiums = [
-    {
-      url:  `/api/update/${jobId}/dorpe`,
-      teks: "Dorpe en stede word gesoek…",
-      stap: "Stap 1 van 3",
-    },
-    {
-      url:  `/api/update/${jobId}/riviere`,
-      teks: "Riviere word geïdentifiseer…",
-      stap: "Stap 2 van 3",
-    },
-    {
-      url:  `/api/update/${jobId}/munisipaliteite`,
-      teks: "Munisipaliteite word bepaal… (±60 sekondes)",
-      stap: "Stap 3 van 3",
-    },
+    { url: `/api/update/${jobId}/dorpe`,   teks: "Dorpe en stede word gesoek…" },
+    { url: `/api/update/${jobId}/riviere`, teks: "Riviere word geïdentifiseer…" },
+    { url: `/api/update/${jobId}/munisipaliteite`,
+      teks: "Munisipaliteite word bepaal… (±60 sekondes)" },
+    ...(histories ? [{ url: `/api/update/${jobId}/histories`,
+                       teks: "Historiese plekke word gesoek…" }] : []),
   ];
+  stadiums.forEach((s, i) => { s.stap = `Stap ${i + 1} van ${stadiums.length}`; });
 
   const wrapper = document.getElementById('kaart-wrapper');
   const balk    = document.getElementById('stadium-balk');

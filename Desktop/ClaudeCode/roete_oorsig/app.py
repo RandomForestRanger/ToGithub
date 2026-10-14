@@ -9,6 +9,7 @@ from services.geocoding import geocodeer
 from services.routing import haal_roete
 from services.overpass import (haal_dorpe, haal_riviere, haal_grense_en_sones,
                                vul_aan_met_steekproef)
+from services.histories import haal_histories, kies_histories
 from services.diagram import bou_svg
 from config import SECRET_KEY
 
@@ -38,7 +39,8 @@ def _km_teks(km):
 
 
 def _nuwe_job(koordinate, totale_afstand_m, totale_tyd_s,
-              vertrekpunt, bestemming, totale_km, vars_data, via=None, via_km=None):
+              vertrekpunt, bestemming, totale_km, vars_data, via=None, via_km=None,
+              histories_aan=True):
     kas.ruim_op()
     jid = str(uuid.uuid4())
     _stoor_job(jid, {
@@ -56,6 +58,9 @@ def _nuwe_job(koordinate, totale_afstand_m, totale_tyd_s,
         "riviere":          [],
         "grense":           [],
         "sones":            [],
+        "histories_aan":    histories_aan,
+        "histories_kandidate": [],
+        "histories":        [],
     })
     return jid
 
@@ -96,6 +101,7 @@ def _bou_svg(job):
         totale_km=job["totale_km"],
         tyd_sekondes=job["totale_tyd_s"],
         via=job.get("via"),
+        histories=job.get("histories", []),
     )
 
 
@@ -121,6 +127,7 @@ def kaart():
     bestemming  = request.form.get("bestemming",  "").strip()
     via         = request.form.get("via", "").strip() or None
     vars_data   = request.form.get("vars") == "1"
+    histories_aan = request.form.get("histories") == "1"
 
     if not vertrekpunt or not bestemming:
         flash("Vul asseblief beide vertrekpunt en bestemming in.")
@@ -159,7 +166,8 @@ def kaart():
 
     via_km = round(via_afstand_m / 1000) if via_afstand_m is not None else None
     job_id = _nuwe_job(koordinate, totale_afstand_m, totale_tyd_s,
-                       vertrekpunt, bestemming, totale_km, vars_data, via, via_km)
+                       vertrekpunt, bestemming, totale_km, vars_data, via, via_km,
+                       histories_aan)
 
     # Initial SVG: route line + departure/destination dots only
     svg = _bou_svg(_kry_job(job_id))
@@ -171,6 +179,7 @@ def kaart():
         vertrekpunt=vertrekpunt,
         bestemming=bestemming,
         totale_km=totale_km,
+        histories_aan=histories_aan,
     )
 
 
@@ -199,6 +208,15 @@ def _laai_riviere(job):
     """Fetch Overpass river crossings into the job.  Returns False if some tiles could not be fetched."""
     riviere, volledig = haal_riviere(job["koordinate"], job["totale_afstand_m"])
     job["riviere"] = riviere
+    return volledig
+
+
+def _laai_histories(job):
+    """Fetch historical-site candidates into the job.  Returns False if Overpass or Wikidata was incomplete."""
+    kandidate, volledig = haal_histories(job["koordinate"], job["totale_afstand_m"])
+    job["histories_kandidate"] = kandidate
+    # Runs after stage 3, so the towns (and with them the empty stretches) are final.
+    job["histories"] = kies_histories(kandidate, job["dorpe"], job["totale_km"])
     return volledig
 
 
@@ -257,6 +275,23 @@ def api_munisipaliteite(job):
     logger.info("Munisipaliteite stadium voltooi: %d sones, %d grense", len(sones), len(grense))
 
 
+@app.route("/api/update/<job_id>/histories")
+@_stadium
+def api_histories(job):
+    """
+    Stage 4 (last, so it never holds up the core map): notable historical sites
+    (Overpass + Wikidata), if switched on.  Incomplete data is not retried here —
+    the cache keeps what arrived and the next run fills the gaps.
+    """
+    if not job.get("histories_aan", True):
+        return
+    job["histories_misluk"] = not _laai_histories(job)
+    logger.info("Histories stadium voltooi: %d van %d kandidate%s", len(job["histories"]),
+                len(job["histories_kandidate"]),
+                " (onvolledig)" if job["histories_misluk"] else "")
+
+
+
 # ---------------------------------------------------------------------------
 # Cache management  (flask --app app kas-stand | kas-uitvee [SOORT])
 # ---------------------------------------------------------------------------
@@ -266,6 +301,75 @@ def kas_stand():
     """Show what the cache holds, per soort."""
     for soort, aantal, grootte in kas.statistiek():
         click.echo(f"{soort:24} {aantal:6} inskrywings  {(grootte or 0) / 1e6:8.2f} MB")
+
+
+VOORAF_ROETES = [
+    ("Pretoria", "Bloemfontein"), ("Johannesburg", "Durban"), ("Bloemfontein", "Kaapstad"),
+    ("Kaapstad", "Gqeberha"), ("Durban", "Gqeberha"), ("Pretoria", "Kimberley"),
+    ("Johannesburg", "Kaapstad"), ("Johannesburg", "Polokwane"), ("Kaapstad", "George"),
+    ("Durban", "Bloemfontein"), ("Johannesburg", "Pretoria"), ("Pretoria", "Mbombela"),
+    ("Johannesburg", "Gqeberha"), ("Kaapstad", "Springbok"), ("Bloemfontein", "Gqeberha"),
+    ("Johannesburg", "Kimberley"), ("Durban", "East London"), ("Kaapstad", "Oudtshoorn"),
+    ("Pretoria", "Musina"), ("Johannesburg", "Bloemfontein"),
+]
+VOORAF_ROETE_POUSE_S = 60
+
+
+@app.cli.command("vooraf")
+@click.option("--status", "status_pad", default="data/vooraf_status.json", help="Progress JSON file")
+@click.option("--roetes/--geen-roetes", default=True, help="Also warm up VOORAF_ROETES")
+@click.option("--net-hoof/--alle-bedieners", default=True,
+              help="Only the main Overpass instance (default; the mirrors are often down)")
+def vooraf(status_pad, roetes, net_hoof):
+    """
+    Slow, resumable pre-fetch: the region-wide Wikidata query for historical
+    sites, then every stage of the popular routes.  Safe to stop and re-run at
+    any time.  Run under `caffeinate -i` so the Mac does not sleep.
+    """
+    from services import overpass, vooraf as vf
+    if net_hoof:
+        # Waiting 70 s on dead mirrors helps no one; back off longer on the main instance instead
+        overpass.OVERPASS_URLS = overpass.OVERPASS_URLS[:1]
+        overpass.OVERPASS_WAGTYE = (30, 60, 120)
+    status = vf.Status(status_pad)
+    status.stel(roetes=[{"naam": f"{a} → {b}", "status": "wag"} for a, b in VOORAF_ROETES]
+                if roetes else [])
+    try:
+        vf.haal_wikidata_land(status)
+        if roetes:
+            # Gentle on Overpass for the (heavy) river and town tiles too
+            overpass.TEEL_BONDEL, overpass.BONDEL_POUSE_S = 15, 20
+            klient = app.test_client()
+            status.stel(fase="roetes")
+            for roete, (van, na) in zip(status.data["roetes"], VOORAF_ROETES):
+                roete["status"] = "besig"
+                status.log(f"Roete {roete['naam']}")
+                t0 = time.time()
+                antwoord = klient.post("/kaart", data={"vertrekpunt": van, "bestemming": na,
+                                                       "histories": "1"})
+                teks = antwoord.get_data(as_text=True)
+                if antwoord.status_code != 200 or "const jobId" not in teks:
+                    roete["status"] = "fout"
+                    status.log(f"Roete {roete['naam']}: kon nie roete kry nie")
+                    continue
+                jid = teks.split('const jobId = "', 1)[1].split('"', 1)[0]
+                for stadium in ("dorpe", "riviere", "munisipaliteite", "histories"):
+                    klient.get(f"/api/update/{jid}/{stadium}")
+                job = _kry_job(jid)
+                roete.update(status="klaar", sekondes=round(time.time() - t0), km=job["totale_km"],
+                             histories=[h["naam"] for h in job["histories"]],
+                             onvolledig=any(job.get(k) for k in
+                                            ("dorpe_misluk", "riviere_misluk", "histories_misluk")))
+                status.log(f"Roete {roete['naam']}: {roete['sekondes']} s, "
+                           f"{len(job['histories'])} historiese plekke")
+                time.sleep(VOORAF_ROETE_POUSE_S)
+        status.stel(fase="klaar")
+        status.log("Alles klaar")
+    except Exception as e:
+        logger.exception("Vooraf misluk")
+        status.stel(fase="fout")
+        status.log(f"Fout: {e} — begin net weer; wat reeds gestoor is, bly gestoor")
+        raise
 
 
 @app.cli.command("kas-uitvee")

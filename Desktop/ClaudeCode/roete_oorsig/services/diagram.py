@@ -3,15 +3,17 @@ SVG diagram builder — vertical straight-line route schematic.
 
 Drawing layers (bottom to top):
   1. Province border lines (dashed, full-width)
-  2. River crossing ticks
+  2. River crossing ticks (historical-site leader lines just below)
   3. Road-texture dashed line + main route line
-  4. Town dots and labels
-  5. Header / footer
+  4. Historical-site icons and labels (right-hand column)
+  5. Town dots and labels
+  6. Header / footer / legends
 """
 
 import unicodedata
 
 from services.geocoding import pas_korreksies_toe
+from services.ikone import IKONE, KLEUR_HISTORIE, ikoon_defs, gebruik_ikoon
 
 # Colours
 KLEUR_ROETE    = "#2c5f2e"   # dark green — route line and town dots
@@ -51,11 +53,27 @@ SONE_KLEUR_ONBEKEND = ("#e0e0e0", "#999999")   # neutral grey
 SONE_X1 = 635
 SONE_X2 = 662
 
-# Leg-distance strip (left margin) mirrors the municipality strip: both sit
-# 238 px from the route line.  x=123–159 lies between the province labels
-# (x≥44, ~65 px wide) and the right-aligned town labels (ending at x=377).
+# Route line: left of centre, so the historical-site column on the right has room
+LYN_X = 357
+
+# Leg-distance strip (left margin).  x=123–159 lies between the province labels
+# (x≥44, ~65 px wide) and the right-aligned town labels (ending at x=337; a long
+# name like "Pietermaritzburg" starts around x=220).
 BEEN_X1 = 123
 BEEN_X2 = 159
+# Historical sites: a column right of the river labels (which start at LYN_X + 35),
+# icons in a white medallion, labels running up to the municipality strip.
+HISTORIE_IKOON_X  = 500
+HISTORIE_LABEL_X  = 513
+HISTORIE_TEKENS   = 22    # per line; ~5.2 px per 9 px bold glyph → fits up to x≈630
+HISTORIE_REELS    = 4     # name lines (sites are ≥ 1/12 of the page apart, so there is room)
+HISTORIE_REEL_PX  = 10
+# Afrikaans compounds too long for a line are broken before one of these endings
+# ("Voortrekker-" / "monument"); longest first so "gedenkteken" beats "teken"
+HISTORIE_SKEIDINGS = ("konsentrasiekamp", "gedenkteken", "monument", "museum", "terrein",
+                      "kamp", "kerk", "grotte", "grot", "huis", "fort", "slag")
+HISTORIE_LEGENDE_Y = 1090
+
 # Alternating bands so consecutive legs are told apart; (fill, stroke, text)
 BEEN_KLEURE = [("#eef4ee", "#b8d0b8", "#2c5f2e"),
                ("#dbe8db", "#a6c4a6", "#2c5f2e")]
@@ -119,6 +137,9 @@ _RIVIER_VLAK = {
     for alias in rivier
 }
 _ONGEVLAK = 4   # everything not in a tier list
+_STROOM_VLAK = 5          # named streams (spruite): below every river
+STROOM_SPASIE_FAKTOR = 2  # streams need twice the river spacing, so they never crowd
+STROOM_TIK_PX = 16        # half-length of a stream's tick (rivers: 28)
 
 
 def _normaliseer_rivier(naam):
@@ -136,6 +157,10 @@ def rivier_vlak(naam):
     return _RIVIER_VLAK.get(_normaliseer_rivier(naam), _ONGEVLAK)
 
 
+def _vlak(r):
+    return _STROOM_VLAK if r.get("stroom") else rivier_vlak(r["naam"])
+
+
 def _filter_riviere(riviere, totale_km, min_pct=2.0, max_riviere=50):
     """
     Select rivers to label using a hierarchy of elimination.
@@ -143,7 +168,8 @@ def _filter_riviere(riviere, totale_km, min_pct=2.0, max_riviere=50):
       1. Tier 1 rivers (RIVIER_VLAK_1) are always kept — even when they sit
          closer than min_km to another river.
       2. Everything else competes for space in order: tier 2, then tier 3,
-         then untiered.  Within a tier, `telling` (number of OSM ways carrying
+         then untiered rivers, then named streams (which also need
+         STROOM_SPASIE_FAKTOR × the spacing).  Within a tier, `telling` (number of OSM ways carrying
          the name — a rough prominence proxy) breaks ties, then route distance.
       3. Greedy spacing: a river is added only if it is at least min_km
          (min_pct of the route) from every river already kept, tier 1 included.
@@ -157,18 +183,19 @@ def _filter_riviere(riviere, totale_km, min_pct=2.0, max_riviere=50):
         return riviere[:max_riviere]
     min_km = totale_km * min_pct / 100
 
-    gevang = [r for r in riviere if rivier_vlak(r["naam"]) == 1]
+    gevang = [r for r in riviere if _vlak(r) == 1]
     gevang_km = [r["afstand_km"] for r in gevang]
 
     res = sorted(
-        (r for r in riviere if rivier_vlak(r["naam"]) != 1),
-        key=lambda r: (rivier_vlak(r["naam"]), -r.get("telling", 1), r["afstand_km"]),
+        (r for r in riviere if _vlak(r) != 1),
+        key=lambda r: (_vlak(r), -r.get("telling", 1), r["afstand_km"]),
     )
     bygevoeg = 0
     for rivier in res:
         if bygevoeg >= max_riviere:
             break
-        if all(abs(rivier["afstand_km"] - km) >= min_km for km in gevang_km):
+        spasie = min_km * (STROOM_SPASIE_FAKTOR if rivier.get("stroom") else 1)
+        if all(abs(rivier["afstand_km"] - km) >= spasie for km in gevang_km):
             gevang.append(rivier)
             gevang_km.append(rivier["afstand_km"])
             bygevoeg += 1
@@ -216,13 +243,13 @@ def _versprei(gewens, spasie, y_min, y_max):
 
 
 def bou_svg(dorpe, riviere, grense, munisipaliteit_sones,
-            vertrekpunt, bestemming, totale_km, tyd_sekondes, via=None):
+            vertrekpunt, bestemming, totale_km, tyd_sekondes, via=None, histories=()):
     # Apply river spacing filter before drawing (2 % of route = min gap)
     riviere = _filter_riviere(riviere, totale_km)
 
     breedte = 794
     hoogte  = 1123
-    lyn_x   = 397        # route line x (centre of page)
+    lyn_x   = LYN_X
     y_begin = Y_BEGIN
     y_einde = Y_EINDE
 
@@ -242,6 +269,8 @@ def bou_svg(dorpe, riviere, grense, munisipaliteit_sones,
         f'<svg xmlns="http://www.w3.org/2000/svg" width="{breedte}" height="{hoogte}" '
         f'style="background:#fff;font-family:Arial,sans-serif;">'
     )
+    if histories:
+        svg.append(f'<defs>{ikoon_defs({h["ikoon"] for h in histories})}</defs>')
 
     # ── Header ────────────────────────────────────────────────────────────
     svg.append(
@@ -350,17 +379,26 @@ def bou_svg(dorpe, riviere, grense, munisipaliteit_sones,
             f'font-size="10" fill="{KLEUR_GRENS}" font-style="italic">{na}</text>'
         )
 
+    # ── Historical-site leader lines (masked by the river labels' halo) ────
+    histories_y = [y_van_km(h["afstand_km"]) for h in histories]
+    for y in histories_y:
+        svg.append(
+            f'<line x1="{lyn_x + 6}" y1="{y:.1f}" x2="{HISTORIE_IKOON_X - 10}" y2="{y:.1f}" '
+            f'stroke="{KLEUR_HISTORIE}" stroke-width="0.75" stroke-dasharray="1.5 2.5" opacity="0.7"/>'
+        )
+
     # ── River crossing ticks ───────────────────────────────────────────────
     rivier_y = [y_van_km(r["afstand_km"]) for r in riviere]
     rivier_lbl_y = _versprei(rivier_y, RIVIER_LABEL_SPASIE, y_begin, y_einde)
     for rivier, y, lbl_y in zip(riviere, rivier_y, rivier_lbl_y):
+        tik = STROOM_TIK_PX if rivier.get("stroom") else 28
         svg.append(
-            f'<line x1="{lyn_x - 28}" y1="{y:.1f}" x2="{lyn_x + 28}" y2="{y:.1f}" '
-            f'stroke="{KLEUR_RIVIER}" stroke-width="1"/>'
+            f'<line x1="{lyn_x - tik}" y1="{y:.1f}" x2="{lyn_x + tik}" y2="{y:.1f}" '
+            f'stroke="{KLEUR_RIVIER}" stroke-width="{0.75 if rivier.get("stroom") else 1}"/>'
         )
         if abs(lbl_y - y) > 2:
             svg.append(
-                f'<line x1="{lyn_x + 28}" y1="{y:.1f}" x2="{lyn_x + 33}" y2="{lbl_y:.1f}" '
+                f'<line x1="{lyn_x + tik}" y1="{y:.1f}" x2="{lyn_x + 33}" y2="{lbl_y:.1f}" '
                 f'stroke="{KLEUR_RIVIER}" stroke-width="0.5"/>'
             )
         svg.append(
@@ -377,6 +415,18 @@ def bou_svg(dorpe, riviere, grense, munisipaliteit_sones,
         f'<line x1="{lyn_x}" y1="{y_begin}" x2="{lyn_x}" y2="{y_einde}" '
         f'stroke="{KLEUR_ROETE}" stroke-width="3"/>'
     )
+
+    # ── Historical sites (right-hand column) ──────────────────────────────
+    # The site spacing rule keeps them ≥ 1/12 of the page apart, so they never
+    # collide with each other; a label that would run into a long river label
+    # is left out and the icon shown alone.
+    rivier_lbl = [(lbl_y, lyn_x + 35 + 4.5 * len(pas_korreksies_toe(r["naam"])))
+                  for r, lbl_y in zip(riviere, rivier_lbl_y)]
+    for h, y in zip(histories, histories_y):
+        reels = _historie_reels(h)
+        half = len(reels) * HISTORIE_REEL_PX / 2 + 4
+        vry = all(abs(ry - y) > half or regs < HISTORIE_IKOON_X - 12 for ry, regs in rivier_lbl)
+        svg.append(_historie(h, y, reels if vry else []))
 
     # ── Departure dot (always left-side label) ────────────────────────────
     svg.append(
@@ -411,11 +461,22 @@ def bou_svg(dorpe, riviere, grense, munisipaliteit_sones,
     )
     svg.append(_dorp_label(lyn_x, y_einde, bestemming, totale_km))
 
+    # ── Historical-site legend: only the icon types on this map ──────────
+    if histories:
+        x = 60
+        for tipe in sorted({h["ikoon"] for h in histories}, key=list(IKONE).index):
+            naam = IKONE[tipe][0]
+            svg.append(gebruik_ikoon(tipe, x + 6, HISTORIE_LEGENDE_Y - 4, 12))
+            svg.append(f'<text x="{x + 15}" y="{HISTORIE_LEGENDE_Y}" font-size="10" '
+                       f'fill="{KLEUR_SUBTEKS}">{_esc(naam)}</text>')
+            x += 15 + 5.4 * len(naam) + 16
+
     # ── Footer ────────────────────────────────────────────────────────────
     svg.append(
         f'<text x="{breedte//2}" y="{hoogte - 20}" text-anchor="middle" '
         f'font-size="10" fill="{KLEUR_VOETNOOT}">'
-        f'Gegenereer deur Roete Oorsig \u2022 OpenStreetMap-data</text>'
+        f'Gegenereer deur Roete Oorsig \u2022 OpenStreetMap-'
+        f'{" en Wikidata-data" if histories else "data"}</text>'
     )
 
     svg.append('</svg>')
@@ -436,6 +497,52 @@ def _dorp_label(lyn_x, y, naam, afstand_km):
         f'<text x="{lyn_x - 20}" y="{y + 9:.1f}" text-anchor="end" dominant-baseline="middle" '
         f'font-size="11" fill="#666" {HALO}>{afstand_km} km</text>'
     )
+
+
+def _historie_reels(h):
+    """
+    Label lines of a site: [(text, font_size, bold)] — the name wrapped onto at most
+    HISTORIE_REELS lines of HISTORIE_TEKENS characters, then "12 km links" if the
+    site is ≥ 1 km off the road.
+    """
+    woorde = []
+    for woord in pas_korreksies_toe(h["naam"]).split():
+        einde = next((e for e in HISTORIE_SKEIDINGS if len(woord) > HISTORIE_TEKENS
+                      and woord.lower().endswith(e) and len(woord) > len(e) + 2), None)
+        voor = woord[:-len(einde)] if einde else ""
+        woorde += [voor + ("" if voor.endswith("-") else "-"), woord[-len(einde):]] if einde else [woord]
+    reels = []
+    for woord in woorde:
+        if reels and len(reels[-1]) + 1 + len(woord) <= HISTORIE_TEKENS:
+            reels[-1] += " " + woord
+        else:
+            reels.append(woord)
+    if len(reels) > HISTORIE_REELS:
+        reels = reels[:HISTORIE_REELS]
+        reels[-1] = reels[-1][:HISTORIE_TEKENS - 1].rstrip() + "\u2026"
+    reels = [(r if len(r) <= HISTORIE_TEKENS else r[:HISTORIE_TEKENS - 1] + "\u2026", 9, True)
+             for r in reels]
+    if afwyking := round(h["perp_km"]):
+        reels.append((f'{afwyking} km {h["kant"]}', 8, False))
+    return reels
+
+
+def _historie(h, y, reels):
+    """A site's medallion icon, plus its label lines (none if they would collide)."""
+    dele = [
+        f'<circle cx="{HISTORIE_IKOON_X}" cy="{y:.1f}" r="10" fill="#fff" '
+        f'stroke="{KLEUR_HISTORIE}" stroke-width="0.8"/>',
+        gebruik_ikoon(h["ikoon"], HISTORIE_IKOON_X, y, 13),
+    ]
+    bo = y - (len(reels) - 1) * HISTORIE_REEL_PX / 2   # block centred on the icon
+    for i, (teks, grootte, vet) in enumerate(reels):
+        gewig = ' font-weight="bold"' if vet else ""
+        dele.append(
+            f'<text x="{HISTORIE_LABEL_X}" y="{bo + i * HISTORIE_REEL_PX:.1f}" '
+            f'dominant-baseline="middle" font-size="{grootte}"{gewig} '
+            f'fill="{KLEUR_HISTORIE}" {HALO}>{_esc(teks)}</text>'
+        )
+    return "\n".join(dele)
 
 
 def _esc(text):

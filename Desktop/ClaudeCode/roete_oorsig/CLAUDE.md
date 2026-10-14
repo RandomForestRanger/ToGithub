@@ -8,7 +8,8 @@ point and a destination, fetches the driving route via OpenRouteService, and ren
 ~10 prominent towns marked as dots, plus river crossings and provincial border markers.
 Each town shows its distance from the start; a strip in the left margin shows the
 distance of each leg (town to town), and a strip in the right margin shows the
-municipalities passed through.
+municipalities passed through.  An optional layer adds up to 8 well-known historical
+sites with period road-map icons (§4d).
 The target audience is a 10-year-old following progress during a road trip.
 
 ---
@@ -43,7 +44,12 @@ roete-oorsig/
 │   ├── geometrie.py        # Route projection / intersection (RoeteMeetkunde)
 │   ├── kas.py              # SQLite cache for raw API answers + job store
 │   ├── overpass.py         # Overpass API: towns, rivers, provincial borders
+│   ├── histories.py        # Historical sites: Overpass + Wikidata, scoring, spacing
+│   ├── ikone.py            # Hand-drawn SVG icons for historical sites
 │   └── diagram.py          # SVG vertical-line diagram builder
+├── tests/
+│   ├── test_histories.py   # unittest, fixture data only (python -m unittest)
+│   └── test_riviere.py     # bridge gaps, stream gaps, stream tier
 ├── templates/
 │   ├── base.html           # Base layout with print CSS
 │   ├── index.html          # Input form (vertrek + bestemming)
@@ -61,7 +67,13 @@ Create a `.env` file (never commit it). Use `.env.example` as the template:
 ```
 ORS_API_KEY=your_openrouteservice_api_key_here
 SECRET_KEY=   # optional; signs flash cookies, random per run if unset
+KONTAK=       # optional; contact URL in the User-Agent (default: the GitHub profile)
 ```
+
+**User-Agent**: `config.USER_AGENT` = `RoeteOorsig/1.0 (<KONTAK>)` is sent to Nominatim,
+Overpass and Wikidata — their usage policies ask for a way to reach the operator.
+`KONTAK` defaults to `https://github.com/RandomForestRanger`; never put a personal
+email address there.
 
 `.gitignore` excludes `.env`, `key.txt` (a stray copy of the ORS key) and `data/`
 (the SQLite cache).
@@ -79,6 +91,7 @@ Load env vars in `config.py` using `python-dotenv`.
 ### 1. Input Form (`index.html`)
 - Three text fields: **Vertrekpunt** (departure), **Via (opsioneel)** (optional
   intermediate place) and **Bestemming** (destination).
+- A checkbox **"Wys historiese plekke"** (on by default) → `job["histories_aan"]`.
 - All fields support free-text entry (city names, addresses).
 - A single **"Wys Roete"** ("Show Route") submit button.
 - Form submits via POST to `/kaart`.
@@ -202,7 +215,21 @@ on-route towns and mis-placing km by ~20 km.)
 - Intersect each river polyline with the route (`RoeteMeetkunde.eerste_kruising`,
   grid-indexed segment × segment checks).  Rivers that run alongside the road without
   crossing it are **not** included.
+- **Bridge gaps** (`_brug_gaping`): OSM often splits a river at the road (the culvert or
+  bridge piece is unnamed or tagged differently), so the named line stops metres short.
+  A line *ending* within `BRUG_GAPING_KM = 0.05` of the road counts as a crossing if
+  the waterway has vertices on **both** sides of the road there (±1.5 km along, ≤ 3 km
+  across).  A river running beside the road keeps to one side and does not count.
+  (Recovers the Klein Jukskei on Randburg → Skeerpoort, where the stream rule adds
+  the Leewen spruit at km 44; adds nothing on the brief's
+  three test routes.)
 - Keep only the **first** crossing per river name.
+- **Named streams fill river gaps** (`haal_strome`): for every stretch longer than
+  `STROOM_GAT_KM = 25` without a river crossing (`_gate`, endpoints included), the
+  `waterway=stream` + `name` ways of only that stretch's tiles are fetched (soort
+  `overpass_strome_v1`, tile buffer 0.05° — only crossings count) and crossings inside
+  the gap are added with `"stroom": True`.  Streams far outnumber rivers, hence the gap
+  rule instead of fetching them everywhere.  Unnamed streams cannot be shown.
 - `telling` = number of OSM ways carrying the name (prominence proxy for the diagram's
   river spacing filter).
 - Result: list of `{naam, afstand_km, telling}`, sorted by distance.
@@ -283,6 +310,54 @@ via `reverse_areas()` and extracts all three datasets from the same Nominatim ca
 - 20 samples with 3 s sleep between calls ≈ 65–80 s (stage 3 runs in the background).
 - Nominatim 429 responses are retried with 10 s × attempt backoff.
 
+#### 4d. Historical sites (`services/histories.py`)
+A garnish, not a research engine: at most `MAKS_HISTORIES = 8` sites, fewer is fine,
+never padded.  All tuning constants sit at the top of `histories.py`.
+- **Main source — Wikidata** (`_land_items`): ONE SPARQL query (query.wikidata.org,
+  ~60 s) for the whole region (`LANDE` = the SOEK_LANDE countries), cached for a year
+  (soort `wikidata_land_v2`, key `items`).  Items with coordinates whose P31 (or one
+  level of P279) is in `WIKIDATA_KLASSE` — battle/battlefield, fort/castle/blockhouse,
+  monument/memorial/concentration camp, church/religious building/mission, ruins,
+  archaeological site/rock art/rock shelter/fossil site, cave/show cave, museum,
+  historic building, grave/tomb/cemetery, mine, heritage railway — **or** a UNESCO
+  World Heritage Site (`P1435|P31 = Q9259`).  The class → icon map lives there;
+  `IKOON_VOORRANG` decides between several classes; UNESCO overrides the class icon.
+  Name: `af` label, else `en`; items without either are dropped.
+  **Notability**: `MIN_SITELINKS = 2` (SPARQL sitelinks include Commons etc.; bots made
+  single-language stubs for ~900 SA mine shafts).  UNESCO sites always qualify —
+  **except huge regions and spread-out serial listings**, whose single point says little
+  about where the road meets them: area > `UNESCO_MAKS_KM2 = 1500` (Cape Floral Region,
+  Okavango, iSimangaliso, Drakensberg, Richtersveld …), parts > `UNESCO_MAKS_SPREIDING_KM
+  = 50` apart (Mandela Legacy Sites, Emergence of Modern Humans, Cradle of Humankind —
+  their components are separate items), or in `UNESCO_UITGESLUIT` (Namib Sand Sea,
+  Makhonjwa Mountains: no area on Wikidata).  Area and part coordinates come from a
+  second small SPARQL query (`_unesco_sparql`); both are cached together
+  (`wikidata_land_v2`) and the thresholds apply at selection time.
+  **Always verify Wikidata Q-IDs by label before adding them** (several remembered IDs
+  turned out to be paintings or people).
+- **Extra source — OpenStreetMap, cache only** (`_osm_uit_kas`): historical sites with
+  a wikidata/wikipedia tag from the `overpass_histories_v1` tiles fetched in Oct 2026
+  (1 697 of 3 484 SA tiles; the fetch was stopped — OSM has very few historical sites
+  in SA, e.g. not one battlefield around Ladysmith).  Never fetched again.  OSM items
+  whose Q-ID is in the Wikidata set are skipped; the rest get sitelinks from a batched
+  `wbgetentities` call (cached per Q-ID, soort `wikidata_v1`).
+- **Corridor**: ≤ `KORRIDOR_KM = 10` for every site; up to `BEROEMD_KORRIDOR_KM = 30`
+  for famous ones (≥ `BEROEMD_SITELINKS = 15`, or UNESCO).  Pre-filtered by the route's
+  `bbox_stukke(buffer 0.35°)`, then `projekteer_met_kant`.
+- **Score** (`_telling`) — the point is to make long stretches interesting:
+  sitelinks (1 if unknown) × up to +25 % for closeness × `UNESCO_FAKTOR = 2` ×
+  `IN_DORP_FAKTOR = 0.35` if within `IN_DORP_RADIUS_KM` of a city (6) / town (3) /
+  village (1.5) place node (from the stage-1 town tiles) × up to +50 % (`STREK_BONUS`)
+  the further it is along the route from the nearest town dot (full at 50 km).
+- **Select** (`kies_histories`, pure, no network): dedup by Q-ID, then by name; greedy by
+  score, no two sites closer than `totale_km / SPASIERING_DELER (12)` along the route.
+- Each site: `{naam, qid, ikoon, afstand_km, perp_km, kant ("links"/"regs" in the
+  direction of travel), sitelinks, unesco, in_dorp}`.
+- Reference results (Oct 2026): Johannesburg → Durban: Satyagraha Huis, Slag van
+  Spioenkop, Slag van Willow Grange, Mandela Capture Site, Umhlatuzana Rock Shelter.
+  Johannesburg → Kaapstad: Vredefort-koepel, Battle of Zand River, Nasionale
+  Vrouemonument, NG gemeentes Richmond and Beaufort-Wes, Robbeneiland.
+
 ### 5. Afrikaans Place Names
 - **Always** request `accept-language=af` in all Nominatim calls.
 - Apply a **post-processing correction table** for common known
@@ -330,13 +405,14 @@ a **straight vertical line** regardless of the route's actual geographic shape.
 
 **SVG canvas:**
 - Dimensions: `794px × 1123px` (A4 at 96 dpi, portrait).
-- Route line centred horizontally at `x = 397`.
+- Route line at `x = LYN_X = 357` — left of centre, so the historical-site column on
+  the right has room (it was centred at 397 before that layer).
 - Departure dot at `y = 170`; destination dot at `y = 1060`.
 
 **Drawing layers (bottom to top):**
 0. Margin strips: municipality zones on the right (x=635–662, see 4c) and **leg
    distances on the left** (`BEEN_X1`–`BEEN_X2` = x=123–159, mirroring the municipality
-   strip at 238 px from the route line).  The leg strip has one band per leg —
+   strip).  The leg strip has one band per leg —
    departure → town 1 → … → destination (`_bene`) — whose edges are level with the dots,
    alternating between two soft greens (`BEEN_KLEURE`), with the leg's km (bold 9 px,
    white `HALO`) centred horizontally in it when the band is ≥ 12 px tall.  Legs are
@@ -353,7 +429,9 @@ a **straight vertical line** regardless of the route's actual geographic shape.
    - **Tier 1** (`RIVIER_VLAK_1`, 5 rivers: Oranje, Vaal, Limpopo, Thukela, Breë) —
      never dropped, regardless of spacing.
    - **Tier 2** (`RIVIER_VLAK_2`, 10) → **tier 3** (`RIVIER_VLAK_3`, 20) → untiered
-     compete for space in that order; within a tier, `telling` then distance breaks ties.
+     rivers → **named streams** (tier 5) compete for space in that order; within a tier,
+     `telling` then distance breaks ties.  Streams need `STROOM_SPASIE_FAKTOR = 2` × the
+     spacing and get a shorter, thinner tick (`STROOM_TIK_PX = 16` each side).
    - Greedy spacing: a river is kept only if ≥ 2 % of the route length from every
      river already kept (tier 1 included).  Cap: 50 non-tier-1 rivers.
    - Names match via `_normaliseer_rivier` (lowercase, accents and "rivier"/"river"
@@ -362,8 +440,16 @@ a **straight vertical line** regardless of the route's actual geographic shape.
      nationally (Riet, Klip, Buffels, Krokodil, Sand, Elands, Vis) are deliberately
      kept out of the tiers.
 3. Road-texture dashed line + main route line (`stroke="#2c5f2e"`, 3 px).
-4. Town dots and labels — circles of varying radius; labels on the left.
-5. Header, legend, footer.
+4. Historical sites — dotted brown leader from the route line (drawn below the river
+   labels, whose halo masks it), icon in a white medallion at `HISTORIE_IKOON_X = 500`,
+   bold 9 px name wrapped onto up to 4 lines of 22 chars (long Afrikaans compounds break
+   before an ending in `HISTORIE_SKEIDINGS`: "Voortrekker-/monument") plus "12 km links" when ≥ 1 km off the road.
+   A name that would run into a long river label is dropped (icon alone).  Icons are
+   `<symbol>`s from `services/ikone.py` (`IKONE`: type → Afrikaans legend name + SVG;
+   `ikoon_tipe(tags)` maps OSM tags).  A second legend row at y=1090 lists only the
+   icon types on the map.
+5. Town dots and labels — circles of varying radius; labels on the left.
+6. Header, legend, footer.
 
 **Town dot radii:**
 - `city` → 14 px, `town` → 10 px, `village` → 7 px, `hamlet` → 5 px.
@@ -437,6 +523,7 @@ a **straight vertical line** regardless of the route's actual geographic shape.
 | POST | `/kaart` | Stage 0: geocode + route → initial SVG → render `kaart.html` |
 | GET  | `/api/update/<job_id>/dorpe` | Stage 1: Overpass towns → updated SVG (JSON) |
 | GET  | `/api/update/<job_id>/riviere` | Stage 2: Overpass rivers → updated SVG (JSON) |
+| GET  | `/api/update/<job_id>/histories` | Stage 4 (last): historical sites (skipped when switched off) |
 | GET  | `/api/update/<job_id>/munisipaliteite` | Stage 3: Nominatim sampling → zones + borders → final SVG (JSON) |
 
 ---
@@ -462,6 +549,9 @@ waiting ~90 seconds for a single response.
 1. Towns (Overpass, fast ~5 s) → town dots appear
 2. Rivers (Overpass, fast ~5 s) → river ticks appear
 3. Municipality zones + province borders (Nominatim 20-sample loop, ~65 s) → colour bands + dashed lines appear
+4. Historical sites (Wikidata, cached; only when switched on — the status bar then
+   counts 4 steps) → icons appear.  Last, so it never holds up the core map; runs after
+   stage 3, so the towns (and the empty stretches) are final.  Not retried.
 
 **Town fallback**: Stage 3 calls `vul_aan_met_steekproef(job["dorpe"], dorpe_steekproef, …)`:
 - Overpass returned no towns → the sample towns go through the full spacing-aware
@@ -500,6 +590,10 @@ Storage: `data/roete_oorsig.db` (SQLite, WAL, one connection per thread), table
 | `ors_roete` | start/end coords to 5 decimals | `{koordinate, afstand_m, tyd_s}` | `haal_roete` |
 | `overpass_dorpe_v1` | tile `i,j` | raw place nodes in the tile | `_haal_teels` |
 | `overpass_riviere_v1` | tile `i,j` | raw river ways (`out geom`) with ≥1 vertex in the tile | `_haal_teels` |
+| `overpass_strome_v1` | tile `i,j` | raw named stream ways (`out geom`), river-gap tiles only | `haal_strome` |
+| `overpass_histories_v1` | tile `i,j` | raw OSM historical sites — **read only**, no longer fetched (1 year) | `vooraf` (Oct 2026) |
+| `wikidata_land_v2` | `items` | all Wikidata historical items in the region (1 year) | `histories._land_items` |
+| `wikidata_v1` | Q-ID | `{sitelinks, af, en}` for OSM extras (1 year) | `histories._wikidata` |
 | `taak` | job id | the job dict (30 min) | `app.py` |
 
 **Overpass tiles**: `TEEL_GRAAD = 0.25` (~25 km).  `_teels_vir_roete` lists every tile
@@ -524,6 +618,11 @@ deliberately reads the cache (`kas.omseil(False)`) so tiles refreshed moments ea
 are not fetched twice.
 
 **CLI**:
+- `caffeinate -i flask --app app vooraf [--status PAD] [--geen-roetes] [--alle-bedieners]`
+  — slow, resumable pre-fetch: the Wikidata region query, then every stage of the
+  routes in `VOORAF_ROETES` (Overpass batches of 15 with 20 s pauses, 60 s between
+  routes; main Overpass instance only unless `--alle-bedieners`).  Progress as JSON
+  in the status file.  Safe to stop and re-run.
 - `flask --app app kas-stand` — entries and size per soort.
 - `flask --app app kas-uitvee [SOORT]` — clear everything, or one soort.
 

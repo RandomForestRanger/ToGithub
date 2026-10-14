@@ -88,6 +88,28 @@ class RoeteMeetkunde:
         Returns (afstand_langs_roete_km, loodregte_afstand_km), or None if the
         point is further than maks_km from the route.
         """
+        naaste = self._naaste(lat, lon, maks_km)
+        if naaste is None:
+            return None
+        d2, i, t, _, _ = naaste
+        return self._langs_km(i, t), math.sqrt(d2)
+
+    def projekteer_met_kant(self, lat, lon, maks_km=15.0):
+        """
+        As projekteer(), plus the side of the road in the direction of travel:
+        returns (afstand_langs_roete_km, loodregte_afstand_km, "links" | "regs"),
+        or None.
+        """
+        naaste = self._naaste(lat, lon, maks_km)
+        if naaste is None:
+            return None
+        d2, i, t, px, py = naaste
+        (x1, y1), (x2, y2) = self._xy[i], self._xy[i + 1]
+        kruis = (x2 - x1) * (py - y1) - (y2 - y1) * (px - x1)   # > 0: left of travel
+        return self._langs_km(i, t), math.sqrt(d2), "links" if kruis > 0 else "regs"
+
+    def _naaste(self, lat, lon, maks_km):
+        """(perp_km², seg_i, t, px, py) of the nearest route segment, or None beyond maks_km."""
         px, py = self._na_xy(lat, lon)
         beste = None   # (perp_km², seg_i, t)
         for i in self._segmente_naby(px - maks_km, py - maks_km, px + maks_km, py + maks_km):
@@ -101,8 +123,7 @@ class RoeteMeetkunde:
                 beste = (d2, i, t)
         if beste is None or beste[0] > maks_km ** 2:
             return None
-        d2, i, t = beste
-        return self._langs_km(i, t), math.sqrt(d2)
+        return (*beste, px, py)
 
     def eerste_kruising(self, lyn):
         """
@@ -121,16 +142,21 @@ class RoeteMeetkunde:
                         vroegste = km
         return vroegste
 
-    def bbox_stukke(self, stuk_km=60.0, buffer_graad=0.15):
+    def bbox_stukke(self, stuk_km=60.0, buffer_graad=0.15, van_km=None, tot_km=None):
         """
         Split the route into ~stuk_km pieces and return one (s, w, n, e) bbox per
         piece.  A union of these hugs the route far more tightly than a single
         bbox — a diagonal 1400 km route's bbox covers a whole province or three.
+        With van_km/tot_km (route km), only the pieces overlapping that stretch.
         """
         stukke = []
         begin = 0
         for i in range(1, len(self._kum)):
             if self._kum[i] - self._kum[begin] >= stuk_km or i == len(self._kum) - 1:
+                if ((van_km is not None and self._kum[i] * self._skaal < van_km)
+                        or (tot_km is not None and self._kum[begin] * self._skaal > tot_km)):
+                    begin = i
+                    continue
                 xs = [p[0] for p in self._xy[begin:i + 1]]
                 ys = [p[1] for p in self._xy[begin:i + 1]]
                 lons = [x / (_KM_PER_GRAAD_LON * self._cos0) for x in xs]

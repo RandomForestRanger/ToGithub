@@ -11,6 +11,7 @@ import math
 import time
 import logging
 import requests
+from config import USER_AGENT
 from services import kas
 from services.geocoding import reverse_areas, pas_korreksies_toe, geocodeer_naby
 from services.diagram import km_vir_stippe, EINDPUNT_RADIUS
@@ -25,7 +26,7 @@ OVERPASS_URLS = [
     "https://overpass.private.coffee/api/interpreter",
     "https://overpass.kumi.systems/api/interpreter",
 ]
-HEADERS = {"User-Agent": "RoeteOorsig/1.0"}
+HEADERS = {"User-Agent": USER_AGENT}
 
 PLEK_RADIUS = {"city": 14, "town": 10, "village": 7, "hamlet": 5}
 PLEK_RANG   = {"city":  4, "town":  3, "village": 2, "hamlet": 1}
@@ -84,6 +85,7 @@ def _overpass(query):
 
 TEEL_GRAAD  = 0.25
 TEEL_BONDEL = 60     # tiles per Overpass query
+BONDEL_POUSE_S = 0   # pause between network batches (the slow pre-fetch raises it)
 
 # Bump the version when a query changes, so old tiles are not reused.
 DORPE_SOORT   = "overpass_dorpe_v1"
@@ -92,12 +94,22 @@ DORPE_UIT     = "out body;"
 RIVIERE_SOORT  = "overpass_riviere_v1"
 RIVIERE_FILTER = 'way["waterway"="river"]["name"]'
 RIVIERE_UIT    = "out geom;"
+# Named streams (spruite): only fetched for stretches with no river crossing
+STROME_SOORT  = "overpass_strome_v1"
+STROME_FILTER = 'way["waterway"="stream"]["name"]'
+STROOM_GAT_KM = 25           # a stretch this long without a river gets streams
+STROOM_BUFFER_GRAAD = 0.05   # only crossings count, so the tiles can hug the road
+# Bridge gap: OSM often splits a river at the road (the culvert or bridge piece is
+# unnamed or tagged differently), so the named line stops metres short of it.
+# A line ending this close to the road counts as crossing if the river has
+# pieces on both sides of the road there.
+BRUG_GAPING_KM = 0.05
 
 
-def _teels_vir_roete(meetkunde):
-    """Every tile touched by the route's bbox pieces (route + 0.15° buffer)."""
+def _teels_vir_roete(meetkunde, buffer_graad=0.15, van_km=None, tot_km=None):
+    """Every tile touched by the route's bbox pieces (route + buffer), optionally of one stretch."""
     teels = set()
-    for s, w, n, e in meetkunde.bbox_stukke():
+    for s, w, n, e in meetkunde.bbox_stukke(buffer_graad=buffer_graad, van_km=van_km, tot_km=tot_km):
         for i in range(math.floor(s / TEEL_GRAAD), math.floor(n / TEEL_GRAAD) + 1):
             for j in range(math.floor(w / TEEL_GRAAD), math.floor(e / TEEL_GRAAD) + 1):
                 teels.add((i, j))
@@ -111,21 +123,25 @@ def _teel_bbox(teel):
 
 def _teels_van_element(el, kandidate):
     """
-    Tiles (out of `kandidate`) an element belongs to: a node's own tile, or
-    every tile containing at least one vertex of a way.  (Not the way's bounds:
-    a long river's bounds cover many tiles it never enters.  River vertices lie
-    a few hundred metres apart, so no 25 km tile is crossed without one.)
+    Tiles (out of `kandidate`) an element belongs to: a node's own tile, the
+    tile of a way's or relation's `center` (from `out center`), or every tile
+    containing at least one vertex of a way.  (Not the way's bounds: a long
+    river's bounds cover many tiles it never enters.  River vertices lie a few
+    hundred metres apart, so no 25 km tile is crossed without one.)
     """
     if el["type"] == "node":
         punte = [el]
+    elif "center" in el:
+        punte = [el["center"]]
     else:
         punte = [p for p in el.get("geometry", []) if p]
     teels = {(math.floor(p["lat"] / TEEL_GRAAD), math.floor(p["lon"] / TEEL_GRAAD)) for p in punte}
     return teels & kandidate
 
 
-def _haal_teels(soort, filter_, uit, teels, timeout_s):
+def _haal_teels(soort, filter_, uit, teels, timeout_s, ttl_s=kas.VERSTEK_TTL_S):
     """
+    `filter_` is one Overpass statement or a list of them (a union).
     Return (elements, volledig): the de-duplicated elements of all `teels`,
     from the cache where possible, fetching the rest from Overpass.
     volledig is False if some tiles could not be fetched — their elements are
@@ -142,9 +158,12 @@ def _haal_teels(soort, filter_, uit, teels, timeout_s):
     logger.info("%s: %d teels in kas, %d ontbreek", soort, len(teels) - len(ontbreek), len(ontbreek))
 
     for b in range(0, len(ontbreek), TEEL_BONDEL):
+        if b and BONDEL_POUSE_S:
+            time.sleep(BONDEL_POUSE_S)
         bondel = ontbreek[b:b + TEEL_BONDEL]
-        dele = "".join(f"  {filter_}({s:.2f},{w:.2f},{n:.2f},{e:.2f});\n"
-                       for s, w, n, e in map(_teel_bbox, bondel))
+        filters = [filter_] if isinstance(filter_, str) else filter_
+        dele = "".join(f"  {f}({s:.2f},{w:.2f},{n:.2f},{e:.2f});\n"
+                       for s, w, n, e in map(_teel_bbox, bondel) for f in filters)
         resultaat = _overpass(f"[out:json][timeout:{timeout_s}];\n(\n{dele});\n{uit}")
         if resultaat is None:
             # Overpass is down; later batches would only repeat the long retry cycle.
@@ -157,7 +176,7 @@ def _haal_teels(soort, filter_, uit, teels, timeout_s):
             for teel in _teels_van_element(el, kandidate):
                 per_teel[teel].append(el)
         for teel, lys in per_teel.items():
-            kas.stoor(soort, f"{teel[0]},{teel[1]}", lys)
+            kas.stoor(soort, f"{teel[0]},{teel[1]}", lys, ttl_s=ttl_s)
     return list(elemente.values()), True
 
 
@@ -389,16 +408,63 @@ def haal_dorpe(koordinate, totale_afstand_m, top_n=25, vaste=()):
     return _kies_dorpe_met_spasiering(uniek, totale_km, top_n, vaste), volledig
 
 
+def _kruisings(elements, meetkunde):
+    """
+    {naam: (km of first crossing, way count)} for named waterways that cross the
+    route — a real intersection, or a bridge gap (see BRUG_GAPING_KM).
+    """
+    lyne, tellings = {}, {}
+    for el in elements:
+        tags = el.get("tags", {})
+        naam = pas_korreksies_toe(tags.get("name:af") or tags["name"])
+        tellings[naam] = tellings.get(naam, 0) + 1
+        lyn = [(p["lat"], p["lon"]) for p in el.get("geometry", []) if p]
+        if len(lyn) >= 2:
+            lyne.setdefault(naam, []).append(lyn)
+
+    kruisings = {}
+    for naam, stukke in lyne.items():
+        kms = [km for lyn in stukke if (km := meetkunde.eerste_kruising(lyn)) is not None]
+        if not kms:
+            kms = [km for km in (_brug_gaping(stukke, lyn, meetkunde) for lyn in stukke)
+                   if km is not None]
+        if kms:
+            kruisings[naam] = (min(kms), tellings[naam])
+    return kruisings
+
+
+def _brug_gaping(stukke, lyn, meetkunde):
+    """
+    Route km where `lyn` ends at the road (within BRUG_GAPING_KM) while the
+    waterway (all its `stukke`) continues on the other side, or None.  A river
+    running alongside the road keeps to one side, so it does not count.
+    """
+    for lat, lon in (lyn[0], lyn[-1]):
+        p = meetkunde.projekteer_met_kant(lat, lon, BRUG_GAPING_KM)
+        if p is None:
+            continue
+        km0 = p[0]
+        # Sides of the road on which the waterway has vertices near that spot
+        kante = {k[2] for stuk in stukke for la, lo in stuk
+                 if (k := meetkunde.projekteer_met_kant(la, lo, 3.0)) and abs(k[0] - km0) < 1.5
+                 and k[1] > BRUG_GAPING_KM}
+        if len(kante) == 2:
+            return km0
+    return None
+
+
 def haal_riviere(koordinate, totale_afstand_m):
     """
     Query Overpass for named rivers with full geometry (`out geom`) and
     intersect each one with the route.  Only rivers the route actually
-    crosses are returned, at the km of the first crossing per river name.
+    crosses are returned (bridge gaps included, see BRUG_GAPING_KM), at the km
+    of the first crossing per river name.  Then named streams fill the
+    stretches longer than STROOM_GAT_KM that have no river (haal_strome).
 
     `telling` (number of OSM ways carrying the name) is a prominence proxy used
     by the diagram's spacing filter: the Oranje has dozens, a spruit has one.
 
-    Returns (riviere, volledig): list of dicts {naam, afstand_km, telling}
+    Returns (riviere, volledig): list of dicts {naam, afstand_km, telling[, stroom]}
     sorted by route distance; volledig as for haal_dorpe.
     """
     meetkunde = RoeteMeetkunde(koordinate, totale_afstand_m)
@@ -406,25 +472,42 @@ def haal_riviere(koordinate, totale_afstand_m):
                                      _teels_vir_roete(meetkunde), timeout_s=90)
     logger.info("Overpass riviere: %d resultate%s", len(elements), "" if volledig else " (onvolledig)")
 
-    kruisings = {}   # naam → km of first crossing
-    tellings  = {}   # naam → way count
-    for el in elements:
-        tags = el.get("tags", {})
-        naam = pas_korreksies_toe(tags.get("name:af") or tags["name"])
-        tellings[naam] = tellings.get(naam, 0) + 1
-        lyn = [(p["lat"], p["lon"]) for p in el.get("geometry", []) if p]
-        if len(lyn) < 2:
-            continue
-        km = meetkunde.eerste_kruising(lyn)
-        if km is not None and (naam not in kruisings or km < kruisings[naam]):
-            kruisings[naam] = km
-
-    resultate = [
-        {"naam": naam, "afstand_km": round(km), "telling": tellings[naam]}
-        for naam, km in kruisings.items()
-    ]
+    resultate = [{"naam": naam, "afstand_km": round(km), "telling": telling}
+                 for naam, (km, telling) in _kruisings(elements, meetkunde).items()]
+    strome, strome_volledig = haal_strome(meetkunde, resultate, round(totale_afstand_m / 1000))
+    resultate += strome
     resultate.sort(key=lambda x: x["afstand_km"])
-    return resultate, volledig
+    return resultate, volledig and strome_volledig
+
+
+def _gate(kms, totale_km, min_km):
+    """[(van, tot)] stretches longer than min_km between consecutive kms (and the endpoints)."""
+    punte = sorted({0, totale_km, *kms})
+    return [(a, b) for a, b in zip(punte, punte[1:]) if b - a > min_km]
+
+
+def haal_strome(meetkunde, riviere, totale_km):
+    """
+    Named streams crossing the route, only inside stretches longer than
+    STROOM_GAT_KM without a river crossing — and only those stretches' tiles
+    are fetched (streams far outnumber rivers).  Returns (strome, volledig);
+    each {naam, afstand_km, telling, stroom: True}.
+    """
+    gate = _gate([r["afstand_km"] for r in riviere], totale_km, STROOM_GAT_KM)
+    if not gate:
+        return [], True
+    teels = set()
+    for van, tot in gate:
+        teels.update(_teels_vir_roete(meetkunde, STROOM_BUFFER_GRAAD, van, tot))
+    elements, volledig = _haal_teels(STROME_SOORT, STROME_FILTER, RIVIERE_UIT,
+                                     sorted(teels), timeout_s=90)
+    rivier_name = {r["naam"] for r in riviere}
+    strome = [{"naam": naam, "afstand_km": round(km), "telling": telling, "stroom": True}
+              for naam, (km, telling) in _kruisings(elements, meetkunde).items()
+              if naam not in rivier_name and any(van < km < tot for van, tot in gate)]
+    logger.info("Strome: %d gapings > %d km, %d teels, %d strome%s", len(gate), STROOM_GAT_KM,
+                len(teels), len(strome), "" if volledig else " (onvolledig)")
+    return strome, volledig
 
 
 def haal_grense_en_sones(koordinate, totale_afstand_m, n_steekproef=20):
