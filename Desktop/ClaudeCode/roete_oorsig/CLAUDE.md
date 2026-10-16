@@ -500,8 +500,13 @@ a **straight vertical line** regardless of the route's actual geographic shape.
 - The screen view shows the diagram plus a **"Druk Kaart"** ("Print Map") button.
 - The print button calls `window.print()`.
 - On print, only the SVG is visible — no form, no nav, no button.
-- The SVG must NOT use `viewBox` scaling that would cause blurriness;
-  target physical A4 dimensions directly via the `@page` rule.
+- The SVG carries `width`/`height` 794×1123 plus a matching `viewBox`, so it can scale
+  without blurring (it is vector).  Print sets `#kaart-wrapper svg` to exactly 210×297 mm
+  (1:1 at 96 dpi) via the `@page` rule.
+- **Phones**: on screen `#kaart-wrapper svg` has `max-width: 100%; height: auto`, so the
+  map shrinks to the screen width (pinch to zoom).  Without this, the centred 794 px map
+  spilled off the left edge, out of scroll reach.  A `max-width: 560px` query tightens the
+  form and page padding.
 
 ### 8. Error Handling
 - If geocoding fails for either location: flash a friendly Afrikaans error:
@@ -720,6 +725,6 @@ All user-visible text must be in **Afrikaans**:
 - User accounts or saved routes.
 - Map tiles or geographic background imagery.
 - Zoom, pan, or interactive map controls.
-- Mobile-responsive layout (print is the primary output).
+- A separate mobile layout (print is the primary output; phones get the scaled-down map).
 - Multiple route alternatives.
 - Traffic or live data.

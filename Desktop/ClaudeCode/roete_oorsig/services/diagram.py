@@ -267,6 +267,7 @@ def bou_svg(dorpe, riviere, grense, munisipaliteit_sones,
 
     svg.append(
         f'<svg xmlns="http://www.w3.org/2000/svg" width="{breedte}" height="{hoogte}" '
+        f'viewBox="0 0 {breedte} {hoogte}" '
         f'style="background:#fff;font-family:Arial,sans-serif;">'
     )
     if histories:
