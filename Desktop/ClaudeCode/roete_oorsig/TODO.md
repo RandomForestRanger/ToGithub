@@ -3,7 +3,10 @@
 ## Hosting (2026-10-16)
 
 - [x] Render (free) chosen; gunicorn, seed cache (`saad/kas.db.gz`) and `DEPLOY.md` added.
-- [ ] User creates the Render web service (steps in `DEPLOY.md`) and checks the live site.
+- [x] Live at https://roeteoorsig.onrender.com (2026-10-16); phone layout fixed.
+- Cache on Render is wiped on every sleep/redeploy.  **Decision (2026-10-16): grow it by
+  hand** — warm up requested routes locally, `flask --app app kas-saad`, push.  Later
+  option: move `kas.py` to a free online Postgres (e.g. Neon) so it grows by itself.
 - [ ] Refresh the seed cache at least yearly (`flask --app app kas-saad`).
 
 ## Status (2026-10-14, late afternoon)
