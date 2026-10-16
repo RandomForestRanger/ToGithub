@@ -1,5 +1,11 @@
 # Roete Oorsig — TODO
 
+## Hosting (2026-10-16)
+
+- [x] Render (free) chosen; gunicorn, seed cache (`saad/kas.db.gz`) and `DEPLOY.md` added.
+- [ ] User creates the Render web service (steps in `DEPLOY.md`) and checks the live site.
+- [ ] Refresh the seed cache at least yearly (`flask --app app kas-saad`).
+
 ## Status (2026-10-14, late afternoon)
 
 Historical sites layer implemented, **not yet committed**.  Main source switched from

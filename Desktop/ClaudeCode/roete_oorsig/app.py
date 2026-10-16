@@ -379,5 +379,11 @@ def kas_uitvee(soort):
     click.echo(f"{kas.vee_uit(soort)} inskrywings verwyder")
 
 
+@app.cli.command("kas-saad")
+def kas_saad():
+    """Write the seed cache (saad/kas.db.gz) that ships with the code for Render."""
+    click.echo(f"{kas.SAAD_PAD}: {kas.maak_saad() / 1e6:.1f} MB")
+
+
 if __name__ == "__main__":
     app.run(debug=True)

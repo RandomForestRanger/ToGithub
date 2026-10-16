@@ -36,6 +36,8 @@ roete-oorsig/
 ├── app.py                  # Flask application entry point
 ├── config.py               # Config (API keys loaded from .env)
 ├── requirements.txt
+├── DEPLOY.md               # Render (free) setup steps
+├── saad/kas.db.gz          # seed cache shipped with the code (flask kas-saad)
 ├── .env.example
 ├── services/
 │   ├── __init__.py
@@ -625,6 +627,13 @@ are not fetched twice.
   in the status file.  Safe to stop and re-run.
 - `flask --app app kas-stand` — entries and size per soort.
 - `flask --app app kas-uitvee [SOORT]` — clear everything, or one soort.
+- `flask --app app kas-saad` — write the seed cache `saad/kas.db.gz` (jobs and expired rows
+  dropped, every row valid ≥ 1 year, gzipped; ~18 MB).  Commit it after warming up routes.
+
+**Seed cache (hosting)**: Render's free tier has no persistent disk.  When
+`data/roete_oorsig.db` does not exist, `kas._db()` unpacks `saad/kas.db.gz` in its place
+(`_plant_saad`, under a lock), so every restart starts from the warmed-up cache.
+See `DEPLOY.md`.
 
 Measured: Johannesburg → De Aar cold ≈ 2 min; fully cached ≈ 0.8 s for all four stages.
 
@@ -662,6 +671,7 @@ POST /kaart
 flask>=3.0
 python-dotenv>=1.0
 requests>=2.31
+gunicorn>=22.0   # production server on Render
 ```
 
 ---
@@ -670,6 +680,8 @@ requests>=2.31
 
 - Run dev server: `flask --app app run --debug --port 5001` (port 5000 is taken by
   macOS AirPlay)
+- Production (Render): `gunicorn app:app --workers 1 --threads 4 --timeout 300` — see
+  `DEPLOY.md`.
 - Never commit `.env` — only `.env.example`.
 - The SVG is generated as a Python string in `services/diagram.py` and passed
   to the Jinja2 template via `render_template('kaart.html', svg=svg_string, ...)`.

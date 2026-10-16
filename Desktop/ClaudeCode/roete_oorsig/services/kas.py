@@ -13,25 +13,71 @@ Storage: one SQLite file (data/roete_oorsig.db, gitignored), table
 kas(soort, sleutel, waarde JSON, verval epoch).  One connection per thread.
 """
 import os
+import gzip
 import json
 import time
+import shutil
 import sqlite3
 import threading
 import contextlib
 import contextvars
 
-DB_PAD = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-                      "data", "roete_oorsig.db")
+_WORTEL = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+DB_PAD = os.path.join(_WORTEL, "data", "roete_oorsig.db")
+# Seed cache shipped with the code (committed): on a host without a persistent
+# disk (Render free) the cache starts from this copy after every restart.
+SAAD_PAD = os.path.join(_WORTEL, "saad", "kas.db.gz")
+SAAD_TTL_S = 365 * 24 * 3600
 VERSTEK_TTL_S = 90 * 24 * 3600   # OSM data changes slowly
 
 _plaaslik = threading.local()
 _omseil = contextvars.ContextVar("kas_omseil", default=False)
+_saad_slot = threading.Lock()
+
+
+def _plant_saad():
+    """No cache file yet → unpack the seed cache (if shipped) in its place."""
+    with _saad_slot:
+        if os.path.exists(DB_PAD) or not os.path.exists(SAAD_PAD):
+            return
+        tydelik = DB_PAD + ".saad"
+        with gzip.open(SAAD_PAD, "rb") as bron, open(tydelik, "wb") as doel:
+            shutil.copyfileobj(bron, doel)
+        os.replace(tydelik, DB_PAD)
+
+
+def maak_saad(pad=SAAD_PAD, ttl_s=SAAD_TTL_S, uitgesluit=("taak",)):
+    """
+    Write a gzipped copy of the cache to ship with the code: jobs and expired
+    rows dropped, every row valid for at least ttl_s from now (so the seed
+    does not go stale on the host before it is rebuilt).  Returns bytes written.
+    """
+    tydelik = pad + ".db"
+    os.makedirs(os.path.dirname(pad), exist_ok=True)
+    if os.path.exists(tydelik):
+        os.remove(tydelik)
+    doel = sqlite3.connect(tydelik)
+    with doel:
+        _db().backup(doel)
+    nou = time.time()
+    with doel:
+        doel.execute("PRAGMA journal_mode=DELETE")
+        doel.executemany("DELETE FROM kas WHERE soort = ?", [(s,) for s in uitgesluit])
+        doel.execute("DELETE FROM kas WHERE verval <= ?", (nou,))
+        doel.execute("UPDATE kas SET verval = MAX(verval, ?)", (nou + ttl_s,))
+    doel.execute("VACUUM")
+    doel.close()
+    with open(tydelik, "rb") as bron, gzip.open(pad, "wb", compresslevel=9) as uit:
+        shutil.copyfileobj(bron, uit)
+    os.remove(tydelik)
+    return os.path.getsize(pad)
 
 
 def _db():
     con = getattr(_plaaslik, "con", None)
     if con is None:
         os.makedirs(os.path.dirname(DB_PAD), exist_ok=True)
+        _plant_saad()
         con = sqlite3.connect(DB_PAD, timeout=30)
         con.execute("PRAGMA journal_mode=WAL")
         con.execute(
