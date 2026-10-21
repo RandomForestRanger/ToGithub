@@ -1,5 +1,6 @@
 // Browser smoke test: plays full rounds in headless Chrome against the real Stockfish worker.
-// Usage: npx vite preview --port 4173 &  then  node tools/smoke.mjs [rounds] [http://localhost:4173]
+// Usage: VITE_SMOKE=1 npx vite build && npx vite preview --port 4173 &  then  node tools/smoke.mjs [rounds] [http://localhost:4173]
+// (VITE_SMOKE=1 exposes window.__ctl / __engine; a normal production build does not.)
 import { chromium } from 'playwright-core';
 
 const ROUNDS = Number(process.argv[2] || 2);

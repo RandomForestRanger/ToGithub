@@ -17,8 +17,10 @@ export default function App() {
   const [changed, setChanged] = useState<string[]>([]);
   const [msg, setMsg] = useState('');
   const pendingChanged = useRef<string[]>([]);
-  (window as any).__ctl = ctl; // for the smoke test (tools/smoke.mjs)
-  (window as any).__engine = engine;
+  if (import.meta.env.DEV || import.meta.env.VITE_SMOKE) {
+    (window as any).__ctl = ctl; // for the smoke test (tools/smoke.mjs)
+    (window as any).__engine = engine;
+  }
 
   // apply the round to storage once, as soon as it has a result
   useEffect(() => {

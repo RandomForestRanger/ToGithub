@@ -1,6 +1,6 @@
 # Next steps: Stoomdruk (Evans)
 
-Status on 3 October 2026: the MVP is playable end to end (see `README.md`). All 10 unit tests pass, and the browser smoke test plays full rounds against the real Stockfish without errors.
+Status on 3 October 2026 (clean-ups updated 21 October): the MVP is playable end to end (see `README.md`). All 10 unit tests pass, and the browser smoke test plays full rounds against the real Stockfish without errors.
 
 ## 1. Play-test with the real player (first priority)
 
@@ -27,12 +27,12 @@ Status on 3 October 2026: the MVP is playable end to end (see `README.md`). All 
 
 ## 4. Smaller technical items
 
-- [ ] Remove `window.__ctl` / `window.__engine` from `src/App.tsx` before release (only needed by `tools/smoke.mjs`), or keep them behind `import.meta.env.DEV`.
+- [x] `window.__ctl` / `window.__engine` only in dev or `VITE_SMOKE=1` builds (21 Oct).
 - [ ] The engine-phase wait for depth ≥ 10 is simplified: scoring waits for the full depth-14 analysis, capped at 2.5 s. Tighten if it feels slow.
 - [ ] Promotion always gives a queen. Add a picker if it ever matters.
-- [ ] Code-split the bundle (Vite warns about a >500 kB chunk, mostly the canon JSON).
-- [ ] Two different copies of `canon_builder.py` exist (project root and `tools/`). Decide which one is canonical and delete the other.
-- [ ] Unit test for check 8 (16 scored moves) using a mocked `EngineService`.
+- [x] Bundle split into app / vendor / canon chunks; no more size warning (21 Oct).
+- [x] Removed the older root `canon_builder.py` (stopped at move 10); `tools/canon_builder.py` is canonical (21 Oct).
+- [x] Unit test for check 8 (16 scored moves) with a mocked `EngineService`: `src/game/controller.test.ts` (21 Oct).
 
 ## 5. Deploy
 

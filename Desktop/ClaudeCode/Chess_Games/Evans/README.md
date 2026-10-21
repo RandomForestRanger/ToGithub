@@ -9,14 +9,14 @@ Stockfish 19 lite single-threaded WASM in a Web Worker, d3-hierarchy for the kel
 export PATH="/usr/local/opt/node/bin:$PATH"   # same Node workaround as the other projects
 npm install
 npm run dev          # http://localhost:5173
-npm test             # vitest: chart-phase acceptance checks + storage/scoring
+npm test             # vitest: acceptance checks 1–8 + storage/scoring
 npm run build        # dist/ (Netlify: netlify.toml is ready, publish = dist)
 ```
 
 Browser smoke test (plays whole rounds in headless Chrome against the real engine):
 
 ```bash
-npx vite build && npx vite preview --port 4173 &
+VITE_SMOKE=1 npx vite build && npx vite preview --port 4173 &   # VITE_SMOKE exposes window.__ctl for the test
 node tools/smoke.mjs 3                 # random-ish White
 STRONG=1 node tools/smoke.mjs 3        # Stockfish-guided White (reaches move 20)
 ```
@@ -45,7 +45,7 @@ STRONG=1 node tools/smoke.mjs 3        # Stockfish-guided White (reaches move 20
 5. Fontaine: engine phase from move 5. **Passes.**
 6. Gold stays gold after a bad round. **Passes.**
 7. Data invariants + 500 simulated noisy chart phases. **Passes.**
-8. Round ends after Black's 20th move with exactly 16 scored White moves. **Checked in the browser smoke test (`scored: 16`, `plies: 40`)**; not a unit test because it needs the engine.
+8. Round ends after Black's 20th move with exactly 16 scored White moves. **Unit test passes** (`controller.test.ts`, mocked engine), and the browser smoke test confirms it against the real engine.
 
 ## Choices I made without you (easy to change)
 
@@ -57,13 +57,13 @@ STRONG=1 node tools/smoke.mjs 3        # Stockfish-guided White (reaches move 20
 - `played` counts every line that was a target during the round (start, chains and re-targets).
 - Key moment "best engine-phase move" = his 4-point engine-phase move with the highest eval afterwards.
 - The forest starts zoomed to fit on desktop; on a portrait phone it fits the height and centres on the holdfast (pan sideways for the rest).
-- `window.__ctl` / `window.__engine` are exposed for the smoke test. Harmless, but you can remove them before release.
+- `window.__ctl` / `window.__engine` are exposed only in dev and in `VITE_SMOKE=1` builds (for the smoke test), not in the Netlify build.
 
 ## Not done yet / open
 
 - Not deployed to Netlify yet. See `NEXT_STEPS.md` for the full to-do list.
 - No real-device touch test (pinch-zoom was written but only tested with a mouse and in headless Chrome).
 - `GOLD_EVAL` is uncalibrated against real play. In the bot runs, gold never happened, because Black's engine play at depth 6 is quite strong against a random White.
-- The "pulse + bubbles" after a round work; the colour does not yet "fill in" gradually.
-- `canon_builder.py` in the project root is different from `tools/canon_builder.py`. I left both untouched.
+- After a round the colour fills in up the stipe, then the fronds and bulb, with pulse and bubbles (not yet seen after a real round).
+- `tools/canon_builder.py` is the only builder (the older root copy, which stopped at move 10, was removed on 21 Oct).
 - The Captain's draft lines are copied verbatim from the spec, ready for your edits in `src/content/kaptein.ts`.
