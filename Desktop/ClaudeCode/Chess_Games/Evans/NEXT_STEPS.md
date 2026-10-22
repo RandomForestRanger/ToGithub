@@ -36,8 +36,8 @@ Status on 3 October 2026 (clean-ups updated 21 October): the MVP is playable end
 
 ## 5. Deploy
 
-- [ ] Netlify: `netlify.toml` is ready (`npm run build`, publish `dist`, WASM content-type header).
-- [ ] Add a card for it in the games portal (`Speletjies_Altesaam`), like the other games.
+- [x] Live at https://stoomdruk-evans.netlify.app (22 Oct, CLI deploy, site id 105d8220-b2d0-4947-b9e3-6580f0c6108f). Redeploy: `npm run build && npx netlify-cli deploy --prod --dir dist --no-build --site 105d8220-b2d0-4947-b9e3-6580f0c6108f` (with the Node PATH workaround).
+- [ ] Portal card added to `Speletjies_Altesaam` (index.html + CLAUDE.md), not yet committed or deployed.
 
 ## 6. Later (spec section 18)
 
