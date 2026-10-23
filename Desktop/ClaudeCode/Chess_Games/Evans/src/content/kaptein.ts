@@ -78,5 +78,7 @@ export const UI = {
   momentDrop: (m: string, d: number) => `Grootste stoomverlies: ${m} (−${d.toFixed(1)})`,
   momentBest: (m: string) => `Beste skuif in oop see: ${m}`,
   lights: 'Skeepsligte',
+  restart: 'Begin oor',
+  restartConfirm: 'Seker? Tik weer',
   zones: { gold: 'Volstoom', green: 'Goeie druk', amber: 'Die stoom lek', cold: 'Die ketel is koud' },
 };

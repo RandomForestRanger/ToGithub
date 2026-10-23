@@ -16,6 +16,7 @@ export default function App() {
   const [ctl, setCtl] = useState<RoundController | null>(null);
   const [changed, setChanged] = useState<string[]>([]);
   const [msg, setMsg] = useState('');
+  const [roundNo, setRoundNo] = useState(0);
   const pendingChanged = useRef<string[]>([]);
   if (import.meta.env.DEV || import.meta.env.VITE_SMOKE) {
     (window as any).__ctl = ctl; // for the smoke test (tools/smoke.mjs)
@@ -55,6 +56,15 @@ export default function App() {
     setScreen('intro');
   };
 
+  // abandon the round (nothing is saved) and replay the same target from 1.e4
+  const restart = () => {
+    if (!ctl || ctl.result) return;
+    ctl.dispose();
+    engine.cancelAll();
+    setCtl(new RoundController(ctl.startTarget, stateOfFn(loadStore())));
+    setRoundNo(n => n + 1);
+  };
+
   const home = () => {
     setChanged(pendingChanged.current);
     pendingChanged.current = [];
@@ -73,7 +83,7 @@ export default function App() {
     <div className="app">
       {screen === 'home' && <Kelpwoud store={store} changed={changed} onBegin={begin} onToggleLights={toggleLights} />}
       {screen === 'intro' && ctl && <RoundIntro target={ctl.startTarget} onGo={() => setScreen('game')} />}
-      {screen === 'game' && ctl && <GameScreen ctl={ctl} lights={store.settings.bishopLights} onEnd={() => setScreen('end')} />}
+      {screen === 'game' && ctl && <GameScreen key={roundNo} ctl={ctl} lights={store.settings.bishopLights} onEnd={() => setScreen('end')} onRestart={restart} />}
       {screen === 'end' && ctl?.result && <RoundEnd ctl={ctl} onAgain={() => { setChanged([]); pendingChanged.current = []; void begin(); }} onHome={home} />}
       {msg && <div className="toast" onClick={() => setMsg('')}>{msg}</div>}
     </div>

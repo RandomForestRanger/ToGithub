@@ -49,6 +49,13 @@ class EngineService {
     });
   }
 
+  /** Drop queued searches (resolved empty) and stop the running one — used when a round is abandoned. */
+  cancelAll() {
+    const dropped = this.queue.splice(0);
+    dropped.forEach(j => j.resolve({ depth: 0, lines: [] }));
+    if (this.current) this.worker?.postMessage('stop');
+  }
+
   private pump() {
     if (this.current || !this.worker || !this.queue.length) return;
     const job = this.current = this.queue.shift()!;

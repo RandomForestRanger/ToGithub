@@ -18,9 +18,17 @@ function useWidth(ref: React.RefObject<HTMLElement>, max: number) {
   return w;
 }
 
-export function GameScreen({ ctl, lights, onEnd }: { ctl: RoundController; lights: boolean; onEnd: () => void }) {
+export function GameScreen({ ctl, lights, onEnd, onRestart }: {
+  ctl: RoundController; lights: boolean; onEnd: () => void; onRestart: () => void;
+}) {
   const [, force] = useState(0);
   const [sel, setSel] = useState<string | null>(null);
+  const [confirmRestart, setConfirmRestart] = useState(false);
+  useEffect(() => {
+    if (!confirmRestart) return;
+    const t = setTimeout(() => setConfirmRestart(false), 3000);
+    return () => clearTimeout(t);
+  }, [confirmRestart]);
   const boardWrap = useRef<HTMLDivElement>(null);
   const width = useWidth(boardWrap, 560);
   const movesEnd = useRef<HTMLDivElement>(null);
@@ -124,6 +132,12 @@ export function GameScreen({ ctl, lights, onEnd }: { ctl: RoundController; light
         </div>
         {ctl.engineError && <div className="warn">{UI.engineDown}</div>}
         {ctl.result && <button className="btn primary" onClick={onEnd}>Verder</button>}
+        {!ctl.result && ctl.phase !== 'over' && (
+          <button className={`btn restart${confirmRestart ? ' confirm' : ''}`}
+            onClick={() => (confirmRestart ? onRestart() : setConfirmRestart(true))}>
+            {confirmRestart ? UI.restartConfirm : UI.restart}
+          </button>
+        )}
       </aside>
 
       {ctl.popup && (

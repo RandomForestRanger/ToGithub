@@ -20,6 +20,8 @@ body {
 .btn.primary { background: var(--orange); color: #1a1a2e; border-color: transparent; }
 .btn.ghost { padding: 8px 14px; font-size: 22px; }
 .btn:hover { filter: brightness(1.08); }
+.btn.restart { align-self: flex-start; padding: 8px 16px; font-size: 16px; color: var(--muted); }
+.btn.restart.confirm { color: #fff; background: #e74c3c; border-color: transparent; }
 .card, .sea-chart {
   background: rgba(20, 30, 50, 0.85); backdrop-filter: blur(10px); border: 1px solid var(--line);
   border-radius: 12px; padding: 20px; animation: slideUp .35s ease;
