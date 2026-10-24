@@ -2,6 +2,7 @@ import { LINES } from '../data';
 import { say, UI } from '../content/kaptein';
 import type { RoundController } from '../game/controller';
 import { SteamGraph } from './SteamGraph';
+import { CaptainFace } from './CaptainFace';
 import { useMemo } from 'react';
 
 export function RoundIntro({ target, onGo }: { target: string; onGo: () => void }) {
@@ -10,6 +11,7 @@ export function RoundIntro({ target, onGo }: { target: string; onGo: () => void 
   return (
     <div className="screen center">
       <div className="sea-chart">
+        <CaptainFace mood="steady" size={96} />
         <p className="intro-line">{say('ROUND_START', { line: l.label })}</p>
         <p className="mono sub big">{l.sub}</p>
         {l.reef && <p className="reef-note">{UI.reefNote}</p>}
@@ -27,7 +29,7 @@ export function RoundEnd({ ctl, onAgain, onHome }: { ctl: RoundController; onAga
     <div className="screen center">
       <div className="card end-card">
         <div className="score-big">{r.score}<small>/64</small></div>
-        <p className="end-say">{ctl.speech}</p>
+        <div className="end-captain"><CaptainFace mood={ctl.mood} size={96} /><p className="end-say">{ctl.speech}</p></div>
         <p className="mono">Eindtelling: {r.finalEval >= 0 ? '+' : ''}{Math.abs(r.finalEval) >= 100 ? 'mat' : r.finalEval.toFixed(2)}</p>
         <h3>{UI.coloured}</h3>
         <div className="chips">

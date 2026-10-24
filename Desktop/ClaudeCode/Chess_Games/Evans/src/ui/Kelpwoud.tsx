@@ -4,6 +4,9 @@ import { canon, LINES, ROOT_LINE, type Line } from '../data';
 import { UI } from '../content/kaptein';
 import { lineRec, type Store } from '../game/storage';
 
+import vixenImg from '../assets/vixen.webp';
+
+const VIXEN_W = 180, VIXEN_H = Math.round(VIXEN_W * 418 / 440); // image is 440x418
 import { bulb, bulbDims, fronds, holdfast, seabed, snow, stipe, type BulbDims } from './kelpShapes';
 
 const PLY_PX = 26, MIN_STIPE = 40, DX = 52, FONT = 13;
@@ -102,7 +105,10 @@ export function Kelpwoud({ store, changed, onBegin, onToggleLights }: {
     const r = el.getBoundingClientRect();
     if (!r.width || !r.height) return;
     const a = r.width / r.height;
-    const [bx, by, bw, bh] = box;
+    // include the Vixen above the surface (VIXEN_H of headroom)
+    // (on a portrait phone a little more, so she clears the title and counter)
+    const head = r.width < r.height ? VIXEN_H * 1.7 : VIXEN_H;
+    const [bx, by, bw, bh] = [box[0], box[1] - head, box[2], box[3] + head];
     let v: [number, number, number, number];
     if (a < 1) {
       const w = bh * a;
@@ -232,12 +238,9 @@ export function Kelpwoud({ store, changed, onBegin, onToggleLights }: {
 
         {/* the surface seen from below, with the Vixen on it: red light to port (left), green to starboard (right) */}
         <path d={`M ${box[0] - 2000} ${box[1] - 400} L ${box[0] + box[2] + 2000} ${box[1] - 400} L ${box[0] + box[2] + 2000} ${box[1] + 46} ${Array.from({ length: 40 }, (_, i) => `Q ${box[0] + box[2] + 2000 - (i + 0.5) * (box[2] + 4000) / 40} ${box[1] + (i % 2 ? 54 : 38)} ${box[0] + box[2] + 2000 - (i + 1) * (box[2] + 4000) / 40} ${box[1] + 46}`).join(' ')} Z`} fill="url(#surface)" opacity=".55" />
+        {/* interim art cut from art/Ideas.jpg (green starboard light visible on her bow) */}
         <g transform={`translate(${box[0] + box[2] * 0.62}, ${box[1] + 30})`} className="vixen">
-          <path d="M -70 0 L 70 0 L 55 18 L -55 18 Z" fill="#1d2b36" />
-          <rect x={-18} y={-26} width={10} height={26} fill="#1d2b36" />
-          <circle cx={10} cy={6} r={16} fill="none" stroke="#1d2b36" strokeWidth={4} />
-          <circle cx={-62} cy={4} r={4} fill="#e74c3c" className="navlight" />
-          <circle cx={62} cy={4} r={4} fill="#2ecc71" className="navlight" />
+          <image href={vixenImg} x={-VIXEN_W / 2} y={18 - VIXEN_H} width={VIXEN_W} height={VIXEN_H} />
         </g>
 
         <path d={scene.bed.d} fill="url(#sand)" />

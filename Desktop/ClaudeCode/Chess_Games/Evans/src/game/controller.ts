@@ -7,7 +7,7 @@ import {
 } from '../config';
 import { canon, LINES } from '../data';
 import { engine } from '../engine/EngineService';
-import { say, type KKey } from '../content/kaptein';
+import { MOOD, say, type KKey, type Mood } from '../content/kaptein';
 import { material, numbered, posKey, sanOf, uciToMove } from './chessUtil';
 import { blackChartMove, conquerAt, newChartState, whiteChartMove, type ChartState } from './round';
 import { pointsFromLoss } from './scoring';
@@ -51,6 +51,7 @@ export class RoundController {
   shownSteam = 0;
   debt = 0;
   speech = '';
+  mood: Mood = 'steady';
   popup: Popup | null = null;
   thinking = false;
   lastMove: [string, string] | null = null;
@@ -86,6 +87,7 @@ export class RoundController {
     if (this.speechPly === this.ply && pri < this.speechPri) return;
     this.speechPly = this.ply; this.speechPri = pri;
     this.speech = prefix + say(key, vars);
+    this.mood = MOOD[key] ?? 'steady';
   }
 
   closePopup() { this.popup = null; this.emit(); }
@@ -137,6 +139,7 @@ export class RoundController {
       } else if (r.kind === 'retarget') {
         points = 4;
         this.afterChartArrival(false);
+        this.mood = MOOD.RETARGET!;
         this.popup = {
           kind: 'retarget',
           text: say('RETARGET', { line: label(r.shown) }),
@@ -188,6 +191,7 @@ export class RoundController {
 
   private showMissed(line: string, fen: string, uci: string, moveTxt: string, prefix: string) {
     this.missed[line] = moveTxt;
+    this.mood = MOOD.MISSED!;
     this.popup = {
       kind: 'missed',
       text: prefix + say('MISSED', { line: label(line), move: moveTxt }),

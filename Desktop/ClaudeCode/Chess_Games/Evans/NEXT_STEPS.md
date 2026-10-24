@@ -21,6 +21,7 @@ Status on 3 October 2026 (clean-ups updated 21 October): the MVP is playable end
 ## 3. Art and look
 
 - [ ] Captain Evans portrait (4 faces) and the *Vixen*: the kids draw these, brief in `art/Stoomdruk_Tekenopdrag_Kaptein_en_Vixen.docx`. Scans go in `art/`.
+- [x] Interim art (24 Oct): four Captain faces cropped from `art/First Ideas.png` into `src/assets/kaptein/*.webp` (mood per line: `MOOD` in `src/content/kaptein.ts`), the *Vixen* cut out of `art/Ideas.jpg` into `src/assets/vixen.webp`. To swap in the kids' art, replace those five files (same names, square faces).
 - [x] Sea-bamboo look (11 Oct): tapered stipes, gas-bladder bulbs with crowns, strap fronds streaming with the current, holdfast, seabed, barnacles on reef lines (`src/ui/kelpShapes.ts`).
 - [x] Label overlap: greedy placement (above/right/left/below); labels keep their screen size; the less famous ones appear when zoomed in.
 - [x] Colour fills in up the stipe after a round, then the fronds and bulb colour in. Not yet seen after a real round; check it in play-testing.

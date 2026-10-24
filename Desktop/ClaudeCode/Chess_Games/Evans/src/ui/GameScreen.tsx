@@ -5,6 +5,7 @@ import { LINES } from '../data';
 import { UI } from '../content/kaptein';
 import { bishopBeams, type RoundController } from '../game/controller';
 import { Stoomdruk } from './Stoomdruk';
+import { CaptainFace, preloadFaces } from './CaptainFace';
 
 function useWidth(ref: React.RefObject<HTMLElement>, max: number) {
   const [w, setW] = useState(360);
@@ -34,6 +35,7 @@ export function GameScreen({ ctl, lights, onEnd, onRestart }: {
   const movesEnd = useRef<HTMLDivElement>(null);
 
   useEffect(() => ctl.onChange(() => force(x => x + 1)), [ctl]);
+  useEffect(preloadFaces, []);
   useEffect(() => { movesEnd.current?.scrollIntoView({ block: 'nearest' }); }, [ctl.moves.length]);
   useEffect(() => {
     if (!ctl.popup) return;
@@ -110,7 +112,7 @@ export function GameScreen({ ctl, lights, onEnd, onRestart }: {
         </div>
         <Stoomdruk steam={ctl.shownSteam} debt={ctl.debt} visible={ctl.steamVisible} />
         <div className="captain">
-          <div className="captain-face" aria-hidden>⚓</div>
+          <CaptainFace mood={ctl.mood} />
           <div className="bubble-speech">{ctl.thinking && !ctl.speech ? UI.thinking : ctl.speech || '…'}
             {ctl.thinking && <span className="dots"> · {UI.thinking}</span>}
           </div>

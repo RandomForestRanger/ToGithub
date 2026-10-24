@@ -43,6 +43,18 @@ export const K = {
 
 export type KKey = keyof typeof K;
 
+/** The Captain's face for each kind of line (anything not listed is 'steady'). */
+export type Mood = 'steady' | 'pleased' | 'worried' | 'overjoyed';
+export const MOOD: Partial<Record<KKey, Mood>> = {
+  BLACK_ACCEPTS: 'pleased', LINE_MOVE: 'pleased', CHAIN: 'pleased', TOP_TWO: 'pleased', RETARGET: 'pleased',
+  STEAM_GREEN: 'pleased', DEBT_PAID: 'pleased', POINTS_4: 'pleased',
+  BISHOP_STUURBOORD: 'pleased', BISHOP_BAKBOORD: 'pleased', END_GREEN: 'pleased',
+  LINE_CONQUERED: 'overjoyed', SPITS_HOOK: 'overjoyed', GREEDY: 'overjoyed', STEAM_GOLD: 'overjoyed',
+  END_GOLD: 'overjoyed', END_WHITE_MATES: 'overjoyed',
+  ENTRY_WRONG: 'worried', COUNTERGAMBIT: 'worried', MISSED: 'worried', STEAM_AMBER: 'worried', STEAM_COLD: 'worried',
+  POINTS_2: 'worried', POINTS_1: 'worried', END_MISSED: 'worried', END_WHITE_MATED: 'worried',
+};
+
 /** Pick one line of a category at random and fill {line} / {move}. */
 export function say(key: KKey, vars: { line?: string; move?: string } = {}): string {
   const opts = K[key];
