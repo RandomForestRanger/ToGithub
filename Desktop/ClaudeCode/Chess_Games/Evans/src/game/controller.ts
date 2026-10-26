@@ -3,7 +3,7 @@
 import { Chess, type Square } from 'chess.js';
 import {
   BLACK_ENGINE_DEPTH, BLACK_MULTIPV, BLACK_WINDOW_CP, ANALYSIS_DEPTH, ANALYSIS_MAX_MS, FINAL_EVAL_DEPTH,
-  GOLD_EVAL, MATE_CP, MOVES_PER_ROUND, STEAM_SMOOTHING, THINK_MAX_MS, THINK_MIN_MS,
+  COLD_EVAL, GOLD_EVAL, MATE_CP, MOVES_PER_ROUND, STEAM_SMOOTHING, THINK_MAX_MS, THINK_MIN_MS,
 } from '../config';
 import { canon, LINES } from '../data';
 import { engine } from '../engine/EngineService';
@@ -20,6 +20,8 @@ export interface MoveRec { san: string; ply: number; points?: number | null; pha
 export interface SteamPt { ply: number; steam: number; debt: number }
 export interface Popup {
   kind: 'retarget' | 'missed'; text: string; note?: string; fen?: string; arrow?: [string, string];
+  /** MISSED: replay from 4.b4 through his game to the miss, then the line's route to its end. */
+  replay?: { fen: string; startPly: number; moves: string[]; needed: number };
 }
 export interface RoundResult {
   score: number; gold: boolean; finalEval: number;
@@ -34,10 +36,12 @@ const delay = (ms: number) => new Promise(r => setTimeout(r, ms));
 const think = () => delay(THINK_MIN_MS + Math.random() * (THINK_MAX_MS - THINK_MIN_MS));
 const clamp = (x: number, a: number, b: number) => Math.max(a, Math.min(b, x));
 
+/** Fixed zones on the eval (steam minus debt): the dial's colours never move during a game. */
 export function zoneOf(steam: number, debt: number): Zone {
-  if (steam >= debt + GOLD_EVAL) return 'gold';
-  if (steam > debt) return 'green';
-  if (steam >= 0) return 'amber';
+  const e = steam - debt;
+  if (e >= GOLD_EVAL) return 'gold';
+  if (e > 0) return 'green';
+  if (e >= COLD_EVAL) return 'amber';
   return 'cold';
 }
 
@@ -196,7 +200,25 @@ export class RoundController {
       kind: 'missed',
       text: prefix + say('MISSED', { line: label(line), move: moveTxt }),
       fen, arrow: [uci.slice(0, 2), uci.slice(2, 4)],
+      replay: this.missedReplay(line, fen, uci),
     };
+  }
+
+  /** His moves after 4.b4 up to the miss (his move just played is excluded), then the canon route to the line's end. */
+  private missedReplay(line: string, fen: string, needed: string): Popup['replay'] {
+    const startPly = canon.meta.entry.length;
+    const hist = this.chess.history({ verbose: true });
+    const moves = hist.slice(startPly, -1).map(m => m.from + m.to + (m.promotion ?? ''));
+    const c = new Chess(fen);
+    const route = [needed];
+    c.move(uciToMove(needed));
+    for (let i = 0; i < 40; i++) {
+      const n = canon.nodes[posKey(c)];
+      if (!n || n.endOf.includes(line) || !n.toward[line]) break;
+      route.push(n.toward[line]);
+      c.move(uciToMove(n.toward[line]));
+    }
+    return { fen: canon.nodes[canon.meta.rootKey].fen, startPly, moves: [...moves, ...route], needed: moves.length };
   }
 
   // ---------- Black ----------

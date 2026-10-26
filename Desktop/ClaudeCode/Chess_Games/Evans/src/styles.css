@@ -147,7 +147,9 @@ body {
 .popup-retarget { border-color: var(--green); }
 .popup p { margin: 0 0 6px; }
 .popup .note { font-size: 14px; color: var(--muted); }
-.mini { display: flex; justify-content: center; margin-top: 8px; }
+.mini { display: flex; flex-direction: column; align-items: center; margin-top: 8px; }
+.mini-caption { margin-top: 6px; font-size: 18px; color: var(--muted); min-height: 1.3em; }
+.mini-caption.on-line { color: var(--green); font-weight: 700; }
 
 @media (max-width: 860px) {
   .game { flex-direction: column; align-items: stretch; padding: 10px 16px; }

@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from 'react';
 import { Chessboard } from 'react-chessboard';
 import type { Square } from 'chess.js';
 import { LINES } from '../data';
@@ -6,6 +6,7 @@ import { UI } from '../content/kaptein';
 import { bishopBeams, type RoundController } from '../game/controller';
 import { Stoomdruk } from './Stoomdruk';
 import { CaptainFace, preloadFaces } from './CaptainFace';
+import { MiniReplay } from './MiniReplay';
 
 function useWidth(ref: React.RefObject<HTMLElement>, max: number) {
   const [w, setW] = useState(360);
@@ -38,12 +39,13 @@ export function GameScreen({ ctl, lights, onEnd, onRestart }: {
   useEffect(preloadFaces, []);
   useEffect(() => { movesEnd.current?.scrollIntoView({ block: 'nearest' }); }, [ctl.moves.length]);
   useEffect(() => {
-    if (!ctl.popup) return;
+    if (!ctl.popup || ctl.popup.replay) return; // a replay closes itself after its final freeze
     const t = setTimeout(() => ctl.closePopup(), 7000);
     return () => clearTimeout(t);
   }, [ctl.popup, ctl]);
 
   const c = ctl.chess;
+  const closePopup = useCallback(() => ctl.closePopup(), [ctl]);
   const tryMove = (from: string, to: string) => {
     const ok = ctl.userMove(from, to);
     setSel(null);
@@ -146,7 +148,9 @@ export function GameScreen({ ctl, lights, onEnd, onRestart }: {
         <div className={`popup popup-${ctl.popup.kind}`} onClick={() => ctl.closePopup()} role="status">
           <p>{ctl.popup.text}</p>
           {ctl.popup.note && <p className="note">{ctl.popup.note}</p>}
-          {ctl.popup.fen && ctl.popup.arrow && (
+          {ctl.popup.replay ? (
+            <MiniReplay key={ctl.popup.text + ctl.popup.replay.moves.join()} replay={ctl.popup.replay} onDone={closePopup} />
+          ) : ctl.popup.fen && ctl.popup.arrow && (
             <div className="mini">
               <Chessboard id="mini" position={ctl.popup.fen} boardWidth={180} arePiecesDraggable={false}
                 customArrows={[[ctl.popup.arrow[0] as Square, ctl.popup.arrow[1] as Square, 'rgb(46,204,113)']]}
