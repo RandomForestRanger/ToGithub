@@ -80,6 +80,24 @@ body {
 .bulb-g:hover, .bulb-g.sel { isolation: isolate; }
 .bubble { fill: rgba(255,255,255,.6); animation: rise 2.4s ease-out both; }
 
+.sea-chart.route-card { position: absolute; z-index: 3; top: 64px; right: 16px; width: 400px; max-width: none; max-height: calc(100% - 80px); overflow-y: auto; text-align: left; animation: fadeUp .4s ease-out both; }
+.route-card .route-head { display: flex; gap: 12px; align-items: center; }
+.route-card .intro-line { margin: 0; font-size: 20px; }
+.route-card h3 { margin: 12px 0 4px; font-size: 13px; text-transform: uppercase; letter-spacing: .06em; opacity: .7; }
+.route-card .stages { margin: 0; padding-left: 22px; }
+.route-card .stages li { margin: 2px 0; }
+.route-card .route-moves { margin: 0; line-height: 1.6; }
+.route-card .stage-move { font-weight: 700; color: #8a4a10; }
+.route-card .btn { display: block; margin: 12px auto 0; }
+@media (max-width: 759px) {
+  .sea-chart.route-card { top: auto; bottom: 0; right: 0; left: 0; width: auto; max-height: 50%; border-radius: 16px 16px 0 0; padding-bottom: calc(14px + env(safe-area-inset-bottom, 0px)); }
+}
+/* round intro: the route to the target glows, the rest of the forest steps back */
+.forest.routing .kelp:not(.on-route), .forest.routing .fronds:not(.on-route), .forest.routing .bulb-g:not(.on-route) { opacity: .28; transition: opacity .6s; }
+.forest.routing .kelp.on-route .stipe { filter: drop-shadow(0 0 6px #ffd27a) drop-shadow(0 0 2px #ffd27a); }
+.forest.routing .bulb-g.on-route .bulb { filter: drop-shadow(0 0 8px #ffd27a); }
+.forest.routing .bulb-g.route-end .bulb { animation: pulse 1.4s ease-in-out infinite; }
+.forest.routing .holdfast.on-route { filter: drop-shadow(0 0 6px #ffd27a); }
 .line-card { position: absolute; left: 50%; bottom: 90px; transform: translateX(-50%); width: min(420px, calc(100% - 32px)); z-index: 3; }
 .line-card h2 { margin: 0 0 4px; color: var(--orange); font-size: 22px; }
 .line-card .x { position: absolute; top: 8px; right: 10px; background: none; border: 0; color: var(--text); font-size: 26px; cursor: pointer; }

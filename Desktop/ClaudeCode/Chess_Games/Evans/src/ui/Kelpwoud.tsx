@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { stratify, tree } from 'd3-hierarchy';
 import { canon, LINES, ROOT_LINE, type Line } from '../data';
 import { UI } from '../content/kaptein';
@@ -72,8 +72,21 @@ function placeLabels(nodes: Placed[]): Map<string, LabelPos> {
   return out;
 }
 
-export function Kelpwoud({ store, changed, onBegin, onToggleLights }: {
+/** The chain of lines from the root up to `id` (root first). */
+export function routeOf(id: string): string[] {
+  const out: string[] = [];
+  for (let l: Line | undefined = LINES[id]; l; l = l.parent ? LINES[l.parent] : undefined) out.unshift(l.id);
+  return out;
+}
+
+const reducedMotion = () => typeof matchMedia !== 'undefined' && matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+export function Kelpwoud({ store, changed, onBegin, onToggleLights, route, overlay }: {
   store: Store; changed: string[]; onBegin: () => void; onToggleLights: () => void;
+  /** round intro: light up the path to this line and pan to it */
+  route?: string;
+  /** shown instead of the footer (the round intro card) */
+  overlay?: ReactNode;
 }) {
   const { nodes, box, ground } = useMemo(layout, []);
   const labels = useMemo(() => placeLabels(nodes), [nodes]);
@@ -91,6 +104,23 @@ export function Kelpwoud({ store, changed, onBegin, onToggleLights }: {
     })),
   }), [nodes, box, ground]);
   const [vb, setVb] = useState<[number, number, number, number]>(box);
+  const onRoute = useMemo(() => new Set(route ? routeOf(route) : []), [route]);
+  const vbRef = useRef(vb);
+  vbRef.current = vb;
+  /** glide the camera to v over ~700 ms (instant under reduced motion) */
+  const glideTo = (v: [number, number, number, number]) => {
+    if (reducedMotion()) { setVb(v); return; }
+    const from = vbRef.current, t0 = performance.now();
+    const step = (t: number) => {
+      const k = Math.min(1, (t - t0) / 700), e = k < 0.5 ? 2 * k * k : 1 - (-2 * k + 2) ** 2 / 2;
+      setVb(from.map((f, i) => f + (v[i] - f) * e) as [number, number, number, number]);
+      if (k < 1) raf.current = requestAnimationFrame(step);
+    };
+    cancelAnimationFrame(raf.current);
+    raf.current = requestAnimationFrame(step);
+  };
+  const raf = useRef(0);
+  useEffect(() => () => cancelAnimationFrame(raf.current), []);
   const fitW = useRef(box[2]);
   const [sel, setSel] = useState<string | null>(null);
   const svgRef = useRef<SVGSVGElement>(null);
@@ -130,6 +160,30 @@ export function Kelpwoud({ store, changed, onBegin, onToggleLights }: {
   const greens = ids.filter(id => lineRec(store, id).state !== 'grey').length;
   const golds = ids.filter(id => lineRec(store, id).state === 'gold').length;
 
+  // round intro: fit the route (holdfast to target bulb) into the part of the screen the intro card leaves free
+  useEffect(() => {
+    if (!route) return;
+    const el = svgRef.current;
+    const r = el?.getBoundingClientRect();
+    if (!r || !r.width) return;
+    const rn = nodes.filter(n => onRoute.has(n.id));
+    const xs = rn.map(n => n.x), ys = rn.map(n => n.y - n.dims.len);
+    const pad = 70;
+    const cxr = (Math.min(...xs) + Math.max(...xs)) / 2;
+    const wideScreen = r.width >= 760;
+    const half = Math.max(wideScreen ? 450 : 220, (Math.max(...xs) - Math.min(...xs)) / 2 + pad * 2.5); // short routes keep some forest around them
+    const bx0 = cxr - half, bx1 = cxr + half;
+    const by0 = Math.min(...ys) - pad * 2.5, by1 = ground + 30;
+    const left = 0, right = wideScreen ? r.width - 440 : r.width;
+    const top = 60, bottom = wideScreen ? r.height - 20 : r.height * 0.5;
+    const s = Math.max((bx1 - bx0) / (right - left), (by1 - by0) / (bottom - top));
+    const w = r.width * s, h = r.height * s;
+    // seabed at the bottom of the free area: any spare height shows more forest above, not sand below
+    const v: [number, number, number, number] = [(bx0 + bx1) / 2 - ((left + right) / 2) * s, by1 - bottom * s, w, h];
+    const t = setTimeout(() => glideTo(v), 250);
+    return () => clearTimeout(t);
+  }, [route]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // after a round: pan to the lines that changed
   useEffect(() => {
     if (!changed.length) return;
@@ -148,6 +202,7 @@ export function Kelpwoud({ store, changed, onBegin, onToggleLights }: {
     return Math.max(vb[2] / r.width, vb[3] / r.height);
   };
   const onDown = (e: React.PointerEvent) => {
+    cancelAnimationFrame(raf.current); // a touch takes over from any camera glide
     downOn.current = (e.target as Element).closest?.('[data-id]')?.getAttribute('data-id') ?? null;
     ptrs.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
     moved.current = 0;
@@ -200,7 +255,7 @@ export function Kelpwoud({ store, changed, onBegin, onToggleLights }: {
         <h1>{UI.title} <small>{UI.subtitle}</small></h1>
         <div className="counter">{UI.counter(greens, golds, ids.length)}</div>
       </header>
-      <svg ref={svgRef} className="forest" viewBox={vb.join(' ')} preserveAspectRatio="xMidYMax meet"
+      <svg ref={svgRef} className={`forest ${route ? 'routing' : ''}`} viewBox={vb.join(' ')} preserveAspectRatio="xMidYMax meet"
            onPointerDown={onDown} onPointerMove={onMove} onPointerUp={onUp} onPointerCancel={e => { ptrs.current.delete(e.pointerId); }} onPointerLeave={e => { ptrs.current.delete(e.pointerId); }} onWheel={onWheel}>
         <defs>
           <linearGradient id="water" x1="0" y1="0" x2="0" y2="1">
@@ -251,7 +306,7 @@ export function Kelpwoud({ store, changed, onBegin, onToggleLights }: {
         {nodes.map(n => {
           const st = lineRec(store, n.id).state, sh = scene.shapes.get(n.id)!, [cx, cy] = sh.bulb.crown;
           return (
-            <g key={n.id + 'f'} className={`fronds s-${st} ${changed.includes(n.id) ? 'changed' : ''}`}
+            <g key={n.id + 'f'} className={`fronds s-${st} ${changed.includes(n.id) ? 'changed' : ''} ${onRoute.has(n.id) ? 'on-route' : ''}`}
                style={{ transformOrigin: `${cx}px ${cy}px`, animationDelay: `${(n.x % 9) * -0.8}s` }}>
               {sh.fronds.map((b, i) => <g key={i}><path d={b.outline} className="blade" /><path d={b.rib} className="rib" /></g>)}
             </g>
@@ -259,14 +314,14 @@ export function Kelpwoud({ store, changed, onBegin, onToggleLights }: {
         })}
 
         {/* layer 2: holdfast and stipes */}
-        <g className={`holdfast s-${lineRec(store, ROOT_LINE).state}`}>
+        <g className={`holdfast s-${lineRec(store, ROOT_LINE).state} ${route ? 'on-route' : ''}`}>
           {scene.roots.map((d, i) => <path key={i} d={d} />)}
           <ellipse cx={nodes[0].x} cy={ground - 12} rx={15} ry={11} />
         </g>
         {nodes.map(n => {
           const st = lineRec(store, n.id).state, sh = scene.shapes.get(n.id)!.stipe, ch = changed.includes(n.id);
           return (
-            <g key={n.id} className={`kelp s-${ch ? 'grey' : st} ${n.line.famous ? 'famous' : ''} ${n.line.reef ? 'reef' : ''}`}>
+            <g key={n.id} className={`kelp s-${ch ? 'grey' : st} ${n.line.famous ? 'famous' : ''} ${n.line.reef ? 'reef' : ''} ${onRoute.has(n.id) ? 'on-route' : ''}`}>
               <path d={sh.outline} className="stipe" />
               {ch && <path d={sh.centre} pathLength={1} className={`fill-in s-${st}`} strokeWidth={n.w0 + 4} clipPath={`url(#clip-${n.id})`} />}
               <path d={sh.highlight} className="stipe-hl" strokeWidth={Math.max(1, n.w1 * 0.3)} />
@@ -278,9 +333,9 @@ export function Kelpwoud({ store, changed, onBegin, onToggleLights }: {
         {/* layer 3: bulbs and labels */}
         {nodes.map(n => {
           const st = lineRec(store, n.id).state, b = scene.shapes.get(n.id)!.bulb, L = labels.get(n.id)!;
-          const on = L.placed && (n.line.famous || n.root || zoomedIn);
+          const on = onRoute.has(n.id) || (L.placed && (n.line.famous || n.root || zoomedIn));
           return (
-            <g key={n.id + 'b'} className={`bulb-g s-${st} ${n.line.famous ? 'famous' : ''} ${n.line.reef ? 'reef' : ''} ${changed.includes(n.id) ? 'changed' : ''} ${sel === n.id ? 'sel' : ''} ${on ? 'lbl-on' : ''}`}
+            <g key={n.id + 'b'} className={`bulb-g s-${st} ${n.line.famous ? 'famous' : ''} ${n.line.reef ? 'reef' : ''} ${changed.includes(n.id) ? 'changed' : ''} ${sel === n.id ? 'sel' : ''} ${on ? 'lbl-on' : ''} ${onRoute.has(n.id) ? 'on-route' : ''} ${route === n.id ? 'route-end' : ''}`}
                data-id={n.id}>
               <circle cx={n.x} cy={n.y - n.dims.len / 2} r={Math.max(18, n.dims.len * 0.6)} className="hit" />
               <path d={b.body} className="bulb" />
@@ -294,7 +349,7 @@ export function Kelpwoud({ store, changed, onBegin, onToggleLights }: {
         })}
       </svg>
 
-      {selLine && selRec && (
+      {selLine && selRec && !overlay && (
         <div className="card line-card" role="dialog">
           <button className="x" onClick={() => setSel(null)} aria-label={UI.close}>×</button>
           <h2>{selLine.label}</h2>
@@ -310,11 +365,13 @@ export function Kelpwoud({ store, changed, onBegin, onToggleLights }: {
         </div>
       )}
 
-      <footer className="kelp-bottom">
-        <label className="lights"><input type="checkbox" checked={store.settings.bishopLights} onChange={onToggleLights} /> {UI.lights}</label>
-        <button className="btn primary" onClick={onBegin}>{UI.begin}</button>
-        <button className="btn ghost" onClick={fitView} aria-label="Pas">⤢</button>
-      </footer>
+      {overlay ?? (
+        <footer className="kelp-bottom">
+          <label className="lights"><input type="checkbox" checked={store.settings.bishopLights} onChange={onToggleLights} /> {UI.lights}</label>
+          <button className="btn primary" onClick={onBegin}>{UI.begin}</button>
+          <button className="btn ghost" onClick={fitView} aria-label="Pas">⤢</button>
+        </footer>
+      )}
     </div>
   );
 }

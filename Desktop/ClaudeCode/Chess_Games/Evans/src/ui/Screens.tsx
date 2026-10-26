@@ -3,21 +3,32 @@ import { say, UI } from '../content/kaptein';
 import type { RoundController } from '../game/controller';
 import { SteamGraph } from './SteamGraph';
 import { CaptainFace } from './CaptainFace';
+import { routeOf } from './Kelpwoud';
 import { useMemo } from 'react';
 
+/** The round's objective, shown over the Kelpwoud while the route to the target lights up. */
 export function RoundIntro({ target, onGo }: { target: string; onGo: () => void }) {
   const l = LINES[target];
   const flavour = useMemo(() => say('ROUND_FLAVOUR'), []);
+  const stages = routeOf(target).slice(1).map(id => LINES[id]); // without the root (4.b4)
+  const marks = new Set(stages.map(s => s.sub));
   return (
-    <div className="screen center">
-      <div className="sea-chart">
-        <CaptainFace mood="steady" size={96} />
+    <div className="sea-chart route-card" role="dialog">
+      <div className="route-head">
+        <CaptainFace mood="steady" size={64} />
         <p className="intro-line">{say('ROUND_START', { line: l.label })}</p>
-        <p className="mono sub big">{l.sub}</p>
-        {l.reef && <p className="reef-note">{UI.reefNote}</p>}
-        <p className="flavour">{flavour}</p>
-        <button className="btn primary" onClick={onGo}>{UI.throwBait}</button>
       </div>
+      {l.reef && <p className="reef-note">{UI.reefNote}</p>}
+      <h3>{UI.route}</h3>
+      <ol className="stages">
+        {stages.map(s => <li key={s.id}><b>{s.label}</b> <span className="mono">{s.sub}</span></li>)}
+      </ol>
+      <h3>{UI.routeMoves}</h3>
+      <p className="route-moves mono">
+        {l.movesNumbered.slice(6).map((m, i) => <span key={i} className={marks.has(m) ? 'stage-move' : ''}>{m} </span>)}
+      </p>
+      <p className="flavour">{flavour}</p>
+      <button className="btn primary" onClick={onGo}>{UI.ready}</button>
     </div>
   );
 }

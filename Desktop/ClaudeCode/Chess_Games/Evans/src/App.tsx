@@ -81,8 +81,11 @@ export default function App() {
 
   return (
     <div className="app">
-      {screen === 'home' && <Kelpwoud store={store} changed={changed} onBegin={begin} onToggleLights={toggleLights} />}
-      {screen === 'intro' && ctl && <RoundIntro target={ctl.startTarget} onGo={() => setScreen('game')} />}
+      {(screen === 'home' || screen === 'intro') && (
+        <Kelpwoud store={store} changed={screen === 'intro' ? [] : changed} onBegin={begin} onToggleLights={toggleLights}
+          route={screen === 'intro' ? ctl?.startTarget : undefined}
+          overlay={screen === 'intro' && ctl ? <RoundIntro target={ctl.startTarget} onGo={() => setScreen('game')} /> : undefined} />
+      )}
       {screen === 'game' && ctl && <GameScreen key={roundNo} ctl={ctl} lights={store.settings.bishopLights} onEnd={() => setScreen('end')} onRestart={restart} />}
       {screen === 'end' && ctl?.result && <RoundEnd ctl={ctl} onAgain={() => { setChanged([]); pendingChanged.current = []; void begin(); }} onHome={home} />}
       {msg && <div className="toast" onClick={() => setMsg('')}>{msg}</div>}
