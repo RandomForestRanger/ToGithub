@@ -17,6 +17,7 @@ Bou 'n enkele HTML-bladsy wat as 'n vriendelike, kleurvolle portaal dien vir 'n 
 | Mat-Kat | https://mat-kat.netlify.app/ |
 | Adi – Die Mancala Speletjie | https://adi-joy.netlify.app/ |
 | D6 Dynamos | https://indiese-verdediging.netlify.app/ |
+| Kaptein Evans se Kelpwoud | https://stoomdruk-evans.netlify.app/ |
 
 ---
 
@@ -63,7 +64,8 @@ Gebruik hierdie beskrywings op die kaarte:
 - **Vind die Flater** – "Kan jy die fout raaksien? Vind die flater voor dit te laat is!"
 - **Mat-Kat** – "Oefen jou eindspel en leer hoe om mat te gee soos 'n kampioen."
 - **Adi – Die Mancala Speletjie** – "Speel Adi, 'n ou Afrika-speletjie met klippies en komme. Baie pret!"
-- **D6 Dynamos** – "Speel soos 'n cricket-kampioen en leer die Ou-Indiese verdediging – block elke aanval met jou slim d6-pion!"
+- **D6 Dynamos** – "Speel soos 'n krieket-kampioen en leer die Ou-Indiese verdediging – blok enige aanval met jou handinge d6-pion!"
+- **Kaptein Evans se Kelpwoud** – "Vaar saam met Kaptein Evans, offer 'n pion vir tyd, en laat die kelpwoud groen en goud word!"
 
 ---
 
