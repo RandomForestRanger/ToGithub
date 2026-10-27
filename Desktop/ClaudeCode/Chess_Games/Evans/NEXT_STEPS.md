@@ -6,7 +6,6 @@
 
 1. **Martin's wording pass.** Is `src/content/kaptein.ts` edited? If so: check it (quotes around `'n`, `{line}`/`{move}` kept, `ROUND_START`/`RETARGET`/`MISSED` unchanged), run the tests, build and redeploy.
 2. **Decisions waiting for Martin** (Claude asks once, then acts):
-   - [ ] Commit + deploy the portal card in `Speletjies_Altesaam` (together with Martin's own D6 Dynamos wording edits there)?
    - [ ] Push the Evans commits to GitHub (branch `add-RandomForestRanger`, 6+ commits ahead)?
    - [ ] Round intro shows the target's full moves every round. Keep, or show only the stages for grey lines and the full moves once a line is green?
    - [ ] Pawn icons (♙) under the dial to show how many pawns are invested (the moving red mark was removed with the fixed dial)?
@@ -43,6 +42,8 @@
 - [ ] Optional: hidden stats panel (gold rate, average final eval) for tuning from his own device.
 
 ## Deploy
+
+- **Portal:** the Evans card is live on Lekker Bekker (https://lekker-bekker.netlify.app, Netlify site id `59bc328c-1ff5-4402-aba1-c53066851255`). Deploy the `Speletjies_Altesaam/` folder with `npx netlify-cli deploy --prod --dir . --no-build --site <id>` (27 Oct).
 
 - Netlify site `stoomdruk-evans` (site id `105d8220-b2d0-4947-b9e3-6580f0c6108f`), CLI deploy, Netlify account martinjbekker@gmail.com.
 - Every npm/npx command needs the Node workaround first: `export PATH="/usr/local/opt/node/bin:$PATH"`.
