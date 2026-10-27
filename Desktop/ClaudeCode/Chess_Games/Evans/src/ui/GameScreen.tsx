@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import { Chessboard } from 'react-chessboard';
 import type { Square } from 'chess.js';
 import { LINES } from '../data';
@@ -7,6 +7,7 @@ import { bishopBeams, type RoundController } from '../game/controller';
 import { Stoomdruk } from './Stoomdruk';
 import { CaptainFace, preloadFaces } from './CaptainFace';
 import { MiniReplay } from './MiniReplay';
+import { pickBackground } from './backgrounds';
 
 function useWidth(ref: React.RefObject<HTMLElement>, max: number) {
   const [w, setW] = useState(360);
@@ -26,6 +27,7 @@ export function GameScreen({ ctl, lights, onEnd, onRestart }: {
   const [, force] = useState(0);
   const [sel, setSel] = useState<string | null>(null);
   const [confirmRestart, setConfirmRestart] = useState(false);
+  const bg = useMemo(pickBackground, []); // a new photo each round (the screen remounts per round)
   useEffect(() => {
     if (!confirmRestart) return;
     const t = setTimeout(() => setConfirmRestart(false), 3000);
@@ -91,6 +93,8 @@ export function GameScreen({ ctl, lights, onEnd, onRestart }: {
   });
 
   return (
+    <>
+    {bg && <div className="game-bg" style={{ backgroundImage: `url(${bg})` }} aria-hidden />}
     <div className="game">
       <div className="board-col" ref={boardWrap}>
         <Chessboard
@@ -160,6 +164,7 @@ export function GameScreen({ ctl, lights, onEnd, onRestart }: {
         </div>
       )}
     </div>
+    </>
   );
 }
 

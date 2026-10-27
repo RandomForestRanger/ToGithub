@@ -21,10 +21,10 @@ const click = sq => page.click(`[data-boardid="main"] [data-square="${sq}"]`, { 
 
 let shotPopup = false;
 for (let r = 0; r < ROUNDS; r++) {
-  await page.click('button:has-text("Begin rondte")');
+  await page.click('.kelp-bottom .btn.primary'); // 'Begin rondte' (by class: the wording may change)
   await page.waitForSelector('.sea-chart', { timeout: 20000 });
   if (r === 0) await page.screenshot({ path: `${OUT}/smoke-intro.png` });
-  await page.click('button:has-text("Gooi die lokaas")');
+  await page.click('.route-card .btn.primary'); // 'Ek is gereed!'
   try { await page.waitForSelector('[data-boardid="main"] [data-square="e2"]', { timeout: 10000 }); }
   catch (e) {
     await page.screenshot({ path: `${OUT}/smoke-fail.png` });
@@ -69,7 +69,7 @@ for (let r = 0; r < ROUNDS; r++) {
   await page.screenshot({ path: `${OUT}/smoke-game-${r + 1}.png` });
   await page.waitForSelector('.end-card', { timeout: 10000 });
   await page.screenshot({ path: `${OUT}/smoke-end-${r + 1}.png` });
-  await page.click('button:has-text("Terug na die Kelpwoud")');
+  await page.click('.end-card .btn-row .btn:not(.primary)'); // 'Terug na die Kelpwoud'
   await page.waitForSelector('.forest');
   await page.waitForTimeout(1500);
 }

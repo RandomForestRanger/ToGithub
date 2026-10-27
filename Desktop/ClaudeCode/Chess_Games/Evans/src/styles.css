@@ -216,7 +216,10 @@ body {
 .steam-graph .tick, .stoomdruk .tick { fill: var(--muted); font-family: var(--font-body); font-weight: 600; font-size: 11px; text-anchor: middle; }
 
 /* ---------- Game ---------- */
-.game { display: flex; gap: 20px; padding: 16px; max-width: 1100px; margin: 0 auto; align-items: flex-start; }
+.game { display: flex; gap: 20px; padding: 16px; max-width: 1100px; margin: 0 auto; align-items: flex-start; position: relative; z-index: 1; }
+/* the round's photo, fixed behind everything, under a dark-teal wash so board and panels stay readable */
+.game-bg { position: fixed; inset: 0; z-index: 0; background-size: cover; background-position: center; animation: fadeIn .8s ease both; }
+.game-bg::after { content: ''; position: absolute; inset: 0; background: linear-gradient(160deg, rgba(8,24,40,.62), rgba(6,30,44,.78)); }
 .board-col { flex: 1 1 560px; max-width: 560px; min-width: 0; }
 .panel { flex: 0 1 340px; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
 .target-banner { background: var(--glass); border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; }
@@ -273,20 +276,11 @@ body {
 @keyframes sharkTail { from { transform: rotate(-7deg); } to { transform: rotate(7deg); } }
 @keyframes claw { from { transform: rotate(0deg); } to { transform: rotate(-8deg); } }
 @keyframes porpoise { 0% { transform: translateY(14px) rotate(-9deg); } 50% { transform: translateY(-14px) rotate(9deg); } 100% { transform: translateY(14px) rotate(-9deg); } }
-@keyframes crabWalk {
-  0% { opacity: 0; transform: translate(var(--x0), 10px); }
-  4% { opacity: 1; transform: translate(var(--x0), 0); }
-  30% { transform: translate(var(--x1), 0); }
-  42% { transform: translate(var(--x1), 0); }
-  70% { transform: translate(var(--x2), 0); }
-  76% { opacity: 1; transform: translate(var(--x2), 0); }
-  82% { opacity: 0; transform: translate(var(--x2), 10px); }
-  100% { opacity: 0; transform: translate(var(--x2), 10px); }
-}
 @keyframes bob { from { transform: translateY(-4px); } to { transform: translateY(4px); } }
 @keyframes rise { from { transform: translateY(0); opacity: .9; } to { transform: translateY(-120px); opacity: 0; } }
 @keyframes slideUp { from { opacity: 0; transform: translate(-50%, 20px); } to { opacity: 1; transform: translate(-50%, 0); } }
 .sea-chart, .end-card { animation-name: fadeUp; }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 @keyframes fadeUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: none; } }
 @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .6; } }
 @keyframes scorePopIn { 0% { transform: scale(.5); opacity: 0; } 70% { transform: scale(1.1); } 100% { transform: scale(1); opacity: 1; } }
@@ -322,3 +316,6 @@ body {
   .kelp-bottom .btn.ghost { padding: 8px 10px; }
   .lights { padding: 8px 10px; font-size: 14px; white-space: nowrap; }
 }
+
+/* over the round's photo: panels a little more solid, with the photo blurred behind them */
+.game .target-banner, .game .stoomdruk, .game .movelist { background: rgba(8, 26, 40, .72); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }

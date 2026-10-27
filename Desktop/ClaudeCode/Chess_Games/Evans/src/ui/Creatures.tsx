@@ -50,13 +50,18 @@ export function SmallFish({ box, ground }: { box: Box; ground: number }) {
 
 // ---------- crabs ----------
 
-const CRAB_DUR = 72; // s per cycle: emerge, scurry, pause, scurry back, burrow, stay hidden
+// One visit lasts about a minute (emerge, scurry, pause, scurry back, burrow); the rest of the cycle the
+// crab stays buried. Three crabs, a third of a cycle apart: one visit roughly every 3 minutes.
+const CRAB_DUR = 540;            // s per cycle
+const CRAB_FIRST = 30;           // s after the forest opens before the first crab appears
+const V = { up: 3, walk1: 21.6, pause: 30.2, walk2: 50.4, burrow: 54.7, gone: 59 }; // visit timeline, s
+const pc = (sec: number) => (sec / CRAB_DUR) * 100;
 
-/** Leg keyframes generated so the legs only move while the crab walks (they rest in the pause). */
+/** Walk + leg keyframes, generated so the legs only move while the crab walks (they rest in the pause). */
 function crabGaitCss(): string {
-  const walks: [number, number][] = [[4, 30], [42, 70]]; // percent ranges in which the crab moves (see .crab-walk)
+  const walks: [number, number][] = [[pc(V.up), pc(V.walk1)], [pc(V.pause), pc(V.walk2)]];
   const stops: string[] = [];
-  const step = 0.35; // % of the cycle per leg beat (~0.25 s)
+  const step = pc(0.25); // one leg beat ~0.25 s
   const at = (p: number, a: number) => stops.push(`${p.toFixed(2)}% { transform: rotate(${a}deg); }`);
   at(0, 0);
   for (const [a, b] of walks) {
@@ -68,7 +73,16 @@ function crabGaitCss(): string {
   at(100, 0);
   const body = stops.join(' ');
   const mirrored = body.replace(/rotate\((-?[\d.]+)deg\)/g, (_, d) => `rotate(${-Number(d)}deg)`);
-  return `@keyframes crabLegsL { ${body} } @keyframes crabLegsR { ${mirrored} }`;
+  const walk = `@keyframes crabWalk {
+    0% { opacity: 0; transform: translate(var(--x0), 10px); }
+    ${pc(V.up)}% { opacity: 1; transform: translate(var(--x0), 0); }
+    ${pc(V.walk1)}% { transform: translate(var(--x1), 0); }
+    ${pc(V.pause)}% { transform: translate(var(--x1), 0); }
+    ${pc(V.walk2)}% { transform: translate(var(--x2), 0); }
+    ${pc(V.burrow)}% { opacity: 1; transform: translate(var(--x2), 0); }
+    ${pc(V.gone)}% { opacity: 0; transform: translate(var(--x2), 10px); }
+    100% { opacity: 0; transform: translate(var(--x2), 10px); } }`;
+  return `@keyframes crabLegsL { ${body} } @keyframes crabLegsR { ${mirrored} } ${walk}`;
 }
 
 function crabLegs(side: 1 | -1) {
@@ -86,7 +100,7 @@ export function Crabs({ box, ground }: { box: Box; ground: number }) {
     return [0.18, 0.5, 0.82].map((fx, i) => {
       const x0 = box[0] + box[2] * fx + (rand() - 0.5) * 120;
       const dir = i % 2 ? -1 : 1;
-      return { x0, x1: x0 + dir * (90 + rand() * 50), x2: x0 + dir * (30 + rand() * 30), y: ground + 20 + rand() * 22, size: 0.85 + rand() * 0.3, delay: -i * 24 - rand() * 6 };
+      return { x0, x1: x0 + dir * (90 + rand() * 50), x2: x0 + dir * (30 + rand() * 30), y: ground + 20 + rand() * 22, size: 0.85 + rand() * 0.3, delay: -(CRAB_DUR - CRAB_FIRST - i * CRAB_DUR / 3) };
     });
   }, [box, ground]);
   const css = useMemo(crabGaitCss, []);

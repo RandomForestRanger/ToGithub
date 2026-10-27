@@ -214,14 +214,14 @@ export function particles(box: [number, number, number, number], n = 140) {
 }
 
 /** Columns of rising bubbles (each bubble animates upward with its own delay). */
-export function bubbles(box: [number, number, number, number], ground: number, cols = 9) {
+export function bubbles(box: [number, number, number, number], ground: number, cols = 5) {
   const rand = rng('bubbles');
   const out: { x: number; y: number; r: number; delay: number; dur: number }[] = [];
   for (let c = 0; c < cols; c++) {
     const x = box[0] + (c + 0.2 + rand() * 0.6) * box[2] / cols;
-    const dur = 14 + rand() * 10;
-    for (let k = 0; k < 4; k++) {
-      out.push({ x: x + (rand() - 0.5) * 16, y: ground - 10 - rand() * 60, r: 2 + rand() * 4, delay: -(k / 4) * dur - rand() * 2, dur });
+    const dur = 20 + rand() * 10;
+    for (let k = 0; k < 2; k++) {
+      out.push({ x: x + (rand() - 0.5) * 16, y: ground - 10 - rand() * 60, r: 2 + rand() * 4, delay: -(k / 2) * dur - rand() * 4, dur });
     }
   }
   return out;
