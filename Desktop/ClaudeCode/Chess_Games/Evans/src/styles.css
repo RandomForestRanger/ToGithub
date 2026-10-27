@@ -7,14 +7,20 @@
 * { box-sizing: border-box; }
 html, body, #root { height: 100%; margin: 0; }
 body {
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; font-size: 18px; color: var(--text);
+  font-family: var(--font-body); font-size: 19px; color: var(--text);
   background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
   overscroll-behavior: none;
 }
-.mono { font-family: Consolas, Monaco, monospace; }
+:root { --font-display: 'Rye', 'Zilla Slab', Georgia, serif; --font-body: 'Zilla Slab', Georgia, serif; }
+/* Rye (tattoo-flash display) for titles, headings, buttons and labels; Zilla Slab (a Clarendon-style
+   tattoo serif) for everything you read in sentences. Rye has one weight: never fake-bold it. */
+.kelp-top h1, h2, h3, .btn, .counter, .score-big, .gauge-label, .stat-row, .target-banner b, .chip, .lights {
+  font-family: var(--font-display); font-weight: 400; font-synthesis: none; letter-spacing: .02em;
+}
+.mono { font-family: var(--font-body); font-variant-numeric: tabular-nums lining-nums; font-weight: 600; }
 .app { height: 100%; }
 .btn {
-  font: inherit; font-weight: 600; padding: 12px 22px; border-radius: 12px; cursor: pointer;
+  font: inherit; font-family: var(--font-display); font-weight: 400; padding: 12px 22px; border-radius: 12px; cursor: pointer;
   background: var(--glass); color: var(--text); border: 1px solid var(--line);
 }
 .btn.primary { background: var(--orange); color: #1a1a2e; border-color: transparent; }
@@ -37,11 +43,13 @@ body {
 .kelpwoud { position: relative; height: 100%; display: flex; flex-direction: column; overflow: hidden; background: linear-gradient(#8af0e2, #0fa5ad 40%, #06495a); }
 .kelp-top { position: absolute; top: env(safe-area-inset-top, 0px); left: 0; right: 0; z-index: 2; display: flex; justify-content: space-between; align-items: center; padding: 10px 16px; pointer-events: none; flex-wrap: wrap; gap: 6px; }
 .kelp-top h1 { margin: 0; font-size: 22px; color: var(--orange); text-shadow: 0 1px 0 #063a40, 0 2px 8px rgba(6,58,64,.7); }
-.kelp-top h1 small { font-size: 14px; color: #fff8e6; font-weight: 600; margin-left: 6px; text-shadow: 0 1px 4px rgba(6,58,64,.8); }
+.kelp-top h1 small { font-size: 15px; color: #fff8e6; font-weight: 400; margin-left: 6px; text-shadow: 0 1px 4px rgba(6,58,64,.8); }
 .counter { background: rgba(6,58,64,.6); padding: 6px 12px; border-radius: 99px; font-size: 15px; }
 .forest { flex: 1; width: 100%; touch-action: none; cursor: grab; display: block; }
 .forest:active { cursor: grabbing; }
 .kelp-bottom { position: absolute; bottom: calc(14px + env(safe-area-inset-bottom, 0px)); left: 0; right: 0; display: flex; justify-content: center; align-items: center; gap: 12px; z-index: 2; flex-wrap: wrap; padding: 0 16px; }
+.kelp-bottom { pointer-events: none; } /* the bar spans the width: let the forest under it still pan and zoom */
+.kelp-bottom > * { pointer-events: auto; }
 .lights { background: rgba(6,58,64,.6); padding: 8px 12px; border-radius: 12px; font-size: 15px; }
 
 /* ---------- the painted kelp forest ----------
@@ -60,12 +68,54 @@ body {
 .rise { animation: bubbleRise linear infinite; }
 .bub { fill: rgba(201,251,233,.12); stroke: var(--mint); stroke-width: 1.2; stroke-opacity: .8; }
 .bub-hl { fill: var(--cream); opacity: .9; }
+/* sea life: softer ink and a little haze than the kelp, so it reads as being farther back */
 .swim { animation: swim linear infinite; }
-.fish { animation: bob 3.2s ease-in-out infinite alternate; }
-.fish-body { fill: #f28a22; stroke: var(--ink); stroke-width: 1.8; stroke-linejoin: round; }
-.fish-tail, .fish-fin { fill: #e5671a; stroke: var(--ink); stroke-width: 1.6; stroke-linejoin: round; }
-.fish-belly { fill: none; stroke: #ffd9a3; stroke-width: 2; stroke-linecap: round; }
-.fish-eye { fill: var(--ink); stroke: var(--cream); stroke-width: .8; }
+.fish2 { animation: bob 3.4s ease-in-out infinite alternate; opacity: .85; }
+.swim.far .fish2 { opacity: .55; }
+.fish2-body { fill: #f0862c; stroke: #0b3d44; stroke-width: 1; stroke-opacity: .55; }
+.swim.far .fish2-body { fill: #d99a6a; }
+.fish2-tail { fill: #e06a24; stroke: #0b3d44; stroke-width: .9; stroke-opacity: .5; transform-box: fill-box; transform-origin: 100% 50%; animation: tailBeat .55s ease-in-out infinite alternate; }
+.fish2-fin { fill: none; stroke: #ffd7a8; stroke-width: 1.1; stroke-linecap: round; opacity: .8; }
+.fish2-eye { fill: #0b3d44; } .fish2-glint { fill: #fff3d6; }
+.crab-walk { animation: crabWalk linear infinite; }
+.crab-shadow { fill: #3d5a4c; opacity: .25; }
+.crab-ink { fill: none; stroke: #0b3d44; stroke-width: 4; stroke-linecap: round; stroke-linejoin: round; }
+.crab-leg { fill: none; stroke: #c9532a; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+.crab-legs-l, .crab-legs-r { transform-box: fill-box; animation-timing-function: linear; animation-iteration-count: infinite; }
+.crab-legs-l { transform-origin: 100% 30%; animation-name: crabLegsL; }
+.crab-legs-r { transform-origin: 0% 30%; animation-name: crabLegsR; }
+.crab-pincer { fill: #d9602e; stroke: #0b3d44; stroke-width: 1.4; stroke-linejoin: round; }
+.crab-claw { transform-box: fill-box; animation: claw 2.8s ease-in-out infinite alternate; }
+.crab-claw.l { transform-origin: 100% 100%; } .crab-claw.r { transform-origin: 0% 100%; animation-delay: -1.4s; }
+.crab-stalk { stroke: #0b3d44; stroke-width: 1.6; stroke-linecap: round; }
+.crab-eye { fill: #0b3d44; stroke: #fff3d6; stroke-width: .5; }
+.crab-shell { fill: #d4572b; stroke: #0b3d44; stroke-width: 1.8; stroke-linejoin: round; }
+.crab-shine { fill: none; stroke: #ffc79b; stroke-width: 1.6; stroke-linecap: round; opacity: .8; }
+.crab-speck { fill: #fff0d8; opacity: .75; }
+.cross { animation: swim linear 1 forwards; }
+.visitor-shark { opacity: .9; }
+.visitor-dolphin { opacity: .92; }
+.eel-body { fill: #b8a83e; stroke: #0b3d44; stroke-width: 1.8; stroke-linejoin: round; }
+.eel-fin { fill: #d9cf7a; stroke: #0b3d44; stroke-width: 1; stroke-opacity: .6; opacity: .85; }
+.eel-belly { fill: none; stroke: #f3ead0; stroke-width: 1.6; stroke-linecap: round; opacity: .55; }
+.eel-jaw { fill: none; stroke: #0b3d44; stroke-width: 1.4; stroke-linecap: round; }
+.eel-eye { fill: #f3d64e; stroke: #0b3d44; stroke-width: 1.2; }
+.porpoise { animation: porpoise 3.6s ease-in-out infinite; }
+.dolphin-body { fill: url(#dolphinG); stroke: #0b3d44; stroke-width: 1.8; stroke-linejoin: round; }
+.dolphin-part { fill: #4b829f; stroke: #0b3d44; stroke-width: 1.6; stroke-linejoin: round; }
+.dolphin-belly { fill: #e7f4f0; opacity: .9; }
+.dolphin-line { fill: none; stroke: #0b3d44; stroke-width: 1.2; stroke-linecap: round; }
+.dolphin-eye { fill: #0b3d44; }
+.dolphin-flukes { transform-box: fill-box; transform-origin: 100% 50%; animation: tailBeat 1.2s ease-in-out infinite alternate; }
+.shark-body { fill: #3e6680; stroke: #0b3d44; stroke-width: 2.2; stroke-linejoin: round; }
+.shark-part { fill: #36596f; stroke: #0b3d44; stroke-width: 2; stroke-linejoin: round; }
+.shark-ridge { fill: none; stroke: #eef6ea; stroke-width: 1; opacity: .25; }
+.shark-belly { fill: #dfeee8; opacity: .9; }
+.shark-gill { fill: none; stroke: #0b3d44; stroke-width: 1.3; opacity: .7; }
+.shark-mouth { fill: none; stroke: #0b3d44; stroke-width: 1.8; stroke-linecap: round; }
+.shark-eye { fill: #0b3d44; stroke: #eef6ea; stroke-width: .6; }
+.whaleshark { animation: bob 6s ease-in-out infinite alternate; }
+.shark-tail { transform-box: fill-box; transform-origin: 100% 50%; animation: sharkTail 4.2s ease-in-out infinite alternate; }
 .wash { mix-blend-mode: soft-light; opacity: .7; }
 
 /* colours per state: asleep = translucent blue-green wash, alive = saturated emerald, gold */
@@ -109,7 +159,7 @@ body {
 .s-gold .bulb { animation: shimmer 3s ease-in-out infinite; }
 .bulb-g.sel .bulb { stroke: #fff; stroke-width: 3; }
 .bulb-g.changed .bulb { animation: fadeFill .6s ease-out 2s both, pulseBulb 1.2s ease-in-out 2.2s 3; transform-box: fill-box; transform-origin: center; }
-.kelp-label { fill: #fffaf0; paint-order: stroke; stroke: rgba(6,48,54,.85); stroke-linejoin: round; opacity: 0; pointer-events: none; transition: opacity .2s; }
+.kelp-label { font-family: var(--font-body); font-weight: 700; fill: #fffaf0; paint-order: stroke; stroke: rgba(6,48,54,.85); stroke-linejoin: round; opacity: 0; pointer-events: none; transition: opacity .2s; }
 .lbl-on .kelp-label, .bulb-g:hover .kelp-label, .bulb-g.sel .kelp-label { opacity: 1; }
 .bulb-g:hover, .bulb-g.sel { isolation: isolate; }
 .bubble { fill: rgba(255,255,255,.6); animation: rise 2.4s ease-out both; }
@@ -117,7 +167,7 @@ body {
 .sea-chart.route-card { position: absolute; z-index: 3; top: 64px; right: 16px; width: 400px; max-width: none; max-height: calc(100% - 80px); overflow-y: auto; text-align: left; animation: fadeUp .4s ease-out both; }
 .route-card .route-head { display: flex; gap: 12px; align-items: center; }
 .route-card .intro-line { margin: 0; font-size: 20px; }
-.route-card h3 { margin: 12px 0 4px; font-size: 13px; text-transform: uppercase; letter-spacing: .06em; opacity: .7; }
+.route-card h3 { margin: 12px 0 4px; font-size: 15px; opacity: .75; }
 .route-card .stages { margin: 0; padding-left: 22px; }
 .route-card .stages li { margin: 2px 0; }
 .route-card .route-moves { margin: 0; line-height: 1.6; }
@@ -156,14 +206,14 @@ body {
 .big { font-size: 22px; }
 .flavour { font-style: italic; }
 .end-card { width: min(560px, 100%); }
-.score-big { font-size: 56px; font-weight: 800; color: var(--orange); text-align: center; animation: scorePopIn .5s ease; }
+.score-big { font-size: 56px; color: var(--orange); text-align: center; animation: scorePopIn .5s ease; }
 .score-big small { font-size: 22px; color: var(--muted); }
 .end-say { text-align: center; font-size: 20px; }
 .end-captain .end-say { text-align: left; margin: 0; }
-.end-card h3 { margin: 16px 0 6px; font-size: 16px; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
+.end-card h3 { margin: 16px 0 6px; font-size: 17px; color: var(--muted); }
 .moments { padding-left: 20px; margin: 0; }
 .btn-row { display: flex; gap: 10px; justify-content: center; margin-top: 18px; flex-wrap: wrap; }
-.steam-graph .tick, .stoomdruk .tick { fill: var(--muted); font-size: 10px; text-anchor: middle; }
+.steam-graph .tick, .stoomdruk .tick { fill: var(--muted); font-family: var(--font-body); font-weight: 600; font-size: 11px; text-anchor: middle; }
 
 /* ---------- Game ---------- */
 .game { display: flex; gap: 20px; padding: 16px; max-width: 1100px; margin: 0 auto; align-items: flex-start; }
@@ -177,7 +227,7 @@ body {
 .z-cold { stroke: #3b6fb6; } .z-amber { stroke: #e0901a; } .z-green { stroke: #2ecc71; } .z-gold { stroke: var(--gold); }
 .needle { transition: transform 600ms cubic-bezier(.3,1.4,.5,1); }
 .gauge-mark { transition: all 600ms ease; }
-.gauge-label { text-align: center; font-weight: 700; }
+.gauge-label { text-align: center; }
 .zone-gold { color: var(--gold); } .zone-green { color: var(--green); } .zone-amber { color: var(--orange); } .zone-cold { color: #6fa3e8; }
 .captain { display: flex; gap: 10px; align-items: flex-start; }
 .captain-face { flex: none; border-radius: 50%; background: #0f3460; border: 2px solid var(--orange); object-fit: cover; box-shadow: 0 2px 10px rgba(0,0,0,.35); }
@@ -185,7 +235,7 @@ body {
 .end-captain { display: flex; gap: 14px; align-items: center; justify-content: center; text-align: left; }
 .bubble-speech { background: #f5ecd7; color: #2a1d0e; border-radius: 12px; padding: 10px 12px; flex: 1; min-height: 44px; font-size: 17px; }
 .dots { color: #7a6a50; font-size: 14px; animation: pulse 1.2s infinite; }
-.stat-row { display: flex; justify-content: space-between; font-weight: 700; }
+.stat-row { display: flex; justify-content: space-between; }
 .movelist { max-height: 210px; overflow-y: auto; background: rgba(0,0,0,.2); border-radius: 12px; padding: 8px; font-size: 15px; }
 .mrow { display: grid; grid-template-columns: 2.2em 1fr 1fr; gap: 4px; padding: 2px 0; }
 .mn { color: var(--muted); }
@@ -219,6 +269,20 @@ body {
 @keyframes drift { from { transform: translate(0, 0); } to { transform: translate(14px, -22px); } }
 @keyframes bubbleRise { 0% { transform: translateY(0); opacity: 0; } 8% { opacity: 1; } 85% { opacity: .9; } 100% { transform: translateY(-900px); opacity: 0; } }
 @keyframes swim { from { transform: translateX(var(--from)); } to { transform: translateX(var(--to)); } }
+@keyframes tailBeat { from { transform: rotate(-14deg); } to { transform: rotate(14deg); } }
+@keyframes sharkTail { from { transform: rotate(-7deg); } to { transform: rotate(7deg); } }
+@keyframes claw { from { transform: rotate(0deg); } to { transform: rotate(-8deg); } }
+@keyframes porpoise { 0% { transform: translateY(14px) rotate(-9deg); } 50% { transform: translateY(-14px) rotate(9deg); } 100% { transform: translateY(14px) rotate(-9deg); } }
+@keyframes crabWalk {
+  0% { opacity: 0; transform: translate(var(--x0), 10px); }
+  4% { opacity: 1; transform: translate(var(--x0), 0); }
+  30% { transform: translate(var(--x1), 0); }
+  42% { transform: translate(var(--x1), 0); }
+  70% { transform: translate(var(--x2), 0); }
+  76% { opacity: 1; transform: translate(var(--x2), 0); }
+  82% { opacity: 0; transform: translate(var(--x2), 10px); }
+  100% { opacity: 0; transform: translate(var(--x2), 10px); }
+}
 @keyframes bob { from { transform: translateY(-4px); } to { transform: translateY(4px); } }
 @keyframes rise { from { transform: translateY(0); opacity: .9; } to { transform: translateY(-120px); opacity: 0; } }
 @keyframes slideUp { from { opacity: 0; transform: translate(-50%, 20px); } to { opacity: 1; transform: translate(-50%, 0); } }
@@ -247,4 +311,14 @@ body {
   .panel .movelist { order: 4; }
   .panel > .btn, .panel .warn { order: 5; }
   .stoomdruk svg { max-width: 220px; }
+}
+
+/* Rye runs wide: tighten the Kelpwoud header and footer on narrow phones */
+@media (max-width: 480px) {
+  .kelp-top h1 { font-size: 19px; white-space: nowrap; }
+  .kelp-top h1 small { font-size: 12.5px; margin-left: 4px; }
+  .kelp-bottom { gap: 8px; flex-wrap: nowrap; padding: 0 10px; }
+  .kelp-bottom .btn.primary { padding: 10px 16px; font-size: 17px; }
+  .kelp-bottom .btn.ghost { padding: 8px 10px; }
+  .lights { padding: 8px 10px; font-size: 14px; white-space: nowrap; }
 }

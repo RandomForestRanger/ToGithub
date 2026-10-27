@@ -7,8 +7,9 @@ import { lineRec, type Store } from '../game/storage';
 import vixenImg from '../assets/vixen.webp';
 
 const VIXEN_W = 180, VIXEN_H = Math.round(VIXEN_W * 418 / 440); // image is 440x418
-import { ALIVE_HUES, GOLD_HUES, bubbles, bulb, bulbDims, distantKelp, fishes, fronds, holdfast, hueIndex, particles, seabed, stipe, type BulbDims } from './kelpShapes';
+import { ALIVE_HUES, GOLD_HUES, bubbles, bulb, bulbDims, distantKelp, fronds, holdfast, hueIndex, particles, seabed, stipe, type BulbDims } from './kelpShapes';
 import washImg from '../assets/wash.webp';
+import { Crabs, SmallFish, Visitors, useVisitors } from './Creatures';
 
 const PLY_PX = 26, MIN_STIPE = 40, DX = 52, FONT = 13;
 
@@ -97,7 +98,6 @@ export function Kelpwoud({ store, changed, onBegin, onToggleLights, route, overl
     distant: distantKelp(box, ground),
     specks: particles(box),
     bubbles: bubbles(box, ground),
-    fish: fishes(box, ground),
     shapes: new Map(nodes.map(n => {
       const b = bulb(n.x, n.y, n.dims);
       return [n.id, {
@@ -108,6 +108,7 @@ export function Kelpwoud({ store, changed, onBegin, onToggleLights, route, overl
     })),
   }), [nodes, box, ground]);
   const [vb, setVb] = useState<[number, number, number, number]>(box);
+  const visitors = useVisitors(box, ground);
   const onRoute = useMemo(() => new Set(route ? routeOf(route) : []), [route]);
   const vbRef = useRef(vb);
   vbRef.current = vb;
@@ -322,6 +323,8 @@ export function Kelpwoud({ store, changed, onBegin, onToggleLights, route, overl
             style={p.drift ? { animationDelay: `${p.delay}s` } : undefined} />
         ))}
 
+        <Visitors box={box} {...visitors} kinds={['shark', 'dolphin']} />
+
         {/* the surface seen from below, with the Vixen on it */}
         <path d={`M ${box[0] - 2000} ${box[1] - 400} L ${box[0] + box[2] + 2000} ${box[1] - 400} L ${box[0] + box[2] + 2000} ${box[1] + 46} ${Array.from({ length: 40 }, (_, i) => `Q ${box[0] + box[2] + 2000 - (i + 0.5) * (box[2] + 4000) / 40} ${box[1] + (i % 2 ? 54 : 38)} ${box[0] + box[2] + 2000 - (i + 1) * (box[2] + 4000) / 40} ${box[1] + 46}`).join(' ')} Z`} fill="url(#surface)" opacity=".8" />
         <path d={`M ${box[0] - 2000} ${box[1] + 46} ${Array.from({ length: 40 }, (_, i) => `Q ${box[0] - 2000 + (i + 0.5) * (box[2] + 4000) / 40} ${box[1] + (i % 2 ? 38 : 54)} ${box[0] - 2000 + (i + 1) * (box[2] + 4000) / 40} ${box[1] + 46}`).join(' ')}`} className="surface-line" />
@@ -333,6 +336,9 @@ export function Kelpwoud({ store, changed, onBegin, onToggleLights, route, overl
         <path d={scene.bed.d} fill="url(#sand)" className="sand" />
         {scene.bed.ripples.map((d, i) => <path key={i} d={d} className="ripple" />)}
         {scene.bed.pebbles.map(({ tone, ...p }, i) => <ellipse key={i} {...p} fill={tone < 0.5 ? '#3f6e66' : tone < 0.8 ? '#a08a5c' : '#fff1cf'} opacity=".75" />)}
+        <Crabs box={box} ground={ground} />
+        <Visitors box={box} {...visitors} kinds={['eel']} />
+        <SmallFish box={box} ground={ground} />
         {scene.bubbles.map((b, i) => (
           <g key={i} className="rise" style={{ animationDuration: `${b.dur}s`, animationDelay: `${b.delay}s` }}>
             <circle cx={b.x} cy={b.y} r={b.r} className="bub" />
@@ -353,20 +359,6 @@ export function Kelpwoud({ store, changed, onBegin, onToggleLights, route, overl
             </g>
           );
         })}
-
-        {scene.fish.map((f, i) => (
-          <g key={i} className="swim" style={{ ['--from' as any]: `${f.from}px`, ['--to' as any]: `${f.to}px`, animationDuration: `${f.dur}s`, animationDelay: `${f.delay}s` }}>
-            <g transform={`translate(0 ${f.y}) scale(${f.size})`}>
-              <g className="fish">
-                <path d="M-16 0 L-27 -8 L-25 0 L-27 8 Z" className="fish-tail" />
-                <path d="M-17 0 C-12 -10 6 -11 15 -2 C17 0 17 1 15 2 C6 11 -12 10 -17 0 Z" className="fish-body" />
-                <path d="M-4 -8 C0 -14 6 -13 8 -8" className="fish-fin" />
-                <path d="M-10 2 C-2 7 8 6 13 1" className="fish-belly" />
-                <circle cx="9" cy="-2" r="2.2" className="fish-eye" />
-              </g>
-            </g>
-          </g>
-        ))}
 
         {/* layer 2: holdfast and stipes */}
         <g className={`holdfast s-${lineRec(store, ROOT_LINE).state} ${route ? 'on-route' : ''}`}>

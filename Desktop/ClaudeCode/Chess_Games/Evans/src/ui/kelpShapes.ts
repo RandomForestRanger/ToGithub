@@ -19,7 +19,7 @@ const poly = (pts: Pt[]) => 'M' + pts.map(p => `${f(p[0])} ${f(p[1])}`).join('L'
 const line = (pts: Pt[]) => 'M' + pts.map(p => `${f(p[0])} ${f(p[1])}`).join('L');
 
 /** Ribbon around a sampled centreline, width w(t) at t in [0,1]. Returns outline and centreline. */
-function ribbon(at: (t: number) => Pt, w: (t: number) => number, n = 22) {
+export function ribbon(at: (t: number) => Pt, w: (t: number) => number, n = 22) {
   const c: Pt[] = [];
   for (let i = 0; i <= n; i++) c.push(at(i / n));
   const L: Pt[] = [], R: Pt[] = [];
@@ -225,17 +225,6 @@ export function bubbles(box: [number, number, number, number], ground: number, c
     }
   }
   return out;
-}
-
-/** A few small fish swimming with the current (left to right), at different depths and speeds. */
-export function fishes(box: [number, number, number, number], ground: number) {
-  const rand = rng('fish');
-  return [0.28, 0.52, 0.74].map((fy, i) => ({
-    y: box[1] + (ground - box[1]) * fy + (rand() - 0.5) * 60,
-    from: box[0] - 260, to: box[0] + box[2] + 260,
-    size: i === 1 ? 1.25 : 0.85 + rand() * 0.2,
-    dur: 48 + rand() * 30, delay: -rand() * 60,
-  }));
 }
 
 /** Per-line hue for living fronds: from blue-green to lime (deterministic). */
