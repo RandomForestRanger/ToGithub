@@ -1,52 +1,56 @@
-import { COLD_EVAL, GAUGE_MAX, GAUGE_MIN, GOLD_EVAL } from '../config';
 import { UI } from '../content/kaptein';
 import { zoneOf } from '../game/controller';
+import drukmeter from '../assets/drukmeter.webp';
 
-// A fixed dial: scale, colours and marks never change during a game; only the needle moves.
-// The needle shows the eval (steam minus the pawns invested), so the gold zone is exactly the gold rule.
-const MIN = GAUGE_MIN, MAX = GAUGE_MAX;
-const CX = 110, CY = 105, R = 85;
-const ang = (v: number) => Math.PI * (1 - (Math.max(MIN, Math.min(MAX, v)) - MIN) / (MAX - MIN));
-const pt = (v: number, r = R) => [CX + r * Math.cos(ang(v)), CY - r * Math.sin(ang(v))] as const;
+// The painted drukmeter (art/drukmeter.png, cut out to src/assets/drukmeter.webp) with a live needle on top.
+// Only the needle moves. It shows the eval (steam minus the pawns invested), in pawns.
+// Geometry measured on the asset (750 x 494): dial centre, radius, and the angle of each painted tick
+// (degrees from straight up) for -2, -1, =, 1, 2.
+const W = 750, H = 494, CX = 371.1, CY = 260.1, R = 153.8;
+const TICKS: [number, number][] = [[-2, -50.6], [-1, -24], [0, 1], [1, 25.6], [2, 52.2]];
+const LIMIT = 2.3; // beyond the end ticks the needle stops just past them
 
-function arc(a: number, b: number) {
-  if (b <= a) return '';
-  const [x1, y1] = pt(a); const [x2, y2] = pt(b);
-  return `M ${x1} ${y1} A ${R} ${R} 0 0 1 ${x2} ${y2}`;
+/** Needle angle for an eval, interpolating between the painted ticks (straight line past the ends). */
+export function needleAngle(e: number): number {
+  const v = Math.max(-LIMIT, Math.min(LIMIT, e));
+  for (let i = 0; i < TICKS.length - 1; i++) {
+    const [v0, a0] = TICKS[i], [v1, a1] = TICKS[i + 1];
+    if (v <= v1 || i === TICKS.length - 2) {
+      if (v < v0 && i === 0) return a0 + (v - v0) * (a1 - a0);
+      return a0 + ((v - v0) / (v1 - v0)) * (a1 - a0);
+    }
+  }
+  return 0;
 }
 
-const mark = (v: number, color: string) => {
-  const [x1, y1] = pt(v, R - 16); const [x2, y2] = pt(v, R + 12);
-  return <line x1={x1} y1={y1} x2={x2} y2={y2} stroke={color} strokeWidth={4} strokeLinecap="round" />;
-};
-
-const TICKS = Array.from({ length: MAX - MIN + 1 }, (_, i) => MIN + i);
+/** Rye is wide: long zone names shrink so they stay inside the dial face (whatever wording is in kaptein.ts). */
+const labelSize = (t: string) => `${Math.min(31, (31 * 12) / Math.max(1, t.length))}px`;
 
 export function Stoomdruk({ steam, debt, visible }: { steam: number; debt: number; visible: boolean }) {
   const e = steam - debt;
   const zone = zoneOf(steam, debt);
-  const deg = 90 - (ang(e) * 180) / Math.PI; // rotate from pointing up
+  const deg = visible ? needleAngle(e) : needleAngle(0);
+  const len = R - 10;
+  const label = visible ? UI.zones[zone] : 'Stoomdruk';
   return (
     <div className={`stoomdruk ${visible ? '' : 'dim'}`} aria-label={`Stoomdruk ${e.toFixed(1)}`}>
-      <svg viewBox="0 0 220 130" width="100%">
-        <path d={arc(MIN, COLD_EVAL)} className="z z-cold" />
-        <path d={arc(COLD_EVAL, 0)} className="z z-amber" />
-        <path d={arc(0, GOLD_EVAL)} className="z z-green" />
-        <path d={arc(GOLD_EVAL, MAX)} className="z z-gold" />
-        {TICKS.map(v => {
-          const [x, y] = pt(v, R - 26);
-          return <text key={v} x={x} y={y + 4} className="tick">{v > 0 ? `+${v}` : v}</text>;
-        })}
-        {mark(0, '#e74c3c')}
-        {mark(GOLD_EVAL, '#ffd700')}
+      <svg viewBox={`0 0 ${W} ${H}`} width="100%" role="img">
+        <defs>
+          <radialGradient id="capBrass" cx=".35" cy=".3" r=".8">
+            <stop offset="0" stopColor="#fff1b8" /><stop offset=".45" stopColor="#d9a23a" /><stop offset="1" stopColor="#8a5a14" />
+          </radialGradient>
+        </defs>
+        <image href={drukmeter} width={W} height={H} />
+        <text x={CX} y={CY + 62} className={`dial-zone zone-${zone}`} style={{ fontSize: labelSize(label) }}>{label}</text>
+        {visible && <text x={CX} y={CY + 100} className="dial-value">{`${e >= 0 ? '+' : ''}${e.toFixed(1)}`}</text>}
         <g className="needle" style={{ transform: `rotate(${deg}deg)`, transformOrigin: `${CX}px ${CY}px` }}>
-          <line x1={CX} y1={CY} x2={CX} y2={CY - R + 6} stroke="#e8e8e8" strokeWidth={3} strokeLinecap="round" />
+          <path d={`M${CX - 7} ${CY} L${CX} ${CY - len} L${CX + 7} ${CY} Z`} className="needle-blade" />
+          <path d={`M${CX - 2} ${CY - len * 0.15} L${CX} ${CY - len + 6} L${CX + 2} ${CY - len * 0.15} Z`} className="needle-shine" />
+          <path d={`M${CX - 9} ${CY} L${CX} ${CY + 34} L${CX + 9} ${CY} Z`} className="needle-tail" />
         </g>
-        <circle cx={CX} cy={CY} r={8} fill="#b87333" stroke="#e8e8e8" strokeWidth={2} />
+        <circle cx={CX} cy={CY} r={17} fill="url(#capBrass)" className="needle-cap" />
+        <circle cx={CX - 5} cy={CY - 5} r={4} className="needle-cap-glint" />
       </svg>
-      <div className={`gauge-label zone-${zone}`}>
-        {visible ? UI.zones[zone] : 'Stoomdruk'} <span className="mono">{visible ? `${e >= 0 ? '+' : ''}${e.toFixed(1)}` : ''}</span>
-      </div>
     </div>
   );
 }

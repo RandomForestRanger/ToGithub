@@ -41,7 +41,8 @@ export default function App() {
     });
   }, [ctl]);
 
-  const begin = async () => {
+  /** A new round: choose a target (avoiding recent ones and `skip`) and show its brief over the Kelpwoud. */
+  const begin = async (skip?: string) => {
     setMsg('');
     try {
       await engine.init();
@@ -51,18 +52,19 @@ export default function App() {
     }
     ctl?.dispose();
     const s = loadStore();
-    const target = chooseRoundTarget(Math.random, stateOfFn(s), s.recentTargets);
+    const target = chooseRoundTarget(Math.random, stateOfFn(s), skip ? [...s.recentTargets, skip] : s.recentTargets);
     setCtl(new RoundController(target, stateOfFn(s)));
     setScreen('intro');
   };
 
-  // abandon the round (nothing is saved) and replay the same target from 1.e4
+  // Begin oor: abandon the round (nothing is saved) and start a completely new one, brief and all
   const restart = () => {
     if (!ctl || ctl.result) return;
+    const old = ctl.startTarget;
     ctl.dispose();
     engine.cancelAll();
-    setCtl(new RoundController(ctl.startTarget, stateOfFn(loadStore())));
     setRoundNo(n => n + 1);
+    void begin(old);
   };
 
   const home = () => {
@@ -82,7 +84,7 @@ export default function App() {
   return (
     <div className="app">
       {(screen === 'home' || screen === 'intro') && (
-        <Kelpwoud store={store} changed={screen === 'intro' ? [] : changed} onBegin={begin} onToggleLights={toggleLights}
+        <Kelpwoud store={store} changed={screen === 'intro' ? [] : changed} onBegin={() => void begin()} onToggleLights={toggleLights}
           route={screen === 'intro' ? ctl?.startTarget : undefined}
           overlay={screen === 'intro' && ctl ? <RoundIntro target={ctl.startTarget} onGo={() => setScreen('game')} /> : undefined} />
       )}

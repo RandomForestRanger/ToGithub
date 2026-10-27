@@ -14,7 +14,7 @@ body {
 :root { --font-display: 'Rye', 'Zilla Slab', Georgia, serif; --font-body: 'Zilla Slab', Georgia, serif; }
 /* Rye (tattoo-flash display) for titles, headings, buttons and labels; Zilla Slab (a Clarendon-style
    tattoo serif) for everything you read in sentences. Rye has one weight: never fake-bold it. */
-.kelp-top h1, h2, h3, .btn, .counter, .score-big, .gauge-label, .stat-row, .target-banner b, .chip, .lights {
+.kelp-top h1, h2, h3, .btn, .counter, .score-big, .stat-row, .target-banner b, .chip, .lights {
   font-family: var(--font-display); font-weight: 400; font-synthesis: none; letter-spacing: .02em;
 }
 .mono { font-family: var(--font-body); font-variant-numeric: tabular-nums lining-nums; font-weight: 600; }
@@ -73,9 +73,8 @@ body {
 .fish2 { animation: bob 3.4s ease-in-out infinite alternate; opacity: .85; }
 .swim.far .fish2 { opacity: .55; }
 .fish2-body { fill: #f0862c; stroke: #0b3d44; stroke-width: 1; stroke-opacity: .55; }
-.swim.far .fish2-body { fill: #d99a6a; }
 .fish2-tail { fill: #e06a24; stroke: #0b3d44; stroke-width: .9; stroke-opacity: .5; transform-box: fill-box; transform-origin: 100% 50%; animation: tailBeat .55s ease-in-out infinite alternate; }
-.fish2-fin { fill: none; stroke: #ffd7a8; stroke-width: 1.1; stroke-linecap: round; opacity: .8; }
+.fish2-fin { fill: none; stroke: #fff3d6; stroke-width: 1.1; stroke-linecap: round; opacity: .8; }
 .fish2-eye { fill: #0b3d44; } .fish2-glint { fill: #fff3d6; }
 .crab-walk { animation: crabWalk linear infinite; }
 .crab-shadow { fill: #3d5a4c; opacity: .25; }
@@ -224,14 +223,18 @@ body {
 .panel { flex: 0 1 340px; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
 .target-banner { background: var(--glass); border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; }
 .target-banner .tag { display: block; font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
-.stoomdruk { background: var(--glass); border: 1px solid var(--line); border-radius: 12px; padding: 6px 10px 10px; }
-.stoomdruk.dim { opacity: .45; }
-.z { fill: none; stroke-width: 14; }
-.z-cold { stroke: #3b6fb6; } .z-amber { stroke: #e0901a; } .z-green { stroke: #2ecc71; } .z-gold { stroke: var(--gold); }
-.needle { transition: transform 600ms cubic-bezier(.3,1.4,.5,1); }
-.gauge-mark { transition: all 600ms ease; }
-.gauge-label { text-align: center; }
-.zone-gold { color: var(--gold); } .zone-green { color: var(--green); } .zone-amber { color: var(--orange); } .zone-cold { color: #6fa3e8; }
+/* the painted drukmeter: no box of its own, the picture is the frame */
+.stoomdruk { padding: 2px 0; }
+.stoomdruk.dim { opacity: .55; filter: saturate(.6); }
+.needle { transition: transform 700ms cubic-bezier(.3,1.4,.5,1); }
+.needle-blade { fill: #0b3d44; stroke: #06262b; stroke-width: 2; stroke-linejoin: round; }
+.needle-shine { fill: #e9634a; }
+.needle-tail { fill: #0b3d44; stroke: #06262b; stroke-width: 2; stroke-linejoin: round; }
+.needle-cap { stroke: #3d2a0c; stroke-width: 3; }
+.needle-cap-glint { fill: #fff8dc; opacity: .8; }
+.dial-zone { font-family: var(--font-display); font-size: 31px; text-anchor: middle; }
+.dial-value { font-family: var(--font-body); font-weight: 700; font-size: 30px; text-anchor: middle; fill: #3b2a14; font-variant-numeric: tabular-nums; }
+.dial-zone.zone-gold { fill: #a87400; } .dial-zone.zone-green { fill: #1d7a45; } .dial-zone.zone-amber { fill: #c0571a; } .dial-zone.zone-cold { fill: #1f6a8a; }
 .captain { display: flex; gap: 10px; align-items: flex-start; }
 .captain-face { flex: none; border-radius: 50%; background: #0f3460; border: 2px solid var(--orange); object-fit: cover; box-shadow: 0 2px 10px rgba(0,0,0,.35); }
 .sea-chart .captain-face { display: block; margin: 0 auto 10px; }
@@ -296,7 +299,7 @@ body {
 @media (max-width: 860px) {
   .popup { top: auto; bottom: calc(12px + env(safe-area-inset-bottom, 0px)); }
 }
-.stoomdruk svg { max-width: 280px; display: block; margin: 0 auto; }
+.stoomdruk svg { max-width: 360px; display: block; margin: 0 auto; filter: drop-shadow(0 6px 14px rgba(0,0,0,.45)); }
 @media (max-width: 860px) {
   .panel .target-banner { order: 0; }
   .panel .captain { order: 1; }
@@ -318,4 +321,20 @@ body {
 }
 
 /* over the round's photo: panels a little more solid, with the photo blurred behind them */
-.game .target-banner, .game .stoomdruk, .game .movelist { background: rgba(8, 26, 40, .72); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+.game .target-banner, .game .movelist { background: rgba(8, 26, 40, .72); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+
+/* ---------- tattoo rope: a thin twisted-hemp border (src/assets/rope.svg, nine-slice) ----------
+   on cards, briefs, popups, panels and the Captain's speech; and framing the whole Kelpwoud scene. */
+.card, .sea-chart, .popup, .target-banner, .movelist, .bubble-speech, .toast {
+  border-style: solid; border-width: 8px;
+  border-image: url('./assets/rope.svg') 16 / 8px round;
+  background-clip: padding-box;
+}
+.kelpwoud::after {
+  content: ''; position: absolute; inset: 5px; z-index: 2; pointer-events: none;
+  border: 10px solid; border-image: url('./assets/rope.svg') 16 / 10px round;
+}
+.kelp-top { padding: 18px 22px 10px; }
+.kelp-bottom { bottom: calc(22px + env(safe-area-inset-bottom, 0px)); }
+
+[hidden] { display: none !important; }

@@ -10,18 +10,30 @@ const f1 = (n: number) => n.toFixed(1);
 
 // ---------- small fish ----------
 
-/** Small fish, alone or in twos and threes, at different depths: farther ones are fainter and bluer. */
+// Fish colours: each little family (school) shares one colour. [body, tail/fins shade]
+const FISH_COLOURS: [string, string][] = [
+  ['#f2c230', '#d89c14'], // yellow
+  ['#f0862c', '#d9661c'], // orange
+  ['#3f74d6', '#2a55a8'], // blue
+  ['#86c9ef', '#5aa6d4'], // light blue
+  ['#1fa89c', '#13807a'], // teal
+  ['#a3b0b6', '#7d8b92'], // grey
+];
+
+/** Small fish in little families at different depths: farther ones are fainter. Like swims with like. */
 export function SmallFish({ box, ground }: { box: Box; ground: number }) {
   const schools = useMemo(() => {
     const rand = rng('fish2');
-    return [0.22, 0.4, 0.58, 0.76].map((fy, i) => {
+    return [0.18, 0.31, 0.44, 0.57, 0.68, 0.8].map((fy, i) => {
       const far = i % 2 === 0;
+      const [body, shade] = FISH_COLOURS[i % FISH_COLOURS.length];
       return {
         y: box[1] + (ground - box[1]) * fy + (rand() - 0.5) * 50,
         from: box[0] - 160, to: box[0] + box[2] + 160,
         size: far ? 0.55 : 0.75, far,
         dur: (far ? 80 : 60) + rand() * 25, delay: -rand() * 80,
-        mates: i === 1 ? [[0, 0], [-22, 9], [-34, -6]] : i === 2 ? [[0, 0], [-20, -8]] : [[0, 0]],
+        mates: [[[0, 0], [-22, 9], [-34, -6]], [[0, 0], [-20, -8]], [[0, 0]]][i % 3],
+        body, shade,
       };
     });
   }, [box, ground]);
@@ -33,8 +45,8 @@ export function SmallFish({ box, ground }: { box: Box; ground: number }) {
           {s.mates.map(([dx, dy], k) => (
             <g key={k} transform={`translate(${dx} ${s.y + dy}) scale(${s.size})`}>
               <g className="fish2" style={{ animationDelay: `${-k * 0.7}s` }}>
-                <path d="M-11 0 L-19 -6 C-17 -2 -17 2 -19 6 Z" className="fish2-tail" style={{ animationDelay: `${-k * 0.23}s` }} />
-                <path d="M-12 0 C-8 -7 4 -8 11 -2 C12.5 -1 12.5 1 11 2 C4 8 -8 7 -12 0 Z" className="fish2-body" />
+                <path d="M-11 0 L-19 -6 C-17 -2 -17 2 -19 6 Z" className="fish2-tail" style={{ fill: s.shade, animationDelay: `${-k * 0.23}s` }} />
+                <path d="M-12 0 C-8 -7 4 -8 11 -2 C12.5 -1 12.5 1 11 2 C4 8 -8 7 -12 0 Z" className="fish2-body" style={{ fill: s.body }} />
                 <path d="M-3 -6.2 C0 -10 4 -9.5 6 -6.4" className="fish2-fin" />
                 <path d="M2 2.5 C0 5 -2 6 -4.5 6" className="fish2-fin" />
                 <circle cx="7.4" cy="-1.3" r="1.3" className="fish2-eye" />

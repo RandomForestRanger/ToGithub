@@ -93,6 +93,6 @@ export const UI = {
   momentBest: (m: string) => `Beste skuif in oop see: ${m}`,
   lights: 'Skeepsligte',
   restart: 'Begin oor',
-  restartConfirm: 'Seker? Tik weer',
+  restartConfirm: 'Seker? Kliek weer',
   zones: { gold: 'Volstoom', green: 'Goeie druk', amber: 'Die stoom lek effens', cold: 'Die stoomketel is koud' },
 };

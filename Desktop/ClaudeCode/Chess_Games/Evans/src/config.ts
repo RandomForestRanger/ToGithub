@@ -9,7 +9,6 @@ export const ANALYSIS_MIN_DEPTH = 10;
 export const FINAL_EVAL_DEPTH = 16;
 export const GOLD_EVAL = 1.0; // pawns
 export const COLD_EVAL = -1.0; // pawns: below this the gauge is 'cold' (blue)
-export const GAUGE_MIN = -3, GAUGE_MAX = 3; // fixed dial range, pawns of eval
 export const POINT_BANDS_CP = [25, 60, 120] as const;
 export const CLASS_ODDS = { grey: 0.7, green: 0.25, gold: 0.05 } as const;
 export const FAMOUS_WEIGHT = 3;

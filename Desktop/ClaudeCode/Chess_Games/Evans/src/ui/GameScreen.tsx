@@ -127,7 +127,7 @@ export function GameScreen({ ctl, lights, onEnd, onRestart }: {
           <span>{UI.move(moveNo)}</span>
           <span>{UI.points(ctl.score)}</span>
         </div>
-        <div className="movelist mono">
+        <div className="movelist mono" hidden={!pairs.length}>
           {pairs.map(p => (
             <div key={p.n} className="mrow">
               <span className="mn">{p.n}.</span>
