@@ -34,48 +34,82 @@ body {
 .warn { color: var(--red); font-size: 15px; }
 
 /* ---------- Kelpwoud ---------- */
-.kelpwoud { position: relative; height: 100%; display: flex; flex-direction: column; overflow: hidden; background: linear-gradient(#3a7ca5, #16486b 60%, #0b2236); }
+.kelpwoud { position: relative; height: 100%; display: flex; flex-direction: column; overflow: hidden; background: linear-gradient(#8af0e2, #0fa5ad 40%, #06495a); }
 .kelp-top { position: absolute; top: env(safe-area-inset-top, 0px); left: 0; right: 0; z-index: 2; display: flex; justify-content: space-between; align-items: center; padding: 10px 16px; pointer-events: none; flex-wrap: wrap; gap: 6px; }
-.kelp-top h1 { margin: 0; font-size: 22px; color: var(--orange); text-shadow: 0 2px 6px rgba(0,0,0,.6); }
-.kelp-top h1 small { font-size: 14px; color: var(--text); font-weight: 400; margin-left: 6px; }
-.counter { background: rgba(0,0,0,.45); padding: 6px 12px; border-radius: 99px; font-size: 15px; }
+.kelp-top h1 { margin: 0; font-size: 22px; color: var(--orange); text-shadow: 0 1px 0 #063a40, 0 2px 8px rgba(6,58,64,.7); }
+.kelp-top h1 small { font-size: 14px; color: #fff8e6; font-weight: 600; margin-left: 6px; text-shadow: 0 1px 4px rgba(6,58,64,.8); }
+.counter { background: rgba(6,58,64,.6); padding: 6px 12px; border-radius: 99px; font-size: 15px; }
 .forest { flex: 1; width: 100%; touch-action: none; cursor: grab; display: block; }
 .forest:active { cursor: grabbing; }
-.shaft { fill: rgba(255,255,255,.05); }
-.navlight { filter: drop-shadow(0 0 6px currentColor); }
 .kelp-bottom { position: absolute; bottom: calc(14px + env(safe-area-inset-bottom, 0px)); left: 0; right: 0; display: flex; justify-content: center; align-items: center; gap: 12px; z-index: 2; flex-wrap: wrap; padding: 0 16px; }
-.lights { background: rgba(0,0,0,.45); padding: 8px 12px; border-radius: 12px; font-size: 15px; }
+.lights { background: rgba(6,58,64,.6); padding: 8px 12px; border-radius: 12px; font-size: 15px; }
 
-/* sea bamboo: colours per state */
-.s-grey  { --k-stipe: #5f6d68; --k-blade: #74837c; --k-bulb: #84918a; --k-rib: #4c5854; }
-.s-green { --k-stipe: #3d6b2a; --k-blade: #5a9636; --k-bulb: #79b84a; --k-rib: #2c5220; }
-.s-gold  { --k-stipe: #9c7712; --k-blade: #cfa224; --k-bulb: #ffd23f; --k-rib: #85620c; }
-.kelp.s-grey, .fronds.s-grey, .bulb-g.s-grey .bulb { opacity: .55; }
+/* ---------- the painted kelp forest ----------
+   background soft and low-contrast; kelp vivid and crisp; ink only on living (green/gold) kelp. */
+.kelpwoud svg { --ink: #0b3d44; --cream: #fff3d6; --mint: #c9fbe9; }
+.ray { animation: breathe 11s ease-in-out infinite alternate; }
+.distant { fill: #6fe0d5; }
+.distant.d0 { opacity: .12; }
+.distant.d1 { opacity: .2; }
+.speck { fill: var(--mint); }
+.speck.cream { fill: var(--cream); }
+.speck.drift { animation: drift 18s ease-in-out infinite alternate; }
+.surface-line { fill: none; stroke: #fffbea; stroke-width: 3; stroke-opacity: .8; stroke-linecap: round; }
+.sand { stroke: var(--ink); stroke-width: 2.5; stroke-opacity: .55; vector-effect: non-scaling-stroke; }
+.ripple { fill: none; stroke: var(--cream); stroke-opacity: .7; stroke-width: 2; }
+.rise { animation: bubbleRise linear infinite; }
+.bub { fill: rgba(201,251,233,.12); stroke: var(--mint); stroke-width: 1.2; stroke-opacity: .8; }
+.bub-hl { fill: var(--cream); opacity: .9; }
+.swim { animation: swim linear infinite; }
+.fish { animation: bob 3.2s ease-in-out infinite alternate; }
+.fish-body { fill: #f28a22; stroke: var(--ink); stroke-width: 1.8; stroke-linejoin: round; }
+.fish-tail, .fish-fin { fill: #e5671a; stroke: var(--ink); stroke-width: 1.6; stroke-linejoin: round; }
+.fish-belly { fill: none; stroke: #ffd9a3; stroke-width: 2; stroke-linecap: round; }
+.fish-eye { fill: var(--ink); stroke: var(--cream); stroke-width: .8; }
+.wash { mix-blend-mode: soft-light; opacity: .7; }
+
+/* colours per state: asleep = translucent blue-green wash, alive = saturated emerald, gold */
+.s-grey  { --k-stipe: #7fd6c8; --k-blade: #8fe0cf; --k-bulb: #a6eadb; --k-rib: #e8fff7; }
+.s-green { --k-stipe: #17975f; --k-blade: #22ad6b; --k-bulb: #46c97c; --k-rib: var(--cream); }
+.s-gold  { --k-stipe: #d99a14; --k-blade: #f2b42a; --k-bulb: #ffd34d; --k-rib: var(--cream); }
+.kelp.s-grey, .fronds.s-grey { opacity: .5; }
+.bulb-g.s-grey .bulb, .bulb-g.s-grey .crown { opacity: .6; }
 .stipe { fill: var(--k-stipe); }
-.stipe-hl { fill: none; stroke: #fff; stroke-opacity: .16; stroke-linecap: round; }
+.stipe-hl { fill: none; stroke: var(--cream); stroke-opacity: .75; stroke-linecap: round; }
+.s-grey .stipe-hl { stroke-opacity: .35; }
 .fill-in { fill: none; stroke: var(--k-stipe); stroke-dasharray: 1; stroke-dashoffset: 0; animation: fillUp 1.6s ease-in-out .7s both; }
 .fronds { transform-box: view-box; animation: swayFrond 7s ease-in-out infinite alternate; }
-.blade { fill: var(--k-blade); opacity: .85; }
-.rib { fill: none; stroke: var(--k-rib); stroke-width: 1.2; opacity: .6; }
+.blade { fill: var(--k-blade); }
+.s-grey .blade { opacity: .8; }
+/* little flecks of light along each blade */
+.rib { fill: none; stroke: var(--k-rib); stroke-width: 1.6; stroke-linecap: round; stroke-dasharray: 1.5 7; opacity: .8; }
+.s-grey .rib { opacity: .45; }
+/* ink: thick dark-teal edges on living kelp only, the same thickness at any zoom */
+.s-green .stipe, .s-gold .stipe, .s-green .blade, .s-gold .blade { stroke: var(--ink); stroke-width: 2; stroke-linejoin: round; vector-effect: non-scaling-stroke; }
 .fronds.changed { animation: fadeFill .9s ease-out 2s both, swayFrond 7s ease-in-out 2.9s infinite alternate; }
 .holdfast path { fill: none; stroke: var(--k-stipe); stroke-width: 4.5; stroke-linecap: round; }
+.holdfast:not(.s-grey) .root-ink { stroke: var(--ink); stroke-width: 7.5; }
+.holdfast.s-grey { opacity: .6; }
+.holdfast.s-grey .root-ink { display: none; }
 .holdfast ellipse { fill: var(--k-stipe); }
-.ripple { fill: none; stroke: #e6d4ab; stroke-opacity: .35; stroke-width: 2; }
+.holdfast:not(.s-grey) ellipse { stroke: var(--ink); stroke-width: 2; vector-effect: non-scaling-stroke; }
 /* reef lines: rust outline and barnacles, whatever their state */
-.reef .stipe { stroke: #b5532c; stroke-width: 1.5; }
-.barnacle circle { fill: #e9dfc8; stroke: #7d6247; stroke-width: .8; }
+.reef .stipe { stroke: #b5532c; stroke-width: 2; vector-effect: non-scaling-stroke; }
+.barnacle circle { fill: #fff3d6; stroke: #7d6247; stroke-width: .8; }
 .barnacle .barnacle-hole { fill: #3b2e22; stroke: none; }
 .reef .bulb { stroke: #b5532c !important; stroke-width: 2.5 !important; stroke-dasharray: 3 2; }
 .bulb-g { cursor: pointer; }
 .hit { fill: transparent; }
-.bulb { fill: var(--k-bulb); stroke: rgba(0,0,0,.45); stroke-width: 1.2; }
-.crown { fill: var(--k-rib); stroke: rgba(0,0,0,.35); stroke-width: .8; pointer-events: none; }
-.bulb-g.s-grey .crown { opacity: .55; }
-.shine { fill: #fff; opacity: .45; pointer-events: none; }
+.bulb { fill: var(--k-bulb); stroke: rgba(11,61,68,.35); stroke-width: 1.2; vector-effect: non-scaling-stroke; }
+.s-green .bulb, .s-gold .bulb { stroke: var(--ink); stroke-width: 2.2; }
+.crown { fill: var(--k-stipe); stroke: rgba(11,61,68,.4); stroke-width: 1; vector-effect: non-scaling-stroke; pointer-events: none; }
+.s-green .crown, .s-gold .crown { stroke: var(--ink); stroke-width: 1.8; }
+.shine { fill: var(--cream); opacity: .85; pointer-events: none; }
+.s-grey .shine { opacity: .45; }
 .s-gold .bulb { animation: shimmer 3s ease-in-out infinite; }
 .bulb-g.sel .bulb { stroke: #fff; stroke-width: 3; }
 .bulb-g.changed .bulb { animation: fadeFill .6s ease-out 2s both, pulseBulb 1.2s ease-in-out 2.2s 3; transform-box: fill-box; transform-origin: center; }
-.kelp-label { fill: #fff; paint-order: stroke; stroke: rgba(0,0,0,.75); stroke-linejoin: round; opacity: 0; pointer-events: none; transition: opacity .2s; }
+.kelp-label { fill: #fffaf0; paint-order: stroke; stroke: rgba(6,48,54,.85); stroke-linejoin: round; opacity: 0; pointer-events: none; transition: opacity .2s; }
 .lbl-on .kelp-label, .bulb-g:hover .kelp-label, .bulb-g.sel .kelp-label { opacity: 1; }
 .bulb-g:hover, .bulb-g.sel { isolation: isolate; }
 .bubble { fill: rgba(255,255,255,.6); animation: rise 2.4s ease-out both; }
@@ -94,10 +128,11 @@ body {
 }
 /* round intro: the route to the target glows, the rest of the forest steps back */
 .forest.routing .kelp:not(.on-route), .forest.routing .fronds:not(.on-route), .forest.routing .bulb-g:not(.on-route) { opacity: .28; transition: opacity .6s; }
-.forest.routing .kelp.on-route .stipe { filter: drop-shadow(0 0 6px #ffd27a) drop-shadow(0 0 2px #ffd27a); }
-.forest.routing .bulb-g.on-route .bulb { filter: drop-shadow(0 0 8px #ffd27a); }
+.forest.routing .kelp.on-route, .forest.routing .fronds.on-route, .forest.routing .holdfast.on-route { opacity: 1; }
+.forest.routing .kelp.on-route .stipe { stroke: var(--ink); stroke-width: 2; vector-effect: non-scaling-stroke; filter: drop-shadow(0 0 7px #fff3c4) drop-shadow(0 0 3px #fff3c4); }
+.forest.routing .bulb-g.on-route .bulb { opacity: 1; stroke: var(--ink); stroke-width: 2; filter: drop-shadow(0 0 9px #fff3c4); }
 .forest.routing .bulb-g.route-end .bulb { animation: pulse 1.4s ease-in-out infinite; }
-.forest.routing .holdfast.on-route { filter: drop-shadow(0 0 6px #ffd27a); }
+.forest.routing .holdfast.on-route { filter: drop-shadow(0 0 6px #fff3c4); }
 .line-card { position: absolute; left: 50%; bottom: 90px; transform: translateX(-50%); width: min(420px, calc(100% - 32px)); z-index: 3; }
 .line-card h2 { margin: 0 0 4px; color: var(--orange); font-size: 22px; }
 .line-card .x { position: absolute; top: 8px; right: 10px; background: none; border: 0; color: var(--text); font-size: 26px; cursor: pointer; }
@@ -180,6 +215,11 @@ body {
 @keyframes fadeFill { from { filter: grayscale(1) brightness(.8); opacity: .55; } to { filter: none; opacity: 1; } }
 @keyframes shimmer { 0%, 100% { filter: brightness(1); } 50% { filter: brightness(1.35) drop-shadow(0 0 6px #ffd700); } }
 @keyframes pulseBulb { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.5); } }
+@keyframes breathe { from { opacity: .55; } to { opacity: 1; } }
+@keyframes drift { from { transform: translate(0, 0); } to { transform: translate(14px, -22px); } }
+@keyframes bubbleRise { 0% { transform: translateY(0); opacity: 0; } 8% { opacity: 1; } 85% { opacity: .9; } 100% { transform: translateY(-900px); opacity: 0; } }
+@keyframes swim { from { transform: translateX(var(--from)); } to { transform: translateX(var(--to)); } }
+@keyframes bob { from { transform: translateY(-4px); } to { transform: translateY(4px); } }
 @keyframes rise { from { transform: translateY(0); opacity: .9; } to { transform: translateY(-120px); opacity: 0; } }
 @keyframes slideUp { from { opacity: 0; transform: translate(-50%, 20px); } to { opacity: 1; transform: translate(-50%, 0); } }
 .sea-chart, .end-card { animation-name: fadeUp; }

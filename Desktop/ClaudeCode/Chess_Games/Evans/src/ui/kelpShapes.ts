@@ -174,3 +174,73 @@ export function snow(box: [number, number, number, number], n = 90) {
   const rand = rng('snow');
   return Array.from({ length: n }, () => ({ x: box[0] + rand() * box[2], y: box[1] + rand() * box[3], r: 0.8 + rand() * 1.8, o: 0.1 + rand() * 0.25 }));
 }
+
+// ---------- atmosphere (decorative only) ----------
+
+/** Misty kelp far behind the forest: soft silhouettes from the seabed, no interaction. Two depths. */
+export function distantKelp(box: [number, number, number, number], ground: number) {
+  const rand = rng('distant');
+  const out: { d: string; depth: 0 | 1 }[] = [];
+  const n = Math.round(box[2] / 140);
+  for (let i = 0; i < n; i++) {
+    const depth = (i % 3 === 0 ? 0 : 1) as 0 | 1;           // 0 = farthest
+    const x = box[0] - 200 + (i + rand()) * (box[2] + 400) / n;
+    const h = (0.45 + rand() * 0.5) * (ground - box[1]);
+    const lean = (rand() - 0.3) * 120, w = depth ? 10 + rand() * 6 : 7 + rand() * 4;
+    const wob = rand() * 6;
+    const at = (t: number): Pt => [x + lean * t * t + Math.sin(t * 5 + wob) * 14, ground + 20 - h * t];
+    out.push({ d: ribbon(at, t => w * (1 - 0.55 * t) + 1, 18).outline, depth });
+    // a few long blades from the top
+    const top = at(1);
+    for (let k = 0; k < 3; k++) {
+      const a = (k - 1) * 0.7 + 0.3 + (rand() - 0.5) * 0.3, len = 70 + rand() * 60;
+      const C: Pt = [top[0] + Math.sin(a) * len * 0.5, top[1] - Math.cos(a) * len * 0.5];
+      const T: Pt = [C[0] + Math.sin(a + 0.6) * len * 0.5, C[1] - Math.cos(a + 0.6) * len * 0.5];
+      const q = (t: number): Pt => { const u = 1 - t; return [u * u * top[0] + 2 * u * t * C[0] + t * t * T[0], u * u * top[1] + 2 * u * t * C[1] + t * t * T[1]]; };
+      out.push({ d: ribbon(q, t => (w * 0.9) * Math.sin(Math.PI * Math.pow(t, 0.6)) + 0.5, 14).outline, depth });
+    }
+  }
+  return out;
+}
+
+/** Tiny floating particles: mostly pale mint, some warm cream; a few drift. */
+export function particles(box: [number, number, number, number], n = 140) {
+  const rand = rng('particles');
+  return Array.from({ length: n }, (_, i) => ({
+    x: box[0] + rand() * box[2], y: box[1] + 40 + rand() * (box[3] - 40),
+    r: 0.6 + rand() * 1.6, o: 0.25 + rand() * 0.45,
+    cream: rand() < 0.3, drift: i % 4 === 0, delay: -rand() * 20,
+  }));
+}
+
+/** Columns of rising bubbles (each bubble animates upward with its own delay). */
+export function bubbles(box: [number, number, number, number], ground: number, cols = 9) {
+  const rand = rng('bubbles');
+  const out: { x: number; y: number; r: number; delay: number; dur: number }[] = [];
+  for (let c = 0; c < cols; c++) {
+    const x = box[0] + (c + 0.2 + rand() * 0.6) * box[2] / cols;
+    const dur = 14 + rand() * 10;
+    for (let k = 0; k < 4; k++) {
+      out.push({ x: x + (rand() - 0.5) * 16, y: ground - 10 - rand() * 60, r: 2 + rand() * 4, delay: -(k / 4) * dur - rand() * 2, dur });
+    }
+  }
+  return out;
+}
+
+/** A few small fish swimming with the current (left to right), at different depths and speeds. */
+export function fishes(box: [number, number, number, number], ground: number) {
+  const rand = rng('fish');
+  return [0.28, 0.52, 0.74].map((fy, i) => ({
+    y: box[1] + (ground - box[1]) * fy + (rand() - 0.5) * 60,
+    from: box[0] - 260, to: box[0] + box[2] + 260,
+    size: i === 1 ? 1.25 : 0.85 + rand() * 0.2,
+    dur: 48 + rand() * 30, delay: -rand() * 60,
+  }));
+}
+
+/** Per-line hue for living fronds: from blue-green to lime (deterministic). */
+export const ALIVE_HUES = ['#14a68c', '#1fae73', '#2bb35a', '#5cc23e', '#8bd13a', '#19a3a0'];
+export const GOLD_HUES = ['#f2b42a', '#f7c840', '#e9a21c', '#ffd75a'];
+export function hueIndex(seed: string): number {
+  return Math.floor(rng(seed + 'hue')() * 1000);
+}

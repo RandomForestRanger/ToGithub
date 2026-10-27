@@ -7,7 +7,8 @@ import { lineRec, type Store } from '../game/storage';
 import vixenImg from '../assets/vixen.webp';
 
 const VIXEN_W = 180, VIXEN_H = Math.round(VIXEN_W * 418 / 440); // image is 440x418
-import { bulb, bulbDims, fronds, holdfast, seabed, snow, stipe, type BulbDims } from './kelpShapes';
+import { ALIVE_HUES, GOLD_HUES, bubbles, bulb, bulbDims, distantKelp, fishes, fronds, holdfast, hueIndex, particles, seabed, stipe, type BulbDims } from './kelpShapes';
+import washImg from '../assets/wash.webp';
 
 const PLY_PX = 26, MIN_STIPE = 40, DX = 52, FONT = 13;
 
@@ -93,7 +94,10 @@ export function Kelpwoud({ store, changed, onBegin, onToggleLights, route, overl
   const scene = useMemo(() => ({
     bed: seabed(box[0] - 2000, box[0] + box[2] + 2000, ground),
     roots: holdfast(nodes[0].x, ground),
-    snow: snow(box),
+    distant: distantKelp(box, ground),
+    specks: particles(box),
+    bubbles: bubbles(box, ground),
+    fish: fishes(box, ground),
     shapes: new Map(nodes.map(n => {
       const b = bulb(n.x, n.y, n.dims);
       return [n.id, {
@@ -258,49 +262,83 @@ export function Kelpwoud({ store, changed, onBegin, onToggleLights, route, overl
       <svg ref={svgRef} className={`forest ${route ? 'routing' : ''}`} viewBox={vb.join(' ')} preserveAspectRatio="xMidYMax meet"
            onPointerDown={onDown} onPointerMove={onMove} onPointerUp={onUp} onPointerCancel={e => { ptrs.current.delete(e.pointerId); }} onPointerLeave={e => { ptrs.current.delete(e.pointerId); }} onWheel={onWheel}>
         <defs>
-          <linearGradient id="water" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0" stopColor="#3f86b0" />
-            <stop offset="0.45" stopColor="#17506f" />
-            <stop offset="1" stopColor="#0a1f33" />
+          {/* 1. the glow: bright aqua under the surface, turquoise, deep teal at the seabed */}
+          <linearGradient id="water" gradientUnits="userSpaceOnUse" x1="0" y1={box[1] - 200} x2="0" y2={ground + 60}>
+            <stop offset="0" stopColor="#8af0e2" />
+            <stop offset="0.12" stopColor="#2fd0cc" />
+            <stop offset="0.38" stopColor="#0fa5ad" />
+            <stop offset="0.68" stopColor="#0a7584" />
+            <stop offset="1" stopColor="#06495a" />
           </linearGradient>
+          <radialGradient id="glow" gradientUnits="userSpaceOnUse" cx={box[0] + box[2] * 0.55} cy={box[1] + 40} r={box[2] * 0.6}>
+            <stop offset="0" stopColor="#fff6dc" stopOpacity=".55" />
+            <stop offset="0.35" stopColor="#c9fff0" stopOpacity=".22" />
+            <stop offset="1" stopColor="#c9fff0" stopOpacity="0" />
+          </radialGradient>
           <linearGradient id="surface" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0" stopColor="#bfe3f2" />
-            <stop offset="1" stopColor="#5fa6cc" />
+            <stop offset="0" stopColor="#f3fff8" />
+            <stop offset="0.7" stopColor="#bff5ea" />
+            <stop offset="1" stopColor="#8fe6dc" />
+          </linearGradient>
+          <linearGradient id="ray" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stopColor="#fff4d6" stopOpacity=".26" />
+            <stop offset="0.4" stopColor="#bdfbf0" stopOpacity=".09" />
+            <stop offset="1" stopColor="#bdfbf0" stopOpacity="0" />
           </linearGradient>
           <linearGradient id="sand" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0" stopColor="#c8ad7c" />
-            <stop offset="0.5" stopColor="#a68b5e" />
-            <stop offset="1" stopColor="#6e5a3c" />
-          </linearGradient>
-          <linearGradient id="shaftG" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0" stopColor="#fff" stopOpacity=".13" />
-            <stop offset="1" stopColor="#fff" stopOpacity="0" />
+            <stop offset="0" stopColor="#f0dcaa" />
+            <stop offset="0.35" stopColor="#d2b57c" />
+            <stop offset="1" stopColor="#7d7a58" />
           </linearGradient>
           <radialGradient id="bulbShade" cx="0.35" cy="0.3" r="0.85">
-            <stop offset="0" stopColor="#fff" stopOpacity=".28" />
-            <stop offset="0.6" stopColor="#fff" stopOpacity="0" />
-            <stop offset="1" stopColor="#000" stopOpacity=".28" />
+            <stop offset="0" stopColor="#fff8e1" stopOpacity=".55" />
+            <stop offset="0.5" stopColor="#fff8e1" stopOpacity="0" />
+            <stop offset="1" stopColor="#063a40" stopOpacity=".3" />
           </radialGradient>
+          <pattern id="wash" patternUnits="userSpaceOnUse" width="420" height="420">
+            <image href={washImg} width="420" height="420" />
+          </pattern>
           {nodes.filter(n => changed.includes(n.id)).map(n => (
             <clipPath key={n.id} id={`clip-${n.id}`}><path d={scene.shapes.get(n.id)!.stipe.outline} /></clipPath>
           ))}
         </defs>
         <rect x={box[0] - 2000} y={box[1] - 400} width={box[2] + 4000} height={box[3] + 800} fill="url(#water)" />
-        {[0.12, 0.34, 0.58, 0.8].map((fx, i) => (
-          <polygon key={i} className="shaft" fill="url(#shaftG)" points={`${box[0] + box[2] * fx},${box[1] + 40} ${box[0] + box[2] * fx + 90},${box[1] + 40} ${box[0] + box[2] * (fx + 0.1)},${ground} ${box[0] + box[2] * (fx - 0.05)},${ground}`} />
+        <rect x={box[0] - 2000} y={box[1] - 400} width={box[2] + 4000} height={box[3] + 800} fill="url(#glow)" />
+        {/* dappled sunbeams, slowly breathing */}
+        {[0.08, 0.27, 0.45, 0.63, 0.84].map((fx, i) => {
+          const x = box[0] + box[2] * fx, top = box[1] + 44, w = 70 + (i % 3) * 40;
+          return (
+            <g key={i} className="ray" style={{ animationDelay: `${-i * 2.7}s` }}>
+              <polygon fill="url(#ray)" points={`${x},${top} ${x + w},${top} ${x + w * 0.6 + 260},${ground} ${x - 120},${ground}`} />
+              <polygon fill="url(#ray)" opacity=".8" points={`${x + w * 0.2},${top} ${x + w * 0.8},${top} ${x + w * 0.55 + 210},${ground} ${x - 60},${ground}`} />
+              <polygon fill="url(#ray)" opacity=".8" points={`${x + w * 0.38},${top} ${x + w * 0.62},${top} ${x + w * 0.5 + 150},${ground} ${x + 10},${ground}`} />
+            </g>
+          );
+        })}
+        {/* misty kelp far behind */}
+        {scene.distant.map((k, i) => <path key={i} d={k.d} className={`distant d${k.depth}`} />)}
+        {scene.specks.map((p, i) => (
+          <circle key={i} cx={p.x} cy={p.y} r={p.r} opacity={p.o} className={`speck ${p.cream ? 'cream' : ''} ${p.drift ? 'drift' : ''}`}
+            style={p.drift ? { animationDelay: `${p.delay}s` } : undefined} />
         ))}
-        {scene.snow.map((p, i) => <circle key={i} cx={p.x} cy={p.y} r={p.r} fill="#dff" opacity={p.o} />)}
 
-        {/* the surface seen from below, with the Vixen on it: red light to port (left), green to starboard (right) */}
-        <path d={`M ${box[0] - 2000} ${box[1] - 400} L ${box[0] + box[2] + 2000} ${box[1] - 400} L ${box[0] + box[2] + 2000} ${box[1] + 46} ${Array.from({ length: 40 }, (_, i) => `Q ${box[0] + box[2] + 2000 - (i + 0.5) * (box[2] + 4000) / 40} ${box[1] + (i % 2 ? 54 : 38)} ${box[0] + box[2] + 2000 - (i + 1) * (box[2] + 4000) / 40} ${box[1] + 46}`).join(' ')} Z`} fill="url(#surface)" opacity=".55" />
+        {/* the surface seen from below, with the Vixen on it */}
+        <path d={`M ${box[0] - 2000} ${box[1] - 400} L ${box[0] + box[2] + 2000} ${box[1] - 400} L ${box[0] + box[2] + 2000} ${box[1] + 46} ${Array.from({ length: 40 }, (_, i) => `Q ${box[0] + box[2] + 2000 - (i + 0.5) * (box[2] + 4000) / 40} ${box[1] + (i % 2 ? 54 : 38)} ${box[0] + box[2] + 2000 - (i + 1) * (box[2] + 4000) / 40} ${box[1] + 46}`).join(' ')} Z`} fill="url(#surface)" opacity=".8" />
+        <path d={`M ${box[0] - 2000} ${box[1] + 46} ${Array.from({ length: 40 }, (_, i) => `Q ${box[0] - 2000 + (i + 0.5) * (box[2] + 4000) / 40} ${box[1] + (i % 2 ? 38 : 54)} ${box[0] - 2000 + (i + 1) * (box[2] + 4000) / 40} ${box[1] + 46}`).join(' ')}`} className="surface-line" />
         {/* interim art cut from art/Ideas.jpg (green starboard light visible on her bow) */}
         <g transform={`translate(${box[0] + box[2] * 0.62}, ${box[1] + 30})`} className="vixen">
           <image href={vixenImg} x={-VIXEN_W / 2} y={18 - VIXEN_H} width={VIXEN_W} height={VIXEN_H} />
         </g>
 
-        <path d={scene.bed.d} fill="url(#sand)" />
+        <path d={scene.bed.d} fill="url(#sand)" className="sand" />
         {scene.bed.ripples.map((d, i) => <path key={i} d={d} className="ripple" />)}
-        {scene.bed.pebbles.map(({ tone, ...p }, i) => <ellipse key={i} {...p} fill={tone < 0.5 ? '#5b4d3a' : tone < 0.8 ? '#8a7a62' : '#d9cdb4'} opacity=".7" />)}
+        {scene.bed.pebbles.map(({ tone, ...p }, i) => <ellipse key={i} {...p} fill={tone < 0.5 ? '#3f6e66' : tone < 0.8 ? '#a08a5c' : '#fff1cf'} opacity=".75" />)}
+        {scene.bubbles.map((b, i) => (
+          <g key={i} className="rise" style={{ animationDuration: `${b.dur}s`, animationDelay: `${b.delay}s` }}>
+            <circle cx={b.x} cy={b.y} r={b.r} className="bub" />
+            <circle cx={b.x - b.r * 0.35} cy={b.y - b.r * 0.35} r={b.r * 0.28} className="bub-hl" />
+          </g>
+        ))}
 
         {/* layer 1: fronds (behind), swaying from their crowns */}
         {nodes.map(n => {
@@ -308,13 +346,31 @@ export function Kelpwoud({ store, changed, onBegin, onToggleLights, route, overl
           return (
             <g key={n.id + 'f'} className={`fronds s-${st} ${changed.includes(n.id) ? 'changed' : ''} ${onRoute.has(n.id) ? 'on-route' : ''}`}
                style={{ transformOrigin: `${cx}px ${cy}px`, animationDelay: `${(n.x % 9) * -0.8}s` }}>
-              {sh.fronds.map((b, i) => <g key={i}><path d={b.outline} className="blade" /><path d={b.rib} className="rib" /></g>)}
+              {sh.fronds.map((b, i) => {
+                const hues = st === 'gold' ? GOLD_HUES : ALIVE_HUES, h = hues[(hueIndex(n.id) + i) % hues.length];
+                return <g key={i}><path d={b.outline} className="blade" style={st !== 'grey' ? { fill: h } : undefined} /><path d={b.rib} className="rib" /></g>;
+              })}
             </g>
           );
         })}
 
+        {scene.fish.map((f, i) => (
+          <g key={i} className="swim" style={{ ['--from' as any]: `${f.from}px`, ['--to' as any]: `${f.to}px`, animationDuration: `${f.dur}s`, animationDelay: `${f.delay}s` }}>
+            <g transform={`translate(0 ${f.y}) scale(${f.size})`}>
+              <g className="fish">
+                <path d="M-16 0 L-27 -8 L-25 0 L-27 8 Z" className="fish-tail" />
+                <path d="M-17 0 C-12 -10 6 -11 15 -2 C17 0 17 1 15 2 C6 11 -12 10 -17 0 Z" className="fish-body" />
+                <path d="M-4 -8 C0 -14 6 -13 8 -8" className="fish-fin" />
+                <path d="M-10 2 C-2 7 8 6 13 1" className="fish-belly" />
+                <circle cx="9" cy="-2" r="2.2" className="fish-eye" />
+              </g>
+            </g>
+          </g>
+        ))}
+
         {/* layer 2: holdfast and stipes */}
         <g className={`holdfast s-${lineRec(store, ROOT_LINE).state} ${route ? 'on-route' : ''}`}>
+          {scene.roots.map((d, i) => <path key={'i' + i} d={d} className="root-ink" />)}
           {scene.roots.map((d, i) => <path key={i} d={d} />)}
           <ellipse cx={nodes[0].x} cy={ground - 12} rx={15} ry={11} />
         </g>
@@ -329,6 +385,8 @@ export function Kelpwoud({ store, changed, onBegin, onToggleLights, route, overl
             </g>
           );
         })}
+
+        <rect x={box[0] - 2000} y={box[1] - 400} width={box[2] + 4000} height={box[3] + 1300} fill="url(#wash)" className="wash" pointerEvents="none" />
 
         {/* layer 3: bulbs and labels */}
         {nodes.map(n => {

@@ -24,6 +24,7 @@
   - MISSED popup **replays**: his game from 4.b4 (quick), pause on the needed move (green arrow), the line's route to its end, 5 s freeze, closes (`src/ui/MiniReplay.tsx`).
   - **Fixed Stoomdruk dial**: −3..+3, blue < −1 < amber < 0 < green < +1 < gold; only the needle (eval) moves. Round-end graph on the same scale. (CLAUDE.md section 9 still describes the old moving red/gold marks.)
   - **Round intro over the Kelpwoud**: camera glides to the target, route glows, card lists stages and moves, button "Ek is gereed!".
+- 27 Oct: **painted Kelpwoud** — luminous turquoise water (aqua → deep teal), cream surface glow, breathing sunbeams, misty distant kelp, particles, rising bubbles, three orange tattoo-style fish, watercolour texture (`src/assets/wash.webp`, soft-light). Grey lines = translucent blue-green wash; green = saturated emerald (per-frond hues blue-green → lime) with dark-teal ink edges and cream flecks; gold = amber/gold, inked. Shapes and mechanics unchanged (`kelpShapes.ts` atmosphere helpers, styles in `styles.css`).
 - Play-testing so far: mechanics and rendering good, points feel fair, gold reachable with great effort. **Keep `GOLD_EVAL` at 1.00 for now.**
 
 ## Open, smaller
