@@ -1,4 +1,5 @@
-import { LINES } from '../data';
+import { LINES, routeLow } from '../data';
+import { THEORY_DIP } from '../config';
 import { say, UI } from '../content/kaptein';
 import type { RoundController } from '../game/controller';
 import { SteamGraph } from './SteamGraph';
@@ -19,6 +20,7 @@ export function RoundIntro({ target, onGo }: { target: string; onGo: () => void 
         <p className="intro-line">{say('ROUND_START', { line: l.label })}</p>
       </div>
       {l.reef && <p className="reef-note">{UI.reefNote}</p>}
+      {routeLow(target) <= THEORY_DIP && <p className="theory-note">{UI.theoryDip}</p>}
       <h3>{UI.route}</h3>
       <ol className="stages">
         {stages.map(s => <li key={s.id}><b>{s.label}</b> <span className="mono">{s.sub}</span></li>)}

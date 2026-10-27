@@ -25,6 +25,8 @@ export const K = {
   STEAM_GOLD: ['Volstoom! Volstoom! The fluitjie blaas van al die stoom.'],
   STEAM_GREEN: ['Goeie druk. Hou die vuur aan die brand.'],
   STEAM_AMBER: ['Die stoom lek! Onthou, ons gee die pion weg sodat ons DRUK kan plaas.?'],
+  // on the chart, when the line's own theory takes the needle below zero (once per round)
+  STEAM_THEORY: ['Ja, dit is nou so – om by die "{line}" uit te kom, moet ons \'n paar vreemde skuiwe maak.'],
   STEAM_COLD: ['Die ketel is nou koud. Kom, kry vir ons die vuur weer aan.'],
   DEBT_PAID: ['Skuld betaal! Als reg, ons speel voort.'],
   POINTS_4: ['Ardderchog! Mooi man.', 'Netjies.'],
@@ -92,6 +94,7 @@ export const UI = {
   momentDrop: (m: string, d: number) => `Grootste stoomverlies: ${m} (−${d.toFixed(1)})`,
   momentBest: (m: string) => `Beste skuif in oop see: ${m}`,
   lights: 'Skeepsligte',
+  theoryDip: "Op pad na hierdie lyn sak die stoommeter onder nul. Dis die prys van die lyn, nie jou fout nie.",
   restart: 'Begin oor',
   restartConfirm: 'Seker? Kliek weer',
   zones: { gold: 'Volstoom', green: 'Goeie druk', amber: 'Die stoom lek effens', cold: 'Die stoomketel is koud' },

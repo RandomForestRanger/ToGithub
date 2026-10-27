@@ -8,6 +8,22 @@ This file is the build spec. The data the game needs is already computed: `data/
 
 ---
 
+## 0. As built (October 2026) — overrides the sections below where they differ
+
+**Live:** https://stoomdruk-evans.netlify.app (Netlify site `stoomdruk-evans`, CLI deploy; commands and history in `NEXT_STEPS.md`). Every `npm`/`npx` needs `export PATH="/usr/local/opt/node/bin:$PATH"` first. Check that `vite build` succeeds before testing.
+
+- **Look:** painted Kelpwoud — turquoise water to deep teal, sunbeams, misty distant kelp, watercolour texture (`assets/wash.webp`). Grey lines are translucent washes; green/gold lines are saturated and inked (dark teal, `vector-effect: non-scaling-stroke`). Fonts bundled via npm: **Rye** for titles/buttons/labels, **Zilla Slab** for reading text.
+- **Rope:** thin nine-slice rope (`assets/rope.svg`) on cards, briefs, popups, panels, speech bubble; a thicker twisted rope with corner knots frames the Kelpwoud (`ui/RopeFrame.tsx`).
+- **Sea life** (`ui/Creatures.tsx`, always behind the kelp): fish families in six colours (one colour per school); crabs visit about every 3 min; visitors: moray eel every 2 min, dolphin every 4, whale shark every 7. **Cheat keys on the Kelpwoud: E eel, D dolphin, W whale shark.** None under reduced motion.
+- **Art (interim):** Captain's four mood faces and the *Vixen* from `art/`; mood per line in `MOOD` (`content/kaptein.ts`). Badge emblem from the artist brief (`assets/emblem.webp`, ribbon blank).
+- **Round flow:** while he admires the forest, the next round is prepared (engine warm, target chosen, images preloaded), so the brief opens at once. The **brief** sits over the Kelpwoud: camera glides to the target, its route glows, the card lists the route's stages and moves (`Ek is gereed!`). Lines whose own route dips below −0.5 get a note (`theoryDip`). **Begin oor** (two clicks: `Seker? Kliek weer`) abandons the round, saves nothing, and starts a new round with a new target and brief.
+- **MISSED popup** replays: his game from 4.b4, a pause on the needed move (green arrow), the line's route to its end, a 5 s freeze (`ui/MiniReplay.tsx`).
+- **Badges** (`game/badges.ts`): 12 lines (Pierce, Morphy, Bronstein, Slow, Anderssen Variation, Stone-Ware | McDonnell Defense, Mayet, Declined 5.a4, Declined 4...Bb6, Hein, Fontaine) earn a badge when they turn gold; shown only when earned, six a side of the Kelpwoud, with an arrival animation the first time.
+- **Game background:** a random photo per round from `assets/backgrounds/` (Unsplash, credits in `CREDITS.md`) under a dark wash. Any `.webp` added there joins the rotation.
+- **Captain's lines** are Martin's own wording now (`content/kaptein.ts` is the source; §12's table is the original draft).
+
+---
+
 ## 1. Stack and layout
 
 - **React + Vite + TypeScript**, static single-page app, deploy to Netlify. No backend.
@@ -233,20 +249,13 @@ Use the same weights for `chooseTarget(open)` during the round (sections 4.2 and
 
 ## 9. Stoomdruk (the steam gauge)
 
-A boiler pressure dial beside the board, always visible from 4.b4 onward.
+The painted **drukmeter** (`art/drukmeter.png` → `assets/drukmeter.webp`) beside the board; **only the needle moves**, the scale and colours never change.
 
-- **Steam** = `clamp(eval / 100, -15, 15) + debt`, in pawns, where `debt = max(0, -material)` (the pawns White has invested).
-- **Red mark** at `debt`. The needle above the red mark means White is better (eval > 0); below it, the compensation isn't paying for the pawn. When he wins material back, the debt shrinks and the red mark visibly slides down (`DEBT_PAID`).
-- **Gold mark** at `debt + GOLD_EVAL`: the line he needs to be above at move 20 for gold.
-- **Dial range** -2 to +8 pawns (clamp the needle). Zones:
-  - above the gold mark: gold, "Volstoom"
-  - between the red and gold marks: green
-  - from 0 up to the red mark: amber, "Die stoom lek"
-  - below 0: cold blue, "Die ketel is koud"
-- **Source:** on the chart use `node.steam` from the data (no noise, no waiting). In the engine phase use the runtime analysis, smoothed: `shown = 0.5 * new + 0.5 * previousShown`.
-- **Animation:** move the needle over 600 ms. A zone change triggers the Captain's `STEAM_*` line, at most once every 3 moves.
-
-The round-end screen draws the steam over the whole game as a line, with the red mark and gold mark as step lines, so he can see where the pressure leaked.
+- **Needle = eval** (steam − debt, i.e. White's eval in pawns), interpolated between the painted ticks −2, −1, =, 1, 2 (angles measured on the picture, `ui/Stoomdruk.tsx`); stops just past ±2. Before 4.b4 it is dimmed at =.
+- **Zones** (fixed, `zoneOf`): gold ≥ +1 (`GOLD_EVAL`, the gold rule at move 20), green 0..+1, amber −1..0, cold < −1. The zone name (from `UI.zones`) and value are written inside the dial; long names shrink to fit.
+- **Source:** on the chart `node.steam` from the data; in the engine phase the runtime analysis, smoothed 0.5/0.5.
+- **Captain:** a zone change says `STEAM_*` (at most every 6 half-moves). **On the chart** a dip is theory, not his fault: below −0.5 (`THEORY_DIP`) the Captain says `STEAM_THEORY` once per round, and the usual leak lines stay quiet.
+- The round-end graph shows the eval over the game with fixed lines at 0 and +1.
 
 ---
 
@@ -310,7 +319,7 @@ Each stipe takes its own line's state, so the path from the holdfast to a gold l
 
 The voice: a 19th-century Welsh packet-ship captain who speaks warm, short, punchy Afrikaans with a few Welsh words (*Da iawn* = very good, *Bendigedig* = wonderful, *Ardderchog* = excellent, *Hwyl fawr* = goodbye). Sentences stay short; chess terms are fine. Keep every string in `src/content/kaptein.ts`. Where a category has several lines, pick one at random. `{line}` is a label in quotes; `{move}` is numbered SAN.
 
-These three are Martin's own wording; keep them exactly:
+**`src/content/kaptein.ts` is the source of truth** (Martin rewrote the lines in October 2026); the table below is the original draft, kept for reference. These three must stay exactly:
 - `ROUND_START`: `Hierdie rondte speel ons die "{line}".`
 - `RETARGET`: `Geen probleem, jy het sopas oorgeskuif na die "{line}".`
 - `MISSED`: `Om die "{line}" lyn te ontsluit moes jy hierso {move} gespeel het.`
@@ -380,18 +389,10 @@ One key, `stoomdruk.v1`:
 
 ## 14. Screens
 
-1. **Kelpwoud (home):** the forest fills the screen. Counter at the top; the button `Begin rondte` at the bottom.
-2. **Round intro:** an old sea-chart card with `Hierdie rondte speel ons die "{label}".`, the `sub` move, and a `ROUND_FLAVOUR` line. Button: `Gooi die lokaas`.
-3. **Game**
-   - Board on the left (on top on a phone).
-   - Panel with: the target banner (label + sub, updated on re-target or chain), the Stoomdruk dial, the Captain's speech bubble, the move list with a small points chip on each of his moves, `Skuif 7/20`, and `Punte 23`.
-   - Last move highlighted. No hints, no takebacks.
-4. **Round end**
-   - The score out of 64.
-   - The lines coloured this round, as green or gold chips.
-   - The steam graph (section 9).
-   - Up to three key moments: the missed line move, the biggest steam drop, and his best engine-phase move.
-   - Buttons: `Nog 'n rondte` and `Terug na die Kelpwoud` (which plays the colouring animation).
+1. **Kelpwoud (home):** the forest in its rope frame; counter at the top; earned badges at the sides; `Begin 'n rondte` at the bottom.
+2. **Brief** (over the Kelpwoud, see §0): route lit up, stages and moves, `Ek is gereed!`.
+3. **Game:** board (on top on a phone) over the round's background photo; panel with target banner, drukmeter, the Captain (mood face + speech), `Skuif 7/20` and `Punte 23`, the move list with points chips, and `Begin oor`. Last move highlighted. No hints, no takebacks.
+4. **Round end:** score out of 64, lines coloured this round, the eval graph, up to three key moments; `Nog 'n rondte` and `Terug na die Kelpwoud` (plays the colouring animation and any badge arrivals).
 
 ---
 

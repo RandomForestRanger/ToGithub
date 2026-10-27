@@ -7,6 +7,9 @@ import { chooseRoundTarget } from './game/targets';
 import { Kelpwoud } from './ui/Kelpwoud';
 import { GameScreen } from './ui/GameScreen';
 import { RoundEnd, RoundIntro } from './ui/Screens';
+import { pickBackground } from './ui/backgrounds';
+import { preloadFaces } from './ui/CaptainFace';
+import drukmeter from './assets/drukmeter.webp';
 
 type Screen = 'home' | 'intro' | 'game' | 'end';
 
@@ -18,10 +21,25 @@ export default function App() {
   const [msg, setMsg] = useState('');
   const [roundNo, setRoundNo] = useState(0);
   const pendingChanged = useRef<string[]>([]);
+  const nextTarget = useRef<string | null>(null);   // chosen while he admires the forest
+  const nextBg = useRef<string | null>(null);
+  const [roundBg, setRoundBg] = useState<string | null>(null);
   if (import.meta.env.DEV || import.meta.env.VITE_SMOKE) {
     (window as any).__ctl = ctl; // for the smoke test (tools/smoke.mjs)
     (window as any).__engine = engine;
   }
+
+  // While he admires the Kelpwoud, get the next round ready: engine warm, target chosen, images loaded.
+  // Then "Begin 'n rondte" opens the brief at once.
+  useEffect(() => {
+    if (screen !== 'home') return;
+    engine.init().catch(() => {}); // an error shows on click, as before
+    const s = loadStore();
+    nextTarget.current = chooseRoundTarget(Math.random, stateOfFn(s), s.recentTargets);
+    nextBg.current = pickBackground();
+    for (const src of [drukmeter, nextBg.current]) if (src) new Image().src = src;
+    preloadFaces();
+  }, [screen]);
 
   // apply the round to storage once, as soon as it has a result
   useEffect(() => {
@@ -52,7 +70,11 @@ export default function App() {
     }
     ctl?.dispose();
     const s = loadStore();
-    const target = chooseRoundTarget(Math.random, stateOfFn(s), skip ? [...s.recentTargets, skip] : s.recentTargets);
+    const ready = nextTarget.current && nextTarget.current !== skip ? nextTarget.current : null;
+    const target = ready ?? chooseRoundTarget(Math.random, stateOfFn(s), skip ? [...s.recentTargets, skip] : s.recentTargets);
+    nextTarget.current = null;
+    setRoundBg(nextBg.current ?? pickBackground());
+    nextBg.current = null;
     setCtl(new RoundController(target, stateOfFn(s)));
     setScreen('intro');
   };
@@ -88,7 +110,7 @@ export default function App() {
           route={screen === 'intro' ? ctl?.startTarget : undefined}
           overlay={screen === 'intro' && ctl ? <RoundIntro target={ctl.startTarget} onGo={() => setScreen('game')} /> : undefined} />
       )}
-      {screen === 'game' && ctl && <GameScreen key={roundNo} ctl={ctl} lights={store.settings.bishopLights} onEnd={() => setScreen('end')} onRestart={restart} />}
+      {screen === 'game' && ctl && <GameScreen key={roundNo} ctl={ctl} bg={roundBg} lights={store.settings.bishopLights} onEnd={() => setScreen('end')} onRestart={restart} />}
       {screen === 'end' && ctl?.result && <RoundEnd ctl={ctl} onAgain={() => { setChanged([]); pendingChanged.current = []; void begin(); }} onHome={home} />}
       {msg && <div className="toast" onClick={() => setMsg('')}>{msg}</div>}
     </div>

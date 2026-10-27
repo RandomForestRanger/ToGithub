@@ -10,6 +10,9 @@ const VIXEN_W = 180, VIXEN_H = Math.round(VIXEN_W * 418 / 440); // image is 440x
 import { ALIVE_HUES, GOLD_HUES, bubbles, bulb, bulbDims, distantKelp, fronds, holdfast, hueIndex, particles, seabed, stipe, type BulbDims } from './kelpShapes';
 import washImg from '../assets/wash.webp';
 import { Crabs, SmallFish, Visitors, useVisitors } from './Creatures';
+import { Badge } from './Badge';
+import { RopeFrame } from './RopeFrame';
+import { BADGES_LEFT, BADGES_RIGHT, type BadgeDef } from '../game/badges';
 
 const PLY_PX = 26, MIN_STIPE = 40, DX = 52, FONT = 13;
 
@@ -185,7 +188,7 @@ export function Kelpwoud({ store, changed, onBegin, onToggleLights, route, overl
     const w = r.width * s, h = r.height * s;
     // seabed at the bottom of the free area: any spare height shows more forest above, not sand below
     const v: [number, number, number, number] = [(bx0 + bx1) / 2 - ((left + right) / 2) * s, by1 - bottom * s, w, h];
-    const t = setTimeout(() => glideTo(v), 250);
+    const t = setTimeout(() => glideTo(v), 30);
     return () => clearTimeout(t);
   }, [route]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -398,6 +401,17 @@ export function Kelpwoud({ store, changed, onBegin, onToggleLights, route, overl
           );
         })}
       </svg>
+
+      <RopeFrame />
+
+      {!overlay && ([['left', BADGES_LEFT], ['right', BADGES_RIGHT]] as [string, BadgeDef[]][]).map(([side, list]) => {
+        const earned = list.filter(b => lineRec(store, b.id).state === 'gold');
+        return earned.length > 0 && (
+          <div key={side} className={`badges badges-${side}`}>
+            {earned.map(b => <Badge key={b.id} name={b.name} fresh={changed.includes(b.id)} onClick={() => setSel(b.id)} />)}
+          </div>
+        );
+      })}
 
       {selLine && selRec && !overlay && (
         <div className="card line-card" role="dialog">

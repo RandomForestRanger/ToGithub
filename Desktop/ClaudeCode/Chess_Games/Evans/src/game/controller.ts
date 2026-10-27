@@ -3,7 +3,7 @@
 import { Chess, type Square } from 'chess.js';
 import {
   BLACK_ENGINE_DEPTH, BLACK_MULTIPV, BLACK_WINDOW_CP, ANALYSIS_DEPTH, ANALYSIS_MAX_MS, FINAL_EVAL_DEPTH,
-  COLD_EVAL, GOLD_EVAL, MATE_CP, MOVES_PER_ROUND, STEAM_SMOOTHING, THINK_MAX_MS, THINK_MIN_MS,
+  COLD_EVAL, GOLD_EVAL, MATE_CP, THEORY_DIP, MOVES_PER_ROUND, STEAM_SMOOTHING, THINK_MAX_MS, THINK_MIN_MS,
 } from '../config';
 import { canon, LINES } from '../data';
 import { engine } from '../engine/EngineService';
@@ -62,6 +62,7 @@ export class RoundController {
   missed: Record<string, string> = {};
   result: RoundResult | null = null;
   bishopSaid = { stuur: false, bak: false };
+  theorySaid = false;
   engineError = false;
 
   private listeners = new Set<() => void>();
@@ -365,6 +366,18 @@ export class RoundController {
     this.steam.sort((a, b) => a.ply - b.ply);
     if (debt < prevDebt && this.steam.length > 1) { this.speak('DEBT_PAID', {}, 1); return; }
     const z = zoneOf(shown, debt);
+    // On the chart the needle follows the line's own theory: a real dip there is the price of the line,
+    // not his mistake. Say so once, and keep the usual "steam is leaking" lines for off-chart play.
+    const onChart = this.phase === 'chart' && this.chart.onChart && !!this.chart.target;
+    if (onChart && (z === 'amber' || z === 'cold')) {
+      if (!this.theorySaid && shown - debt <= THEORY_DIP) {
+        this.theorySaid = true;
+        this.speak('STEAM_THEORY', { line: label(this.chart.target!) }, 1);
+        this.lastZonePly = ply;
+      }
+      this.lastZone = z;
+      return;
+    }
     if (this.lastZone && z !== this.lastZone && ply - this.lastZonePly >= 6) {
       this.speak(({ gold: 'STEAM_GOLD', green: 'STEAM_GREEN', amber: 'STEAM_AMBER', cold: 'STEAM_COLD' } as const)[z], {}, 0);
       this.lastZonePly = ply;

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from 'react';
 import { Chessboard } from 'react-chessboard';
 import type { Square } from 'chess.js';
 import { LINES } from '../data';
@@ -7,7 +7,6 @@ import { bishopBeams, type RoundController } from '../game/controller';
 import { Stoomdruk } from './Stoomdruk';
 import { CaptainFace, preloadFaces } from './CaptainFace';
 import { MiniReplay } from './MiniReplay';
-import { pickBackground } from './backgrounds';
 
 function useWidth(ref: React.RefObject<HTMLElement>, max: number) {
   const [w, setW] = useState(360);
@@ -21,13 +20,14 @@ function useWidth(ref: React.RefObject<HTMLElement>, max: number) {
   return w;
 }
 
-export function GameScreen({ ctl, lights, onEnd, onRestart }: {
+export function GameScreen({ ctl, lights, onEnd, onRestart, bg }: {
   ctl: RoundController; lights: boolean; onEnd: () => void; onRestart: () => void;
+  /** the round's background photo (chosen and preloaded by App) */
+  bg: string | null;
 }) {
   const [, force] = useState(0);
   const [sel, setSel] = useState<string | null>(null);
   const [confirmRestart, setConfirmRestart] = useState(false);
-  const bg = useMemo(pickBackground, []); // a new photo each round (the screen remounts per round)
   useEffect(() => {
     if (!confirmRestart) return;
     const t = setTimeout(() => setConfirmRestart(false), 3000);
