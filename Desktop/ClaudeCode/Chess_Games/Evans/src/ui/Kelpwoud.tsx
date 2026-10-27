@@ -12,6 +12,10 @@ import washImg from '../assets/wash.webp';
 import { Crabs, SmallFish, Visitors, useVisitors } from './Creatures';
 import { Badge } from './Badge';
 import { RopeFrame } from './RopeFrame';
+import { EdgeDecor } from './EdgeDecor';
+import { CaptainFace } from './CaptainFace';
+import wapen from '../assets/hoof-wapen.webp';
+import aasBaas from '../assets/aas-baas.webp';
 import { BADGES_LEFT, BADGES_RIGHT, type BadgeDef } from '../game/badges';
 
 const PLY_PX = 26, MIN_STIPE = 40, DX = 52, FONT = 13;
@@ -131,6 +135,7 @@ export function Kelpwoud({ store, changed, onBegin, onToggleLights, route, overl
   useEffect(() => () => cancelAnimationFrame(raf.current), []);
   const fitW = useRef(box[2]);
   const [sel, setSel] = useState<string | null>(null);
+  const [why, setWhy] = useState(false);
   const svgRef = useRef<SVGSVGElement>(null);
   const ptrs = useRef(new Map<number, { x: number; y: number }>());
   const moved = useRef(0);
@@ -146,7 +151,8 @@ export function Kelpwoud({ store, changed, onBegin, onToggleLights, route, overl
     // include the Vixen above the surface (VIXEN_H of headroom)
     // (on a portrait phone a little more, so she clears the title and counter)
     const head = r.width < r.height ? VIXEN_H * 1.7 : VIXEN_H;
-    const [bx, by, bw, bh] = [box[0], box[1] - head, box[2], box[3] + head];
+    const side = r.width >= 760 ? box[2] * 0.09 : 0; // room for the side decor on wide screens
+    const [bx, by, bw, bh] = [box[0] - side, box[1] - head, box[2] + 2 * side, box[3] + head];
     let v: [number, number, number, number];
     if (a < 1) {
       const w = bh * a;
@@ -260,7 +266,10 @@ export function Kelpwoud({ store, changed, onBegin, onToggleLights, route, overl
   return (
     <div className="kelpwoud">
       <header className="kelp-top">
-        <h1>{UI.title} <small>{UI.subtitle}</small></h1>
+        <div className="title-block">
+          <h1>{UI.title} <small>{UI.subtitle}</small></h1>
+          <img src={wapen} className="wapen" alt="" draggable={false} />
+        </div>
         <div className="counter">{UI.counter(greens, golds, ids.length)}</div>
       </header>
       <svg ref={svgRef} className={`forest ${route ? 'routing' : ''}`} viewBox={vb.join(' ')} preserveAspectRatio="xMidYMax meet"
@@ -402,6 +411,20 @@ export function Kelpwoud({ store, changed, onBegin, onToggleLights, route, overl
         })}
       </svg>
 
+      {why && !overlay && (
+        <div className="why-backdrop" onClick={() => setWhy(false)}>
+          <div className="card why-card" role="dialog" aria-label={UI.whyTitle} onClick={e => e.stopPropagation()}>
+            <button className="x" onClick={() => setWhy(false)} aria-label={UI.close}>×</button>
+            <img src={aasBaas} className="why-img" alt={UI.whyTitle} />
+            <div className="why-say">
+              <CaptainFace mood="pleased" size={64} />
+              <div>{UI.whyText.map((t, i) => <p key={i} className={i === UI.whyText.length - 1 ? 'why-motto' : ''}>{t}</p>)}</div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <EdgeDecor />
       <RopeFrame />
 
       {!overlay && ([['left', BADGES_LEFT], ['right', BADGES_RIGHT]] as [string, BadgeDef[]][]).map(([side, list]) => {
@@ -433,6 +456,7 @@ export function Kelpwoud({ store, changed, onBegin, onToggleLights, route, overl
         <footer className="kelp-bottom">
           <label className="lights"><input type="checkbox" checked={store.settings.bishopLights} onChange={onToggleLights} /> {UI.lights}</label>
           <button className="btn primary" onClick={onBegin}>{UI.begin}</button>
+          <button className="btn why-btn" onClick={() => setWhy(true)}><span className="why-long">{UI.why}</span><span className="why-short">{UI.whyShort}</span></button>
           <button className="btn ghost" onClick={fitView} aria-label="Pas">⤢</button>
         </footer>
       )}

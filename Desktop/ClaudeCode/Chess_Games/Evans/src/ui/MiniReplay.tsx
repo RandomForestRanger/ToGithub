@@ -1,4 +1,4 @@
-// The MISSED popup's little film: from 4.b4 through his game (quick), a pause on the move he needed
+// The MISSED popup's little film: a 1-second still, then his game from 1.e4, a pause on the move he needed
 // (green arrow), then the line's route to its end (slower), then a 5-second freeze before onDone.
 import { useEffect, useMemo, useState } from 'react';
 import { Chessboard } from 'react-chessboard';
@@ -6,7 +6,7 @@ import { Chess, type Square } from 'chess.js';
 import type { Popup } from '../game/controller';
 import { numbered, uciToMove } from '../game/chessUtil';
 
-const START_MS = 600, HIS_MS = 450, ARROW_MS = 1600, ROUTE_MS = 1000, FREEZE_MS = 5000;
+const START_MS = 1000, HIS_MS = 900, ARROW_MS = 3200, ROUTE_MS = 2000, FREEZE_MS = 5000;
 
 export function MiniReplay({ replay, onDone, size = 200 }: { replay: NonNullable<Popup['replay']>; onDone: () => void; size?: number }) {
   // positions after each move, and each move's numbered SAN
@@ -47,7 +47,7 @@ export function MiniReplay({ replay, onDone, size = 200 }: { replay: NonNullable
   return (
     <div className="mini">
       <Chessboard id="mini" position={steps.fens[i]} boardWidth={size} arePiecesDraggable={false}
-        animationDuration={reduced ? 0 : 250}
+        animationDuration={reduced ? 0 : 450}
         customArrows={arrow && needSq ? [[needSq[0] as Square, needSq[1] as Square, 'rgb(46,204,113)']] : []}
         customSquareStyles={styles}
         customDarkSquareStyle={{ backgroundColor: '#5b7d8f' }} customLightSquareStyle={{ backgroundColor: '#d9e4e8' }} />

@@ -20,6 +20,8 @@ This file is the build spec. The data the game needs is already computed: `data/
 - **MISSED popup** replays: his game from 4.b4, a pause on the needed move (green arrow), the line's route to its end, a 5 s freeze (`ui/MiniReplay.tsx`).
 - **Badges** (`game/badges.ts`): 12 lines (Pierce, Morphy, Bronstein, Slow, Anderssen Variation, Stone-Ware | McDonnell Defense, Mayet, Declined 5.a4, Declined 4...Bb6, Hein, Fontaine) earn a badge when they turn gold; shown only when earned, six a side of the Kelpwoud, with an arrival animation the first time.
 - **Game background:** a random photo per round from `assets/backgrounds/` (Unsplash, credits in `CREDITS.md`) under a dark wash. Any `.webp` added there joins the rotation.
+- **Kelpwoud extras:** wavy rope frame with corner knots; side decor (foreground kelp, rocks, anchor) and a left/right vignette (`ui/EdgeDecor.tsx`); the Hoof-wapen under the title; the button `Hoekom speel ons soms die Evans?` opens the lesson popup (`aas_baas` picture + the Captain's text in `UI.whyText`). The teaching image is **bait** (lokaas), not coal: *Die stuk wen vir ons druk.*
+- **MISSED replay** waits 1 s, plays from 1.e4 at half speed.
 - **Captain's lines** are Martin's own wording now (`content/kaptein.ts` is the source; §12's table is the original draft).
 
 ---

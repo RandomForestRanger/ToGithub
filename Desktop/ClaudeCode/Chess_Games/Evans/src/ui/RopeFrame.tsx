@@ -1,57 +1,95 @@
-// The thick, well-twisted rope that frames the Kelpwoud (thicker and kinkier than the thin rope on panels).
-// Each edge is a strip filled with a seamless pattern of overlapping strands; knots hide the corners.
-const T = 16;   // rope thickness, px
-const P = 9;    // one strand every P px
+// The thick, wavy rope that frames the Kelpwoud (thicker than the thin rope on panels, and never quite
+// straight, like the rope along the bottom of art/First Ideas.png). Each edge is a gentle wave; twisted
+// strands are laid along it at regular steps, turned to follow the rope. Knots hide the corners.
+import { useLayoutEffect, useRef, useState } from 'react';
+import { rng } from './kelpShapes';
 
-/** One strand: ink outline, hemp body, a light highlight and a dark shadow line. Drawn three times
- *  (shifted by a period) so the pattern tiles without seams. */
-function Strands() {
-  return (
-    <>
-      {[-P, 0, P].map(dx => (
-        <g key={dx} transform={`translate(${dx} 0)`}>
-          <path d={`M${P * 0.15} 1.6 C${P * 0.55} 3 ${P * 0.95} ${T - 6} ${P * 1.2} ${T - 1.6}`} className="rs-ink" />
-          <path d={`M${P * 0.15} 1.6 C${P * 0.55} 3 ${P * 0.95} ${T - 6} ${P * 1.2} ${T - 1.6}`} className="rs-hemp" />
-          <path d={`M${P * 0.1} 3.2 C${P * 0.45} 4.6 ${P * 0.78} ${T - 7} ${P * 0.98} ${T - 3.6}`} className="rs-light" />
-          <path d={`M${P * 0.42} 2.4 C${P * 0.8} 4 ${P * 1.1} ${T - 6} ${P * 1.36} ${T - 2.6}`} className="rs-shade" />
-        </g>
-      ))}
-    </>
-  );
+const T = 15;       // rope thickness, px
+const STEP = 8.5;   // one strand every STEP px along the rope
+const INSET = 11;   // rope centreline distance from the screen edge
+
+type Pt = [number, number];
+
+/** A gently wavy line from a to b: two overlaid sines with seeded phases, fading to straight at the ends. */
+function wavy(a: Pt, b: Pt, seed: string): Pt[] {
+  const r = rng(seed), len = Math.hypot(b[0] - a[0], b[1] - a[1]);
+  const nx = -(b[1] - a[1]) / len, ny = (b[0] - a[0]) / len;
+  const p1 = r() * 6.28, p2 = r() * 6.28, w1 = 150 + r() * 80, w2 = 60 + r() * 30;
+  const pts: Pt[] = [];
+  const n = Math.max(8, Math.ceil(len / 4));
+  for (let i = 0; i <= n; i++) {
+    const t = i / n, s = t * len;
+    const fade = Math.min(1, t * 6, (1 - t) * 6);
+    const off = fade * (3.4 * Math.sin(s / w1 * 6.28 + p1) + 1.4 * Math.sin(s / w2 * 6.28 + p2));
+    pts.push([a[0] + (b[0] - a[0]) * t + nx * off, a[1] + (b[1] - a[1]) * t + ny * off]);
+  }
+  return pts;
 }
 
-function Knot() {
+/** Strand positions every STEP px along a polyline, with the local direction. */
+function strandsAlong(pts: Pt[]) {
+  const out: { x: number; y: number; a: number }[] = [];
+  let carry = 0;
+  for (let i = 1; i < pts.length; i++) {
+    const [x0, y0] = pts[i - 1], [x1, y1] = pts[i];
+    const seg = Math.hypot(x1 - x0, y1 - y0), ang = Math.atan2(y1 - y0, x1 - x0) * 180 / Math.PI;
+    let d = STEP - carry;
+    while (d <= seg) { const t = d / seg; out.push({ x: x0 + (x1 - x0) * t, y: y0 + (y1 - y0) * t, a: ang }); d += STEP; }
+    carry = seg - (d - STEP);
+  }
+  return out;
+}
+
+const path = (pts: Pt[]) => 'M' + pts.map(p => `${p[0].toFixed(1)} ${p[1].toFixed(1)}`).join('L');
+
+// one strand in local coordinates: running along +x, the rope's width along y (-T/2..T/2)
+const STRAND = `M${-STEP * 0.55} ${-T / 2 + 1.6} C${-STEP * 0.15} ${-T / 2 + 3} ${STEP * 0.25} ${T / 2 - 5} ${STEP * 0.55} ${T / 2 - 1.6}`;
+const LIGHT = `M${-STEP * 0.6} ${-T / 2 + 3.3} C${-STEP * 0.25} ${-T / 2 + 4.6} ${STEP * 0.05} ${T / 2 - 6.5} ${STEP * 0.28} ${T / 2 - 3.6}`;
+
+function Knot({ x, y }: { x: number; y: number }) {
   return (
-    <svg viewBox="-16 -16 32 32" className="rope-knot" aria-hidden>
+    <g transform={`translate(${x} ${y})`}>
       <circle r="14" className="rs-ink-fill" />
       <circle r="11.5" className="rs-hemp-fill" />
-      {[0, 60, 120, 180, 240, 300].map(a => (
-        <path key={a} d="M0 -10 C6 -8 8 -3 6 2" transform={`rotate(${a})`} className="rk-strand" />
-      ))}
+      {[0, 60, 120, 180, 240, 300].map(a => <path key={a} d="M0 -10 C6 -8 8 -3 6 2" transform={`rotate(${a})`} className="rk-strand" />)}
       <circle r="3.6" className="rs-ink-fill" />
       <circle r="2" cx="-.6" cy="-.6" className="rk-glint" />
-    </svg>
+    </g>
   );
 }
 
 export function RopeFrame() {
+  const ref = useRef<HTMLDivElement>(null);
+  const [size, setSize] = useState<[number, number]>([0, 0]);
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const ro = new ResizeObserver(() => setSize([el.clientWidth, el.clientHeight]));
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+  const [w, h] = size;
+  const c: Pt[] = [[INSET, INSET], [w - INSET, INSET], [w - INSET, h - INSET], [INSET, h - INSET]];
+  const edges = w > 0 ? [wavy(c[0], c[1], 'top'), wavy(c[1], c[2], 'right'), wavy(c[2], c[3], 'bottom'), wavy(c[3], c[0], 'left')] : [];
   return (
-    <div className="rope-frame" aria-hidden>
-      <svg width="0" height="0" style={{ position: 'absolute' }}>
-        <defs>
-          <pattern id="ropeH" patternUnits="userSpaceOnUse" width={P} height={T}>
-            <rect width={P} height={T} className="rs-bed" /><Strands />
-          </pattern>
-          <pattern id="ropeV" patternUnits="userSpaceOnUse" width={P} height={T} patternTransform={`rotate(90) translate(0 ${-T})`}>
-            <rect width={P} height={T} className="rs-bed" /><Strands />
-          </pattern>
-        </defs>
-      </svg>
-      <svg className="rf-edge rf-top"><rect width="100%" height={T} fill="url(#ropeH)" /></svg>
-      <svg className="rf-edge rf-bottom"><rect width="100%" height={T} fill="url(#ropeH)" /></svg>
-      <svg className="rf-edge rf-left"><rect width={T} height="100%" fill="url(#ropeV)" /></svg>
-      <svg className="rf-edge rf-right"><rect width={T} height="100%" fill="url(#ropeV)" /></svg>
-      {['tl', 'tr', 'bl', 'br'].map(c => <div key={c} className={`rf-knot rf-${c}`}><Knot /></div>)}
+    <div ref={ref} className="rope-frame" aria-hidden>
+      {w > 0 && (
+        <svg width={w} height={h}>
+          {edges.map((pts, i) => (
+            <g key={i} className="rope-edge">
+              <path d={path(pts)} className="rope-ink" />
+              <path d={path(pts)} className="rope-hemp" />
+              {strandsAlong(pts).map((s, k) => (
+                <g key={k} transform={`translate(${s.x.toFixed(1)} ${s.y.toFixed(1)}) rotate(${s.a.toFixed(1)})`}>
+                  <path d={STRAND} className="rs-twist" />
+                  <path d={LIGHT} className="rs-light" />
+                </g>
+              ))}
+            </g>
+          ))}
+          {c.map(([x, y], i) => <Knot key={i} x={x} y={y} />)}
+        </svg>
+      )}
     </div>
   );
 }

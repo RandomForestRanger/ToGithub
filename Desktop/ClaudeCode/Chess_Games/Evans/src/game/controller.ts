@@ -205,11 +205,11 @@ export class RoundController {
     };
   }
 
-  /** His moves after 4.b4 up to the miss (his move just played is excluded), then the canon route to the line's end. */
+  /** The whole game from 1.e4 up to the miss (his move just played is excluded), then the canon route to the line's end. */
   private missedReplay(line: string, fen: string, needed: string): Popup['replay'] {
-    const startPly = canon.meta.entry.length;
+    const startPly = 0;
     const hist = this.chess.history({ verbose: true });
-    const moves = hist.slice(startPly, -1).map(m => m.from + m.to + (m.promotion ?? ''));
+    const moves = hist.slice(0, -1).map(m => m.from + m.to + (m.promotion ?? ''));
     const c = new Chess(fen);
     const route = [needed];
     c.move(uciToMove(needed));
@@ -219,7 +219,7 @@ export class RoundController {
       route.push(n.toward[line]);
       c.move(uciToMove(n.toward[line]));
     }
-    return { fen: canon.nodes[canon.meta.rootKey].fen, startPly, moves: [...moves, ...route], needed: moves.length };
+    return { fen: new Chess().fen(), startPly, moves: [...moves, ...route], needed: moves.length };
   }
 
   // ---------- Black ----------

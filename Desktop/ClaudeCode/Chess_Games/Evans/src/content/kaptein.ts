@@ -95,6 +95,16 @@ export const UI = {
   momentBest: (m: string) => `Beste skuif in oop see: ${m}`,
   lights: 'Skeepsligte',
   theoryDip: "Op pad na hierdie lyn sak die stoommeter onder nul. Dis die prys van die lyn, nie jou fout nie.",
+  why: 'Hoekom speel ons soms die Evans?',
+  whyShort: 'Hoekom?',
+  whyTitle: 'Die stuk wen vir ons druk',
+  // the Captain's explanation in the "why" popup (one string per paragraph)
+  whyText: [
+    "Hierdie was my gunsteling manier om die Italiaanse opening bietjie interessant te maak, ou seun. Ons ruil 'n stuk, en wen 'n bietjie druk.",
+    "Wat beteken dit? Wel, die pion is 'n ou stukkie aas, ja 'n lokaas, om 'n vissie te lok.",
+    "En as hy die aas vat, dan kan ons lekker met hom planne beraam – want dan help ons allerhande planne om ons speelmaat die hele tyd onder druk te hou!",
+    'Onthou: Die stuk wen vir ons druk!',
+  ],
   restart: 'Begin oor',
   restartConfirm: 'Seker? Kliek weer',
   zones: { gold: 'Volstoom', green: 'Goeie druk', amber: 'Die stoom lek effens', cold: 'Die stoomketel is koud' },
