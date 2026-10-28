@@ -1,19 +1,38 @@
 # Next steps: Stoomdruk (Evans)
 
-**Live:** https://stoomdruk-evans.netlify.app · **Last session:** 26 October 2026 · All 11 unit tests pass.
+**Live:** https://stoomdruk-evans.netlify.app (still the 27 Oct build) · **Last session:** 28 October 2026 · All 28 unit tests pass · the 28 Oct changes are local only, not deployed yet.
 
 ## Pick up here (start of next session)
+
+**28 Oct, evening: second pass after Martin's first test** (CLAUDE.md §0.1 "Second pass", §8, §9, §9a, §11a): the plaque now separates *Lokaas* (route bait only) from *Verloor* and *Vangs*, with piece icons; the needle names its move ("Druk van 9.Qb3"); checkpoints wait for a calm moment; new lines come in by tier, softly and interleaved, and gold lines return in about 1 round in 5; *Die Spookskip* plays once after his third round and from the lesson popup. 40 tests pass.
+
+- [ ] **The lesson picture still says STUK.** `src/assets/aas-baas.webp` has "DIE STUK WEN VIR ONS DRUK" painted in its banner, while the text beside it now says *pion*. Ask the artist for a PION version (or decide that *stuk* stays and change `whyText` back).
+- [ ] Wording pass on tonight's new drafts too: `UI.ledgerLost`, `UI.pressOf`, all of `UI.ghost`, and Martin's own `FORCED` / `RESCUE` lines (forced moves no longer get the usual praise; `['']` = silent).
+
+**28 Oct, morning: the pressure redesign is built but not yet played by him.** See CLAUDE.md §0.1, §5, §9, §9a. Try it locally first:
+`export PATH="/usr/local/opt/node/bin:$PATH" && npm run dev`, then http://localhost:5173.
+
+1. **Watch him play two or three rounds** and note: does he look at the needle after his move? Does the *Lokaas* plaque register? Does he read the checkpoint card, or tap at random? Does he notice when Black slips (the Captain names it after his reply)?
+2. **Tune from what you see** (all in `src/config.ts`):
+   - `CRACK_P` 0.3: more slips = easier sea (0.5 gave 43% gold in simulation for a pressing White).
+   - `PRESS_ZONES` amber .5 / green 1.1 / gold 3.5: if the needle sits in *Volstoom* too often, raise gold.
+   - `CHECK_PLIES` 16, 24, 32: fewer checkpoints if they feel like homework.
+3. **Wording pass on the new drafts** in `src/content/kaptein.ts` (marked "new on 28 Oct"): `QUESTION`, `CRACK_CAUGHT`, `CRACK_ESCAPED`, `CHECK_RIGHT`, `CHECK_WRONG`, `CHECK_HONEST`, and in `UI`: `ledgerBait/Catch/Even`, `routeHidden`, `graphPress/Eval`, `momentCrack`, `momentQuiet`, `momentDrop` (renamed), `checkTitle`, `checkHint`, `checkOptions`, `checkWhy`, `checkWhyNot`, `checkAlso`, `checkContinue`, `checkTally`; plus the two new paragraphs of `whyText`.
+4. **Then commit and deploy.** The folder `.backup-2026-10-28/` holds the pre-redesign copies of every changed file; delete it once the work is committed to git.
+5. **Not built yet** (from the 28 Oct review): depth-before-breadth target choice (first the accepted lines where White stays down at level or better: Compromised, Pierce, Waller, Dufresne, Stone-Ware, McDonnell, Morphy; then the "vis spoeg die hoek uit" lines; then declined; reef and deep-dip lines last, `routeLow` already finds them), and one "ghost ship" replay (5.O-O instead of 5.c3, played out until Black's extra pawn decides).
 
 1. **Martin's wording pass.** Is `src/content/kaptein.ts` edited? If so: check it (quotes around `'n`, `{line}`/`{move}` kept, `ROUND_START`/`RETARGET`/`MISSED` unchanged), run the tests, build and redeploy.
 2. **Decisions waiting for Martin** (Claude asks once, then acts):
    - [ ] Push the Evans commits to GitHub (branch `add-RandomForestRanger`, 6+ commits ahead)?
-   - [ ] Round intro shows the target's full moves every round. Keep, or show only the stages for grey lines and the full moves once a line is green?
-   - [ ] Pawn icons (♙) under the dial to show how many pawns are invested (the moving red mark was removed with the fixed dial)?
+   - [x] Round intro: stages only for grey lines, full moves once green (28 Oct).
+   - [x] Pawns invested under the dial: the *Lokaas* / *Vangs* plaque (28 Oct).
    - [ ] Skeepsligte off: should it also silence the Captain's two bishop lines?
    - [ ] Begin oor: keep "same line, saves nothing", or pick a new target / keep lines conquered so far?
 3. **Touch test on a phone or tablet** (only tested on PC/MacBook so far): tap-to-move, pinch-zoom and pan in the forest, tapping bulbs, the intro card as a bottom sheet, the MISSED replay popup.
 
 ## Done (for reference)
+
+- 28 Oct: **pressure redesign** after a pedagogical review: needle = pressure of his last move (null-move threat; `press` precomputed for the canon by `tools/add_pressure.py`), *Lokaas/Vangs* plaque, pressure-sensitive Black (`CRACK_P`), "Wat het jou pion gekoop?" checkpoints, grey-line briefs without moves, `QUESTION` line, lesson text *pion* for *stuk* with *druk* defined, round-end pressure + eval charts, new moments (slip, quietest move), typo fixes in `kaptein.ts`. 17 new tests. Calibration: 360 simulated open-sea games (Python + native Stockfish 17.1).
 
 - 21 Oct: debug hooks only in dev/`VITE_SMOKE=1` builds, bundle split, check-8 unit test, stale root `canon_builder.py` removed.
 - 22 Oct: deployed to Netlify (see Deploy below).
@@ -35,7 +54,7 @@
 
 - [ ] When the kids' drawings arrive: replace the five files in `src/assets/` (same names; faces square), build, deploy. Brief: `art/Stoomdruk_Tekenopdrag_Kaptein_en_Vixen.docx`.
 - [ ] Decide whether line labels on the cards get a short Afrikaans explanation.
-- [ ] Update CLAUDE.md section 9 (gauge) and section 14 (round intro) to match what was built.
+- [x] CLAUDE.md §9 (gauge) and §14 (round intro) match what was built (28 Oct).
 - [ ] Colour fill-in after a round: confirm it looks right after real rounds.
 - [ ] Engine-phase scoring waits for the full depth-14 analysis (cap 2.5 s); tighten if it feels slow.
 - [ ] Promotion always gives a queen; add a picker if it ever matters.

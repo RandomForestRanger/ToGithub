@@ -1,4 +1,5 @@
 import { defineConfig } from 'vite';
+import { configDefaults } from 'vitest/config';
 import react from '@vitejs/plugin-react';
 
 export default defineConfig({
@@ -14,5 +15,6 @@ export default defineConfig({
       },
     },
   },
-  test: { environment: 'node' },
+  // .backup-*: dated copies of files from before a big change; never run them as tests
+  test: { environment: 'node', exclude: [...configDefaults.exclude, '.backup-*/**'] },
 } as any);

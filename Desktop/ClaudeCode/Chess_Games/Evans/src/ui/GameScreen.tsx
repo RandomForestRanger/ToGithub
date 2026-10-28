@@ -7,6 +7,7 @@ import { bishopBeams, type RoundController } from '../game/controller';
 import { Stoomdruk } from './Stoomdruk';
 import { CaptainFace, preloadFaces } from './CaptainFace';
 import { MiniReplay } from './MiniReplay';
+import { CheckpointCard } from './CheckpointCard';
 
 function useWidth(ref: React.RefObject<HTMLElement>, max: number) {
   const [w, setW] = useState(360);
@@ -116,7 +117,7 @@ export function GameScreen({ ctl, lights, onEnd, onRestart, bg }: {
           <span className="tag">{UI.target}</span>
           {target ? <><b>“{target.label}”</b> <span className="mono sub">{target.sub}</span></> : <i>—</i>}
         </div>
-        <Stoomdruk steam={ctl.shownSteam} debt={ctl.debt} visible={ctl.steamVisible} />
+        <Stoomdruk press={ctl.shownPress} ledger={ctl.ledger} visible={ctl.steamVisible} caption={ctl.pressCaption} />
         <div className="captain">
           <CaptainFace mood={ctl.mood} />
           <div className="bubble-speech">{ctl.thinking && !ctl.speech ? UI.thinking : ctl.speech || '…'}
@@ -147,6 +148,11 @@ export function GameScreen({ ctl, lights, onEnd, onRestart, bg }: {
           </button>
         )}
       </aside>
+
+      {ctl.checkpoint && (
+        <CheckpointCard cp={ctl.checkpoint} speech={ctl.speech}
+          onAnswer={a => ctl.answerCheckpoint(a)} onClose={() => ctl.closeCheckpoint()} />
+      )}
 
       {ctl.popup && (
         <div className={`popup popup-${ctl.popup.kind}`} onClick={() => ctl.closePopup()} role="status">

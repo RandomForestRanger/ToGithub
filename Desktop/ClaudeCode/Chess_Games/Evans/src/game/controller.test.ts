@@ -28,7 +28,11 @@ async function playRound(target: string, seed: number) {
   const ctl = new RoundController(target, () => 'grey');
   const rng = seeded(seed + 1000);
   for (let guard = 0; guard < 2000 && !ctl.result; guard++) {
-    if (ctl.phase !== 'over' && !ctl.thinking && ctl.chess.turn() === 'w') {
+    if (ctl.checkpoint && !ctl.checkpoint.answered) {
+      // "Wat het jou pion gekoop?" holds his move until he answers
+      ctl.answerCheckpoint(ctl.checkpoint.options[0]);
+      ctl.closeCheckpoint();
+    } else if (ctl.phase !== 'over' && !ctl.thinking && ctl.chess.turn() === 'w') {
       let san: string;
       if (ctl.phase === 'entry') san = canon.meta.entry[ctl.ply];
       else {

@@ -30,6 +30,11 @@ STRONG=1 node tools/smoke.mjs 3        # Stockfish-guided White (reaches move 20
 | `src/game/round.ts` | pure chart-phase rules (4.1–4.5), mirrors `tools/check_canon.py` |
 | `src/game/targets.ts` | target choice (section 8) + seeded RNG for tests |
 | `src/game/scoring.ts` | point bands, top-two rule |
+| `src/game/pressure.ts` | Stoomdruk = pressure (null move), dial mapping, pressure-sensitive Black |
+| `src/game/checkpoint.ts` | "Wat het jou pion gekoop?": reads the board for the five answers |
+| `tools/add_pressure.py` | adds `press` to the canon's Black-to-move nodes (run after `canon_builder.py`) |
+| `src/game/ledger.ts` | the plaque: lokaas (route bait) / verloor / vangs |
+| `src/ui/GhostShip.tsx` + `data/ghost_ship.json` | Die Spookskip film; rebuilt by `tools/ghost_ship.py` |
 | `src/game/controller.ts` | round state machine: entry → chart → engine → end; steam, Captain pacing, bishop beams, final eval |
 | `src/game/storage.ts` | `stoomdruk.v1` store; states never go down |
 | `src/engine/EngineService.ts` | one Stockfish worker, FIFO queue, MultiPV parsing |
@@ -46,6 +51,7 @@ STRONG=1 node tools/smoke.mjs 3        # Stockfish-guided White (reaches move 20
 6. Gold stays gold after a bad round. **Passes.**
 7. Data invariants + 500 simulated noisy chart phases. **Passes.**
 8. Round ends after Black's 20th move with exactly 16 scored White moves. **Unit test passes** (`controller.test.ts`, mocked engine), and the browser smoke test confirms it against the real engine.
+9. to 11. (28 Oct) Pressure needle and pressure-sensitive Black (`pressure.test.ts`, `controller.crack.test.ts`), checkpoints (`checkpoint.test.ts`). **Pass.**
 
 ## Choices I made without you (easy to change)
 

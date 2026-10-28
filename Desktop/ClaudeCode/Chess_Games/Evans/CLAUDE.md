@@ -2,7 +2,7 @@
 
 *Working title.* An Afrikaans chess training game that teaches the **Evans Gambit** to a 9-year-old rated about 1600. He always plays White. Each round follows one named Evans line chosen by the app. When he plays the line correctly, that line's branch on a big kelp tree turns green. When he also turns the gambit's compensation into a real advantage by the end of move 20, the branch turns gold.
 
-**The lesson behind everything:** in the Evans, White gives up a pawn (sometimes two or three) to gain time. Material lasts, but time doesn't. The *Stoomdruk* gauge makes the compensation visible: what did your pawn buy, and are you spending it before it runs out?
+**The lesson behind everything:** *Die pion wen vir ons druk.* In the Evans, White gives up a pawn (sometimes two or three) to gain time, and time only lasts while every move asks Black a question. *Druk* (pressure) means: Black has to answer every move, so he never gets the free move he needs to enjoy his extra pawn. The *Stoomdruk* needle shows how big a question his last move asked; the plaque under it shows what he paid. Black is more likely to slip when the road is narrow, so pressure pays off the way it does against a human.
 
 This file is the build spec. The data the game needs is already computed: `data/evans_canon_app.json`. Do not hardcode opening lines anywhere; everything comes from that file.
 
@@ -16,13 +16,34 @@ This file is the build spec. The data the game needs is already computed: `data/
 - **Rope:** thin nine-slice rope (`assets/rope.svg`) on cards, briefs, popups, panels, speech bubble; a thicker twisted rope with corner knots frames the Kelpwoud (`ui/RopeFrame.tsx`).
 - **Sea life** (`ui/Creatures.tsx`, always behind the kelp): fish families in six colours (one colour per school); crabs visit about every 3 min; visitors: moray eel every 2 min, dolphin every 4, whale shark every 7. **Cheat keys on the Kelpwoud: E eel, D dolphin, W whale shark.** None under reduced motion.
 - **Art (interim):** Captain's four mood faces and the *Vixen* from `art/`; mood per line in `MOOD` (`content/kaptein.ts`). Badge emblem from the artist brief (`assets/emblem.webp`, ribbon blank).
-- **Round flow:** while he admires the forest, the next round is prepared (engine warm, target chosen, images preloaded), so the brief opens at once. The **brief** sits over the Kelpwoud: camera glides to the target, its route glows, the card lists the route's stages and moves (`Ek is gereed!`). Lines whose own route dips below −0.5 get a note (`theoryDip`). **Begin oor** (two clicks: `Seker? Kliek weer`) abandons the round, saves nothing, and starts a new round with a new target and brief.
+- **Round flow:** while he admires the forest, the next round is prepared (engine warm, target chosen, images preloaded), so the brief opens at once. The **brief** sits over the Kelpwoud: camera glides to the target, its route glows, the card lists the route's stages, and its moves once the line is green (`Ek is gereed!`). (The `theoryDip` note was retired on 28 Oct; `routeLow` stays for a later curriculum.) **Begin oor** (two clicks: `Seker? Kliek weer`) abandons the round, saves nothing, and starts a new round with a new target and brief.
 - **MISSED popup** replays: his game from 4.b4, a pause on the needed move (green arrow), the line's route to its end, a 5 s freeze (`ui/MiniReplay.tsx`).
 - **Badges** (`game/badges.ts`): 12 lines (Pierce, Morphy, Bronstein, Slow, Anderssen Variation, Stone-Ware | McDonnell Defense, Mayet, Declined 5.a4, Declined 4...Bb6, Hein, Fontaine) earn a badge when they turn gold; shown only when earned, six a side of the Kelpwoud, with an arrival animation the first time.
 - **Game background:** a random photo per round from `assets/backgrounds/` (Unsplash, credits in `CREDITS.md`) under a dark wash. Any `.webp` added there joins the rotation.
-- **Kelpwoud extras:** wavy rope frame with corner knots; side decor (foreground kelp, rocks, anchor) and a left/right vignette (`ui/EdgeDecor.tsx`); the Hoof-wapen under the title; the button `Hoekom speel ons soms die Evans?` opens the lesson popup (`aas_baas` picture + the Captain's text in `UI.whyText`). The teaching image is **bait** (lokaas), not coal: *Die stuk wen vir ons druk.*
+- **Kelpwoud extras:** wavy rope frame with corner knots; side decor (foreground kelp, rocks, anchor) and a left/right vignette (`ui/EdgeDecor.tsx`); the Hoof-wapen under the title; the button `Hoekom speel ons soms die Evans?` opens the lesson popup (`aas_baas` picture + the Captain's text in `UI.whyText`). The teaching image is **bait** (lokaas), not coal: *Die pion wen vir ons druk.*
 - **MISSED replay** waits 1 s, plays from 1.e4 at half speed.
 - **Captain's lines** are Martin's own wording now (`content/kaptein.ts` is the source; §12's table is the original draft).
+
+### 0.1 The pressure redesign (28 October 2026): overrides §5, §7, §9 and §14 where they differ
+
+Why: a review found the game rewarded following the route, not understanding the trade. The needle showed the plain eval (0.0 read amber, so 4.b4 itself read "Die stoom lek effens", and 43% of perfect route positions read amber or cold); the pawns he had paid were invisible; and Black's 50 cp window removed exactly the slips that make gambits work against humans.
+
+- **Needle = pressure** (§9): what Black would lose by skipping his move after his last move (null move). Precomputed for every Black-to-move canon node (`press`, `tools/add_pressure.py`, depth 16); in open sea two depth-12 searches. Zones: cold < 0.5, amber < 1.1, green < 3.5, gold ≥ 3.5 pawns, sitting exactly on the painted ticks (−1, =, 1); `PRESS_FULL` 6 reaches the right tick. Code: `game/pressure.ts`.
+- **Pawn ledger** under the dial: *Lokaas* with one pawn per pawn invested, *Vangs* (gold pawns) when he is ahead, *Gelyk* when level (`ui/Stoomdruk.tsx`).
+- **Pressure-sensitive Black** (§5): when his last move asked ≥ 0.8 pawns (or gave check) and Black has exactly one candidate inside the 50 cp window, Black misses it with probability `CRACK_P` (0.3) and plays the best of the unsafe candidates. Never on an obvious take-back. After his reply the Captain names it (`CRACK_CAUGHT` / `CRACK_ESCAPED`), only if the slip really cost Black ≥ 0.5 at depth 14. Simulation (360 games from chart ends to move 20): gold for a pressing / quiet club White went from 13% / 17% without slips to 38% / 28% at 0.3 (43% / 30% at 0.5).
+- **"Wat het jou pion gekoop?"** checkpoints (§9a) before his 9th, 13th and 17th moves while he is a pawn or more down.
+- **Brief:** for a grey line the stages only (`UI.routeHidden`); the moves appear once the line is green, as on the Kelpwoud card. The theory-dip note is gone (the needle no longer follows the eval).
+- **Captain:** `QUESTION` ("Wat vra jou skuif vir Swart?") is added after `CHART_END`, after a cold needle in open sea, and after every checkpoint answer. Leak lines (amber/cold) only in open sea and only while he has a pawn invested. `whyText` now says *pion* (not *stuk*), defines *druk*, and explains the needle and the plaque.
+- **Round end:** two small charts on one move axis (pressure bars per move, quiet moves dim; the eval line below), the checkpoint tally, and two new moments: Black's slip (`crack`) and his quietest open-sea move while invested (`quiet`). At most three moments.
+
+**Second pass, 28 Oct evening (after Martin's first play-test):**
+- **Plaque split** (`game/ledger.ts`): *Lokaas* is only material given on the opening route (the gambit's own sacrifice; it shrinks as he wins it back and never grows after the route); *Verloor* is anything else he is down; *Vangs* anything he is up; shown as piece icons. Knights and bishops count as one class, so a bishop-for-knight trade nets to nothing. Checkpoints, leak lines and `DEBT_PAID` follow the lokaas, not the material.
+- **Needle caption:** "Druk van 9.Qb3" under the dial, so it is clear which move the reading belongs to.
+- **Checkpoints wait for calm** (§9a): never while he is fighting for his life.
+- **Soft curriculum** (§8): new lines come in by tier, never shut, interleaved; gold lines keep returning.
+- **Die Spookskip** (§11a): the contrast film, once after his third round and from the lesson popup.
+- **No cheering for forced moves** (§12): a good move he had to play still scores, but the Captain says `FORCED` / `RESCUE` instead of the usual praise.
+- **Sea life:** the whale shark's and the dolphin's dorsal fins now sweep back toward the tail (they leaned forward).
 
 ---
 
@@ -195,6 +216,8 @@ From `before.top2` (precomputed, depth 18):
 
 **Black's move:** Stockfish **depth 6, MultiPV 3**. Keep the candidates whose score (from Black's side) is within `BLACK_WINDOW_CP` (50) of the best, and choose one uniformly at random. Mate scores count as +-10000. Thinking delay 400 to 900 ms.
 
+**Black cracks where the road is narrow** (since 28 Oct, `chooseBlackMove` in `game/pressure.ts`): if exactly one candidate is inside the window, the others are outside it, his last move's pressure is at least `CRACK_MIN_PRESS` (0.8) or Black is in check, and the safe move is not a take-back on the square White just moved to, then with probability `CRACK_P` (0.3) Black plays the best unsafe candidate instead. This is how an opponent facing an unfamiliar gambit actually goes wrong, and it is what makes pressure pay.
+
 Why the window: a test of 140 Black decisions showed that choosing freely among the top three gave away more than a pawn on about 1 move in 5. With the 50-centipawn window, that dropped to about 1 in 16.
 
 **Analysis** (for the gauge and for points): after every half-move, analyse at **depth 14** (MultiPV 2 when White is to move), capped at 2.5 seconds. Depth 6 is too noisy for the gauge: in testing it differed from a deep search by more than three-quarters of a pawn on 1 position in 10.
@@ -227,7 +250,7 @@ Every line is in one of three states, and **a state never goes down**:
 | **Gold** | Green in a round that he also **capitalised**. |
 
 **Capitalised** means one of:
-- after Black's 20th move, the eval from White's side, at depth 16 or more, is at least `GOLD_EVAL` (+1.00 pawns); on the gauge, the needle is at least one pawn above the red mark;
+- after Black's 20th move, the eval from White's side, at depth 16 or more, is at least `GOLD_EVAL` (+1.00 pawns) (the gold line on the round-end eval chart);
 - or he delivered checkmate.
 
 A draw or stalemate does not capitalise.
@@ -240,26 +263,53 @@ Calibration of +1.00: I simulated play from 12 chart-end positions to move 20 ag
 
 ## 8. Choosing the target
 
-The pool is every line except the root `evans-gambit` (4.b4) and except the last 2 targets.
+The pool is every line except the root `evans-gambit` (4.b4) and except the last 2 targets (`chooseRoundTarget`, `game/targets.ts`).
 
-1. Choose a state class: grey 70%, green 25%, gold 5%. Renormalise over the classes that are not empty.
-2. Within the class, weight each line by `(famous ? 3 : 1) * (1 + log10(1 + games))`.
+1. Choose a state class: grey 60%, green 25%, gold 15% (`CLASS_ODDS`). Renormalise over the classes that are not empty. Gold lines keep coming back, so the game never runs dry.
+2. Within the class, weight each line by `(famous ? 3 : 1) * (1 + log10(1 + games))`, and:
+   - **grey lines only:** times their tier's openness;
+   - **any class:** times `TIER_REPEAT` (0.5) if the last two targets were both from this line's tier (interleaving).
+
+**Tiers** (`tierOf` in `data.ts`, computed from the data, no hand list):
+
+| Tier | Lines | Rule |
+|---|---|---|
+| 1 | 27, e.g. Accepted, Main Line, Pierce, Compromised, Stone-Ware, McDonnell, Morphy, Waller, Dufresne | White is still a pawn or more down at the line's end, at −0.2 or better |
+| 2 | 6: Slow Variation, 6...d6, Tartakower, Alapin-Steinitz, Lasker, Levenfish | the pawn comes back, or the line ends a little worse |
+| 3 | 6: Declined 4...Bb6 and 5.a4, Cordel Variation, Showalter, Hein, Fontaine | never a pawn down |
+| 4 | 11: the reef lines and every line whose theory dips to −0.5 or worse (Hirschbach, Lange, Sokolsky, Anderssen Defense, Vasquez, Richardson, Hicken, Steinitz, Pavlov, Fraser-Mortimer, Mortimer-Evans) | risky |
+
+**Openness** (`tierOpenness`): tier 1 is always 1. Tier *t* starts at `TIER_FLOOR[t]` (0.35 / 0.3 / 0.08) and rises linearly to 1 as the share of the easier tiers that is green or gold reaches `TIER_NEED[t]` (40% / 50% / 60%). Never zero, so lessons interleave and it feels random. Measured (20,000 picks): a fresh forest serves tier 1 / 2 / 3 / 4 in 82% / 7% / 9% / 1.5% of rounds; with tier 1 all green, 29% / 20% / 32% / 19%; with half the forest gold, a gold line comes up in about 1 round in 5.
 
 Use the same weights for `chooseTarget(open)` during the round (sections 4.2 and 4.4), restricted to the open lines.
 
----
-
 ## 9. Stoomdruk (the steam gauge)
 
-The painted **drukmeter** (`art/drukmeter.png` → `assets/drukmeter.webp`) beside the board; **only the needle moves**, the scale and colours never change.
+The painted **drukmeter** (`art/drukmeter.png` → `assets/drukmeter.webp`, banners *LAE DRUK* and *HOË DRUK*) beside the board; **only the needle moves**, the scale and colours never change.
 
-- **Needle = eval** (steam − debt, i.e. White's eval in pawns), interpolated between the painted ticks −2, −1, =, 1, 2 (angles measured on the picture, `ui/Stoomdruk.tsx`); stops just past ±2. Before 4.b4 it is dimmed at =.
-- **Zones** (fixed, `zoneOf`): gold ≥ +1 (`GOLD_EVAL`, the gold rule at move 20), green 0..+1, amber −1..0, cold < −1. The zone name (from `UI.zones`) and value are written inside the dial; long names shrink to fit.
-- **Source:** on the chart `node.steam` from the data; in the engine phase the runtime analysis, smoothed 0.5/0.5.
-- **Captain:** a zone change says `STEAM_*` (at most every 6 half-moves). **On the chart** a dip is theory, not his fault: below −0.5 (`THEORY_DIP`) the Captain says `STEAM_THEORY` once per round, and the usual leak lines stay quiet.
-- The round-end graph shows the eval over the game with fixed lines at 0 and +1.
+- **Needle = pressure of his last move**: `max(0, eval if Black passed − eval now)`, in pawns from White's side, mates clamped to ±15. A check counts as `PRESS_CHECK` (1.5). It updates after each of his moves and holds during Black's turn. Before 4.b4 it is dimmed at =.
+- **Source:** canon positions use `node.press` (depth 16, `tools/add_pressure.py`); elsewhere two searches at `PRESS_DEPTH` (12), capped at `PRESS_MAX_MS` each, cached by FEN.
+- **Zones** (`pressZone`): cold < 0.5 · amber < 1.1 · green < 3.5 · gold. `pressToDial` puts the thresholds exactly on the painted ticks −1, =, 1 and `PRESS_FULL` (6) on 2. Calibrated on 360 simulated open-sea games: about 10% / 20% / 40% / 30% of club moves. A quiet move in a quiet Italian is about 0.2; attacking a piece is 3 or more. The zone name (`UI.zones`) is written inside the dial; no number.
+- **Caption** under the dial: `UI.pressOf` ("Druk van 9.Qb3"), the move the reading belongs to.
+- **Ledger plaque** under that (`game/ledger.ts`, piece icons drawn in `ui/Stoomdruk.tsx`): *Lokaas* = material given on the opening route (on the route every bit he is down is the gambit's own; after the route it only shrinks, as he wins it back); *Verloor* = anything else he is down; *Vangs* = anything he is up; *Gelyk* when level. Classes queen / rook / minor (knight and bishop together) / pawn, so ordinary trades net out; more than 6 icons shows +n.
+- **Captain:** a zone change says `STEAM_*` (at most every 6 half-moves), cold adds `QUESTION`. On the chart only gold/green praise (the route chose his move); amber/cold only in open sea and only while there is lokaas in the water. `DEBT_PAID` when the lokaas shrinks.
+- **Round end:** pressure bars per move above the eval line (fixed lines at 0 and +1), one shared move axis.
 
----
+## 9a. "Wat het jou pion gekoop?" (checkpoints)
+
+Before his 9th, 13th and 17th moves (`CHECK_PLIES` 16, 24, 32), if there is lokaas in the water, the Captain asks what the pawn bought. **Never while he is fighting for his life:** in check, at `CHECK_CALM_EVAL` (−1.5) or worse, facing mate, or with only one move that doesn't lose `CHECK_ONLY_MOVE_CP` (1.5 pawns; MultiPV 2 at depth 12, so a forced take-back counts). Then the question waits for a calm moment, at most `CHECK_DEFER_PLIES` (two of his moves), and is otherwise skipped. In master positions about 1 checkpoint moment in 7 is such a fight. (Black merely attacking something does not count: in gambit positions that is true most of the time.) His move waits until he taps one of five answers; `Verder` or his next move closes the card. The card sits over the side panel (a bottom sheet on phones), never over the board.
+
+Each answer is checked on the board (`game/checkpoint.ts`, calibrated on 217 canon positions):
+
+| Answer | True when |
+|---|---|
+| `tyd`: Tyd: meer stukke in die spel | White's developed pieces (minor pieces off home squares, +1 for castling) exceed Black's by `CHECK_DEV_LEAD` (1) |
+| `sentrum`: Die sentrum | White has at least 2 pawns on d4/e4/d5/e5, and more than Black |
+| `lyne`: Oop lyne vir my stukke | White has `CHECK_MOB_LEAD` (8) more legal moves than Black |
+| `koning`: Swart se koning sit vas in die middel | Black's king is on d8–f8/d7–f7 and cannot castle next move (no rights, or f8/g8 occupied or attacked) |
+| `niks`: Niks meer nie | none of the above, and the eval is at most `CHECK_NOTHING_CP` (−0.7) |
+
+If nothing is true but the eval is above −0.7, there is no fair question and nothing is asked. Any true answer is right; the card then shows why, and what else the pawn bought; a wrong answer shows why it is not true and what is. The Captain says `CHECK_RIGHT` / `CHECK_HONEST` (for a right *niks*) / `CHECK_WRONG`, then `QUESTION`. The round-end card shows `checkTally`.
 
 ## 10. Bakboord and Stuurboord
 
@@ -315,6 +365,15 @@ Each stipe takes its own line's state, so the path from the holdfast to a gold l
 
 **After a round:** pan to the lines that changed, pulse their bulbs, and send up a few bubbles as the colour fills in.
 
+## 11a. Die Spookskip (the ghost ship)
+
+The contrast case for "time runs out" (`ui/GhostShip.tsx`, data `data/ghost_ship.json` from `tools/ghost_ship.py`, captions `UI.ghost`):
+
+1. **Chapter 1, the slow ship:** 1.e4 e5 2.Nf3 Nc6 3.Bc4 Bc5 4.b4 Bxb4 5.O-O Nf6 6.c3 Be7 7.Qc2 O-O 8.Re1 Bc5 9.d3 d6 10.a4 a6 11.Nbd2 Ba7 12.Ba2 h6 13.h3 Be6. White always plays the quietest move within 0.2 of the best and never drops material; Black plays Stockfish's best. Black castles and develops and is still exactly one pawn up (eval −1.0). Moves 1 to 4 play fast, then about a second a move, with three captions (5.O-O, Black castles, Black is ready).
+2. **Chapter 2, "'n ruk later":** the pawn ending with the same queenside pawns (White a+c against Black a+b+c: the missing b-pawn is the bait) and the kingside as it stood; Stockfish rates it −5.5 and plays it out until Black's c-pawn queens.
+
+Shown once automatically when he returns to the Kelpwoud after his `GHOST_AFTER_ROUNDS` (3rd) round (`settings.ghostSeen`), and any time from the button `Kyk na die Spookskip` in the lesson popup. `Weer` replays.
+
 ---
 
 ## 12. Kaptein Evans (all strings)
@@ -363,6 +422,8 @@ The rest are drafts for Martin to edit:
 | `END_WHITE_MATED` | `Ons het gesink. Maar elke kaptein word een keer nat.` |
 | `END_DRAW` | `Remise. Die see is kalm vandag.` |
 
+**Forced moves** (since 28 Oct): when his best move was the only one that doesn't lose `FORCED_GAP_CP` (1.5 pawns; or the only legal move), a move scoring 3 or 4 still gets its marks, but the Captain says `FORCED` ("Ja-nee, swart het jou nie regtig 'n keuse gegee nie.") instead of `POINTS_*` (or `LINE_MOVE` on the chart), and `RESCUE` ("Dankie tog daar was daardie opsie.") if he was also at `RESCUE_EVAL_CP` (−1.5) or worse. Martin's wording, to be refined; `['']` makes the Captain stay silent.
+
 Pacing: at most one Captain line per half-move. Popups (RETARGET, MISSED) take priority over the speech bubble. Points reactions only in the engine phase or for non-canon moves.
 
 The UI is Afrikaans throughout; line names stay in English as proper nouns, in quotes.
@@ -381,7 +442,7 @@ One key, `stoomdruk.v1`:
   "rounds": [ { "date": "...", "target": "<lineId>", "conquered": ["..."], "gold": false,
                 "score": 41, "finalEval": 0.62 } ],          // keep the last 100
   "recentTargets": ["<lineId>", "<lineId>"],
-  "settings": { "bishopLights": true }
+  "settings": { "bishopLights": true, "ghostSeen": false }
 }
 ```
 
@@ -392,9 +453,9 @@ One key, `stoomdruk.v1`:
 ## 14. Screens
 
 1. **Kelpwoud (home):** the forest in its rope frame; counter at the top; earned badges at the sides; `Begin 'n rondte` at the bottom.
-2. **Brief** (over the Kelpwoud, see §0): route lit up, stages and moves, `Ek is gereed!`.
-3. **Game:** board (on top on a phone) over the round's background photo; panel with target banner, drukmeter, the Captain (mood face + speech), `Skuif 7/20` and `Punte 23`, the move list with points chips, and `Begin oor`. Last move highlighted. No hints, no takebacks.
-4. **Round end:** score out of 64, lines coloured this round, the eval graph, up to three key moments; `Nog 'n rondte` and `Terug na die Kelpwoud` (plays the colouring animation and any badge arrivals).
+2. **Brief** (over the Kelpwoud, see §0): route lit up, stages, and the moves only once the line is green or gold (`UI.routeHidden` for grey lines), `Ek is gereed!`.
+3. **Game:** board (on top on a phone) over the round's background photo; panel with target banner, drukmeter with the ledger plaque, the Captain (mood face + speech), `Skuif 7/20` and `Punte 23`, the move list with points chips, and `Begin oor`. Last move highlighted. No hints, no takebacks. Checkpoint card (§9a) over the panel.
+4. **Round end:** score out of 64, the checkpoint tally, lines coloured this round, the pressure and eval charts, up to three key moments; `Nog 'n rondte` and `Terug na die Kelpwoud` (plays the colouring animation and any badge arrivals).
 
 ---
 
@@ -408,11 +469,20 @@ One key, `stoomdruk.v1`:
 | `FINAL_EVAL_DEPTH` | 16 | 7 |
 | `GOLD_EVAL` | 1.00 (pawns) | 7, 9 |
 | `POINT_BANDS_CP` | 25 / 60 / 120 | 6 |
-| `CLASS_ODDS` | grey .70 / green .25 / gold .05 | 8 |
+| `CLASS_ODDS` | grey .60 / green .25 / gold .15 | 8 |
+| `TIER_FLOOR` / `TIER_NEED` / `TIER_REPEAT` | tiers 2–4: .35 .3 .08 / .4 .5 .6 / 0.5 | 8 |
 | `FAMOUS_WEIGHT` | 3 | 8 |
 | `RECENT_EXCLUDE` | 2 | 8 |
 | `MOVES_PER_ROUND` | 20 | 3 |
-| `STEAM_SMOOTHING` | 0.5 | 9 |
+| `STEAM_SMOOTHING` | 0.5 (eval series on the round-end chart) | 9 |
+| `PRESS_DEPTH` / `PRESS_MAX_MS` / `PRESS_CHECK` | 12 / 1200 / 1.5 | 9 |
+| `PRESS_ZONES` / `PRESS_FULL` | amber .5 / green 1.1 / gold 3.5, full 6 (pawns) | 9 |
+| `CRACK_P` / `CRACK_MIN_PRESS` | 0.3 / 0.8 | 5 |
+| `CRACK_REAL_CP` / `CRACK_KEEP_CP` | 50 / 60 | 5 (when the Captain names a slip, and whether he caught it) |
+| `CHECK_PLIES` / `CHECK_DEV_LEAD` / `CHECK_MOB_LEAD` / `CHECK_NOTHING_CP` | 16, 24, 32 / 1 / 8 / −70 | 9a |
+| `CHECK_CALM_EVAL` / `CHECK_ONLY_MOVE_CP` / `CHECK_DEFER_PLIES` | −150 / 150 / 4 | 9a |
+| `GHOST_AFTER_ROUNDS` | 3 | 11a |
+| `FORCED_GAP_CP` / `RESCUE_EVAL_CP` | 150 / −150 | 12 |
 
 ---
 
@@ -439,13 +509,19 @@ Automate these with fixed random seeds:
 5. Target "Fontaine Countergambit": the engine phase starts at move 5.
 6. A gold line stays gold after a bad round.
 7. For every node, every id in `reach` (except those in `endOf`) has a `toward` entry, and every `toward` move is legal in `fen`. `tools/check_canon.py` checks this and simulates thousands of chart phases under these rules; port its round logic as the reference for `round.ts` tests.
-8. A round ends after Black's 20th move with exactly 16 scored White moves.
+8. A round ends after Black's 20th move with exactly 16 scored White moves (checkpoints answered on the way).
+9. Pressure (`game/pressure.test.ts`): zone thresholds land on the painted ticks; every Black-to-move canon node has `press` (null only in check); Black cracks only when squeezed, never with room to breathe or on a take-back.
+10. A whole round with a fake engine where every Black decision is narrow: Black slips, the Captain names it, the round-end moments show it (`game/controller.crack.test.ts`).
+11. Checkpoints (`game/checkpoint.test.ts`): the Compromised Defence reads *tyd* + *koning*; a slow, castled Black with the engine at −1.2 reads *niks*; no question when the board shows nothing and the engine disagrees.
+12. Plaque (`game/ledger.test.ts`): the greedy line is three pawns of lokaas; winning one back leaves two; a knight dropped in open sea is verloor, not lokaas; bishop for knight nets to nothing; an extra pawn is vangs.
+13. Targets (`game/targets.test.ts`): tiers come from the data; a fresh forest serves mostly tier 1 but every tier can appear; tiers open as tier 1 greens; gold lines return; two same-tier rounds lower that tier next.
+14. Die Spookskip (`game/ghost.test.ts`): every move legal; Black exactly one pawn up throughout chapter 1, and castled; chapter 2 has a+c against a+b+c and ends with Black queening.
+15. Forced moves (`game/controller.forced.test.ts`): with one good move and every other losing 3 pawns, his good moves score 4 and the Captain says `FORCED`, never `POINTS_4`; at −2.5 he says `RESCUE`.
 
 ---
 
 ## 18. Not in v1 (ideas for later)
 
-- **"Wat het jou pion gekoop?"**: at three checkpoints the Captain asks what the pawn bought (development lead, king stuck in the centre, open lines, centre, Black's bishop wasting time), and he taps an answer.
 - **Die Wrakduiker:** replay famous Evans games (Evans v McDonnell, Anderssen v Dufresne 1852, Fischer v Fine 1963, Kasparov v Anand 1995) by guessing the master's moves.
 - **Bakboord en Stuurboord tactics harbour:** short puzzles on the Evans motifs, aimed at the motifs he missed.
 - Several player profiles; sound.
@@ -458,6 +534,18 @@ Automate these with fixed random seeds:
 pip install chess
 python tools/canon_builder.py --pgn tools/evans_master_games.pgn --stockfish /path/to/stockfish \
     --min-games 2 --max-ply 32 --depth 18 --out evans_canon.json --app-out data/evans_canon_app.json
+```
+
+Then add the pressure field (only adds `press` to Black-to-move nodes; nothing else changes):
+
+```
+python tools/add_pressure.py data/evans_canon_app.json --stockfish /path/to/stockfish --depth 16
+```
+
+The ghost ship film (any time; it is independent of the canon):
+
+```
+python tools/ghost_ship.py --stockfish /path/to/stockfish --out data/ghost_ship.json
 ```
 
 With a larger game database (for example a Lichess masters export, or `--lichess-masters`), raise `--min-games` to keep the tree a similar size; `--sweep` prints the tree size for several thresholds. The famous list and the reef rule live at the top of `canon_builder.py`.

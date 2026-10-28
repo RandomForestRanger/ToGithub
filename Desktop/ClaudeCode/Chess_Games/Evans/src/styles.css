@@ -401,3 +401,83 @@ body {
   .kelp-bottom .btn.primary { order: 0; } .kelp-bottom .why-btn { order: 1; }
   .kelp-bottom .lights { order: 2; } .kelp-bottom .btn.ghost { order: 3; }
 }
+
+/* ---------- 28 Oct: pressure needle, pawn ledger, round-end graph, checkpoints ---------- */
+.stoomdruk .ledger { display: flex; align-items: center; justify-content: center; gap: 10px; margin: -6px auto 0; width: fit-content;
+  padding: 4px 14px 5px; border-radius: 10px; background: linear-gradient(160deg, #f3e7c8, #dcc79a); border: 2px solid #8b6b3a;
+  box-shadow: 0 3px 10px rgba(0,0,0,.35); color: #3b2a14; min-height: 36px; }
+.stoomdruk .ledger-label { font-family: var(--font-display); font-size: 17px; letter-spacing: .04em; }
+.stoomdruk .ledger.paid .ledger-label { color: #8b2f12; } .stoomdruk .ledger.won .ledger-label { color: #7a5600; }
+.stoomdruk .ledger.even .ledger-label { color: #6b5a3c; }
+.stoomdruk .ledger { flex-wrap: wrap; row-gap: 2px; }
+.stoomdruk .ledger-seg { display: inline-flex; align-items: center; gap: 6px; }
+.stoomdruk .ledger-seg + .ledger-seg { padding-left: 10px; border-left: 1.5px solid rgba(139,107,58,.55); }
+.stoomdruk .ledger-seg.bait .ledger-label { color: #8b2f12; }
+.stoomdruk .ledger-seg.lost .ledger-label { color: #5b4a3a; }
+.stoomdruk .ledger-seg.won .ledger-label { color: #7a5600; }
+.stoomdruk .ledger-pawns { display: inline-flex; align-items: flex-end; gap: 2px; }
+.stoomdruk .ledger-piece { width: 18px; height: 26px; }
+.stoomdruk .ledger-piece * { stroke: #3b2a14; stroke-width: 2.3; stroke-linejoin: round; }
+.stoomdruk .ledger-piece.bait * { fill: #fffaf0; }
+.stoomdruk .ledger-piece.lost * { fill: #b9ab95; }
+.stoomdruk .ledger-piece.won * { fill: #e0a526; }
+.stoomdruk .ledger-piece .eye { fill: #3b2a14 !important; stroke: none; }
+.stoomdruk .ledger-piece .slit { fill: none !important; }
+.stoomdruk .ledger-more { font-family: var(--font-body); font-weight: 700; font-size: 16px; color: #8b2f12; }
+.steam-graph .graph-title { fill: var(--muted); font-family: var(--font-body); font-weight: 700; font-size: 12px; }
+.steam-graph .graph-axis { stroke: rgba(255,255,255,.25); stroke-width: 1; }
+.steam-graph .graph-ref { stroke: rgba(255,255,255,.22); stroke-width: 1; stroke-dasharray: 3 3; }
+.steam-graph .graph-ref-label { fill: var(--muted); font-family: var(--font-body); font-size: 11px; text-anchor: start; }
+.steam-graph .press-bar { fill: #f3a64a; }
+.steam-graph .press-bar.quiet { fill: #9a7448; }
+.steam-graph .press-bar:hover { fill: #ffc27a; }
+.steam-graph .press-bar.quiet:hover { fill: #b8915f; }
+.route-card .route-hidden { margin: 0; font-style: italic; color: #6b4d24; }
+/* "Wat het jou pion gekoop?" card: a sea chart over the board */
+/* never over the board: he has to look at the board to answer. Wide screens: over the side panel;
+   phones (board on top): a bottom sheet. */
+.checkpoint { position: fixed; z-index: 25; overflow: auto; padding: 14px 16px; border-radius: 14px; animation: fadeIn .25s ease both;
+  right: max(16px, calc((100vw - 1100px) / 2 + 16px)); top: 16px; width: 360px; max-height: calc(100vh - 32px); }
+@media (max-width: 860px) {
+  .checkpoint { left: 12px; right: 12px; top: auto; bottom: calc(12px + env(safe-area-inset-bottom, 0px)); width: auto; max-height: 52vh; }
+}
+.checkpoint .route-head { display: flex; gap: 12px; align-items: center; }
+.checkpoint .intro-line { margin: 0; font-size: 22px; }
+.checkpoint .check-hint { margin: 8px 0 4px; font-style: italic; color: #6b4d24; }
+.checkpoint .opts { display: flex; flex-direction: column; gap: 6px; margin: 8px 0 4px; }
+.checkpoint .opt { display: flex; align-items: center; gap: 10px; text-align: left; font: inherit; font-family: var(--font-body); font-weight: 700;
+  font-size: 17px; color: #3b2a14; background: #fff6df; border: 2px solid #8b6b3a; border-radius: 10px; padding: 10px 12px; cursor: pointer; min-height: 44px; }
+.checkpoint .opt:not(:disabled):hover { background: #ffefc4; }
+.checkpoint .opt:disabled { cursor: default; }
+.checkpoint .opt .mark { display: inline-block; width: 1.2em; font-size: 20px; text-align: center; }
+.checkpoint .opt.true { border-color: #1d7a45; background: #e3f4e6; }
+.checkpoint .opt.true .mark { color: #1d7a45; }
+.checkpoint .opt.false { border-color: #8b2f12; background: #f8e1d8; }
+.checkpoint .opt.false .mark { color: #8b2f12; }
+.checkpoint .opt.idle { opacity: .55; }
+.checkpoint .opt.chosen { box-shadow: 0 0 0 3px rgba(139,107,58,.35); }
+.checkpoint .check-feedback p { margin: 6px 0; }
+.checkpoint .check-say { font-weight: 700; }
+.checkpoint .check-also { margin-top: 10px; color: #6b4d24; font-style: italic; }
+.checkpoint .btn.primary { margin-top: 10px; }
+.end-card .check-tally { text-align: center; margin: 8px 0 0; }
+.checkpoint .check-not { color: #8b2f12; }
+
+/* Die Spookskip */
+.ghost-backdrop { position: fixed; z-index: 30; }
+.ghost-card { width: min(440px, 100%); display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.ghost-card .ghost-title { margin: 0; font-size: 26px; color: #2a1d0e; }
+.ghost-board { display: flex; flex-direction: column; align-items: center; filter: saturate(.75); }
+.ghost-board .mini-caption { color: #5b4a3a; }
+.ghost-say { align-self: stretch; min-height: 4.6em; }
+.ghost-say p { margin: 0; }
+.ghost-card .btn-row { margin-top: 4px; }
+.why-card .btn-row { margin-top: 10px; }
+
+/* which move the needle is measuring, just under the dial */
+.stoomdruk .dial-caption { text-align: center; margin: -6px 0 6px; font-family: var(--font-body); font-weight: 700; font-size: 15px;
+  color: #f3e7c8; text-shadow: 0 1px 3px rgba(0,0,0,.8); font-variant-numeric: tabular-nums lining-nums; }
+/* plain buttons on the cream cards */
+.why-card .btn:not(.primary), .ghost-card .btn:not(.primary) { color: #2a1d0e; background: #fff6df; border: 2px solid #8b6b3a; }
+.why-card .why-ghost { justify-content: flex-start; margin: 8px 0 0; }
+@media (max-width: 860px) { .stoomdruk .dial-caption { margin-top: 2px; } }

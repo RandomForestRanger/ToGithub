@@ -90,8 +90,10 @@ export function routeOf(id: string): string[] {
 
 const reducedMotion = () => typeof matchMedia !== 'undefined' && matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-export function Kelpwoud({ store, changed, onBegin, onToggleLights, route, overlay }: {
+export function Kelpwoud({ store, changed, onBegin, onToggleLights, route, overlay, onGhost }: {
   store: Store; changed: string[]; onBegin: () => void; onToggleLights: () => void;
+  /** open Die Spookskip (from the lesson popup) */
+  onGhost?: () => void;
   /** round intro: light up the path to this line and pan to it */
   route?: string;
   /** shown instead of the footer (the round intro card) */
@@ -416,6 +418,7 @@ export function Kelpwoud({ store, changed, onBegin, onToggleLights, route, overl
           <div className="card why-card" role="dialog" aria-label={UI.whyTitle} onClick={e => e.stopPropagation()}>
             <button className="x" onClick={() => setWhy(false)} aria-label={UI.close}>×</button>
             <img src={aasBaas} className="why-img" alt={UI.whyTitle} />
+            {onGhost && <div className="btn-row why-ghost"><button className="btn" onClick={() => { setWhy(false); onGhost(); }}>{UI.ghost.button}</button></div>}
             <div className="why-say">
               <CaptainFace mood="pleased" size={64} />
               <div>{UI.whyText.map((t, i) => <p key={i} className={i === UI.whyText.length - 1 ? 'why-motto' : ''}>{t}</p>)}</div>

@@ -264,7 +264,7 @@ function Dolphin() {
       <g className="dolphin-flukes">
         <path d="M-60 1 L-75 -11 C-71 -4 -71 0 -67 2 C-71 4 -71 8 -75 15 Z" className="dolphin-part" />
       </g>
-      <path d="M0 -15 C4 -26 10 -32 17 -33 C12 -26 12 -20 16 -14 Z" className="dolphin-part" />
+      <path d="M16 -15 C12 -26 6 -32 -1 -33 C4 -26 4 -20 0 -14 Z" className="dolphin-part" />
       <path d="M-62 2 C-50 -8 -20 -16 10 -15 C30 -14 44 -10 52 -5 C58 -4 66 -3 71 -1 C66 2 58 3 50 3 C40 10 10 14 -20 10 C-40 8 -54 6 -62 2 Z" className="dolphin-body" />
       <path d="M-40 7 C-10 12 25 8 46 3 C30 6 0 9 -40 7 Z" className="dolphin-belly" />
       <path d="M18 6 C14 14 8 18 2 20 C8 12 10 8 10 6 Z" className="dolphin-part" />
@@ -275,6 +275,7 @@ function Dolphin() {
 }
 
 // ---------- whale shark ----------
+// (head at +x; dorsal fins sweep back toward the tail: fixed 28 Oct, they leaned forward)
 
 function WhaleShark() {
   return (
@@ -290,8 +291,8 @@ function WhaleShark() {
       <g className="shark-tail">
         <path d="M-146 0 L-196 -72 C-186 -42 -178 -20 -170 -4 L-186 38 C-175 24 -163 11 -148 5 Z" className="shark-part" />
       </g>
-      <path d="M10 -45 C22 -78 36 -88 49 -89 C42 -74 44 -58 53 -44 Z" className="shark-part" />
-      <path d="M-100 -15 C-96 -28 -90 -32 -83 -33 C-86 -26 -86 -20 -82 -13 Z" className="shark-part" />
+      <path d="M53 -45 C41 -78 27 -88 14 -89 C21 -74 19 -58 10 -44 Z" className="shark-part" />
+      <path d="M-82 -15 C-86 -28 -92 -32 -99 -33 C-96 -26 -96 -20 -100 -13 Z" className="shark-part" />
       <path d="M-150 0 C-120 -22 -40 -48 60 -46 C120 -44 160 -30 176 -12 C182 -6 182 6 176 12 C150 26 80 34 20 34 C-60 32 -120 18 -150 0 Z" className="shark-body" />
       <g clipPath="url(#sharkClip)">
         <rect x="-160" y="-60" width="350" height="64" fill="url(#sharkSpots)" opacity=".85" />

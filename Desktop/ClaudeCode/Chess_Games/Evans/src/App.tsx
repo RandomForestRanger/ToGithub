@@ -8,8 +8,10 @@ import { Kelpwoud } from './ui/Kelpwoud';
 import { GameScreen } from './ui/GameScreen';
 import { RoundEnd, RoundIntro } from './ui/Screens';
 import { pickBackground } from './ui/backgrounds';
+import { GhostShip } from './ui/GhostShip';
 import { preloadFaces } from './ui/CaptainFace';
 import drukmeter from './assets/drukmeter.webp';
+import { GHOST_AFTER_ROUNDS } from './config';
 
 type Screen = 'home' | 'intro' | 'game' | 'end';
 
@@ -24,6 +26,7 @@ export default function App() {
   const nextTarget = useRef<string | null>(null);   // chosen while he admires the forest
   const nextBg = useRef<string | null>(null);
   const [roundBg, setRoundBg] = useState<string | null>(null);
+  const [ghost, setGhost] = useState(false);
   if (import.meta.env.DEV || import.meta.env.VITE_SMOKE) {
     (window as any).__ctl = ctl; // for the smoke test (tools/smoke.mjs)
     (window as any).__engine = engine;
@@ -95,6 +98,15 @@ export default function App() {
     ctl?.dispose();
     setCtl(null);
     setScreen('home');
+    // Die Spookskip, once, after his third round (after the colouring has had time to play)
+    const s = loadStore();
+    if (s.rounds.length >= GHOST_AFTER_ROUNDS && !s.settings.ghostSeen) setTimeout(() => setGhost(true), 4500);
+  };
+
+  const closeGhost = () => {
+    setGhost(false);
+    const s = loadStore();
+    if (!s.settings.ghostSeen) { s.settings = { ...s.settings, ghostSeen: true }; saveStore(s); setStore(s); }
   };
 
   const toggleLights = () => {
@@ -107,11 +119,13 @@ export default function App() {
     <div className="app">
       {(screen === 'home' || screen === 'intro') && (
         <Kelpwoud store={store} changed={screen === 'intro' ? [] : changed} onBegin={() => void begin()} onToggleLights={toggleLights}
+          onGhost={() => setGhost(true)}
           route={screen === 'intro' ? ctl?.startTarget : undefined}
-          overlay={screen === 'intro' && ctl ? <RoundIntro target={ctl.startTarget} onGo={() => setScreen('game')} /> : undefined} />
+          overlay={screen === 'intro' && ctl ? <RoundIntro target={ctl.startTarget} state={stateOfFn(store)(ctl.startTarget)} onGo={() => setScreen('game')} /> : undefined} />
       )}
       {screen === 'game' && ctl && <GameScreen key={roundNo} ctl={ctl} bg={roundBg} lights={store.settings.bishopLights} onEnd={() => setScreen('end')} onRestart={restart} />}
       {screen === 'end' && ctl?.result && <RoundEnd ctl={ctl} onAgain={() => { setChanged([]); pendingChanged.current = []; void begin(); }} onHome={home} />}
+      {ghost && screen === 'home' && <GhostShip onClose={closeGhost} />}
       {msg && <div className="toast" onClick={() => setMsg('')}>{msg}</div>}
     </div>
   );

@@ -13,7 +13,8 @@ export interface Store {
   lines: Record<string, LineRecord>;
   rounds: RoundRecord[];
   recentTargets: string[];
-  settings: { bishopLights: boolean };
+  /** ghostSeen: the Spookskip film has been shown once (after his third round) */
+  settings: { bishopLights: boolean; ghostSeen?: boolean };
 }
 
 const KEY = 'stoomdruk.v1';

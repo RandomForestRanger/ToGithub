@@ -13,7 +13,9 @@ import argparse, collections, json, math, random, sys
 
 import chess
 
-CLASS_ODDS = {"grey": 0.70, "green": 0.25, "gold": 0.05}
+# Class odds as in src/config.ts. The app also weights new lines by tier (src/game/targets.ts, CLAUDE.md section 8);
+# this checker only needs every lookup to resolve, so it keeps the simpler weights.
+CLASS_ODDS = {"grey": 0.60, "green": 0.25, "gold": 0.15}
 FAMOUS_WEIGHT = 3
 RECENT_EXCLUDE = 2
 

@@ -2,48 +2,55 @@
 // UI subscribes via onChange and reads fields directly.
 import { Chess, type Square } from 'chess.js';
 import {
-  BLACK_ENGINE_DEPTH, BLACK_MULTIPV, BLACK_WINDOW_CP, ANALYSIS_DEPTH, ANALYSIS_MAX_MS, FINAL_EVAL_DEPTH,
-  COLD_EVAL, GOLD_EVAL, MATE_CP, THEORY_DIP, MOVES_PER_ROUND, STEAM_SMOOTHING, THINK_MAX_MS, THINK_MIN_MS,
+  BLACK_ENGINE_DEPTH, BLACK_MULTIPV, ANALYSIS_DEPTH, ANALYSIS_MAX_MS, FINAL_EVAL_DEPTH,
+  GOLD_EVAL, MATE_CP, MOVES_PER_ROUND, STEAM_SMOOTHING, THINK_MAX_MS, THINK_MIN_MS,
+  PRESS_CHECK, PRESS_DEPTH, PRESS_MAX_MS, PRESS_ZONES,
+  CRACK_KEEP_CP, CRACK_MIN_PRESS, CRACK_P, CRACK_REAL_CP, CHECK_PLIES,
+  CHECK_CALM_EVAL, CHECK_DEFER_PLIES, CHECK_ONLY_MOVE_CP, FORCED_GAP_CP, RESCUE_EVAL_CP,
 } from '../config';
-import { canon, LINES } from '../data';
+import { canon, LINES, type CanonNode } from '../data';
 import { engine } from '../engine/EngineService';
 import { MOOD, say, type KKey, type Mood } from '../content/kaptein';
 import { material, numbered, posKey, sanOf, uciToMove } from './chessUtil';
 import { blackChartMove, conquerAt, newChartState, whiteChartMove, type ChartState } from './round';
 import { pointsFromLoss } from './scoring';
+import { chooseBlackMove, nullFen, pressureOf, pressZone, type Zone } from './pressure';
+import { ANSWERS, readPosition, type Answer } from './checkpoint';
+import { imbalance, ledgerOf, nextBaitCap, total, zero, type Counts, type Ledger } from './ledger';
 import type { LineState } from './targets';
 
 export type Phase = 'entry' | 'chart' | 'engine' | 'over';
-export type Zone = 'gold' | 'green' | 'amber' | 'cold';
+export type { Zone } from './pressure';
 
 export interface MoveRec { san: string; ply: number; points?: number | null; phase: Phase; evalAfter?: number; loss?: number }
+/** The eval series (steam minus debt = White's eval in pawns), for the round-end graph. */
 export interface SteamPt { ply: number; steam: number; debt: number }
+/** The pressure of each of his moves (the needle), with the pawns he had invested at that moment. */
+export interface PressPt { ply: number; press: number; san: string; /** pieces of lokaas (route bait) at that moment */ bait: number; phase: Phase }
 export interface Popup {
   kind: 'retarget' | 'missed'; text: string; note?: string; fen?: string; arrow?: [string, string];
   /** MISSED: replay from 4.b4 through his game to the miss, then the line's route to its end. */
   replay?: { fen: string; startPly: number; moves: string[]; needed: number };
 }
+/** A "Wat het jou pion gekoop?" question on the board (section 9a). */
+export interface Checkpoint {
+  ply: number; options: Answer[]; truths: Answer[]; devLead: number; mobLead: number;
+  answered: Answer | null; correct?: boolean;
+}
 export interface RoundResult {
   score: number; gold: boolean; finalEval: number;
+  /** checkpoint answers this round */
+  checks: { right: number; n: number };
   ending: 'mates' | 'mated' | 'draw' | 'moves';
   conquered: string[];
   missed: Record<string, string>;
-  moments: { kind: 'missed' | 'drop' | 'best'; line?: string; move: string; value?: number }[];
+  moments: { kind: 'missed' | 'crack' | 'quiet' | 'drop' | 'best'; line?: string; move: string; value?: number; caught?: boolean }[];
 }
 
 const label = (id: string) => LINES[id]?.label ?? id;
 const delay = (ms: number) => new Promise(r => setTimeout(r, ms));
 const think = () => delay(THINK_MIN_MS + Math.random() * (THINK_MAX_MS - THINK_MIN_MS));
 const clamp = (x: number, a: number, b: number) => Math.max(a, Math.min(b, x));
-
-/** Fixed zones on the eval (steam minus debt): the dial's colours never move during a game. */
-export function zoneOf(steam: number, debt: number): Zone {
-  const e = steam - debt;
-  if (e >= GOLD_EVAL) return 'gold';
-  if (e > 0) return 'green';
-  if (e >= COLD_EVAL) return 'amber';
-  return 'cold';
-}
 
 export class RoundController {
   chess = new Chess();
@@ -54,6 +61,23 @@ export class RoundController {
   steam: SteamPt[] = [];
   shownSteam = 0;
   debt = 0;
+  /** The plaque under the dial: lokaas (route bait), verloor, vangs (game/ledger.ts). */
+  ledger: Ledger = ledgerOf(new Chess(), zero());
+  private baitCap: Counts = zero();
+  /** pieces of lokaas still in the water (the gambit is on while this is above 0) */
+  get bait() { return total(this.ledger.bait); }
+  /** The move the needle is measuring (numbered SAN), or null before 4.b4. */
+  get pressCaption() { const p = this.press[this.press.length - 1]; return p ? numbered(p.ply, p.san) : null; }
+  /** The needle: pressure of his last move, in pawns. */
+  press: PressPt[] = [];
+  shownPress = 0;
+  /** Black's cracks under pressure that the Captain named, and whether he caught them. */
+  cracks: { move: string; caught: boolean }[] = [];
+  /** The open checkpoint question, if any: his move waits until he has answered it. */
+  checkpoint: Checkpoint | null = null;
+  checks: { ply: number; chosen: Answer; correct: boolean }[] = [];
+  /** the ply a checkpoint fell due at, while it waits for a calm moment */
+  private checkDue: number | null = null;
   speech = '';
   mood: Mood = 'steady';
   popup: Popup | null = null;
@@ -62,12 +86,15 @@ export class RoundController {
   missed: Record<string, string> = {};
   result: RoundResult | null = null;
   bishopSaid = { stuur: false, bak: false };
-  theorySaid = false;
   engineError = false;
 
   private listeners = new Set<() => void>();
   private alive = true;
   private analysis = new Map<string, Promise<number>>();
+  private pressCache = new Map<string, Promise<number>>();
+  /** White to move: best minus second-best (centipawns) from the MultiPV 2 analysis; Infinity = only one move */
+  private gaps = new Map<string, number>();
+  private pendingCrack: { fenBefore: string; move: string; replyPly: number } | null = null;
   private lastZone: Zone | null = null;
   private lastZonePly = -99;
   private speechPly = -1;
@@ -88,20 +115,73 @@ export class RoundController {
   get target() { return this.chart.target; }
   get steamVisible() { return this.ply >= canon.meta.entry.length; }
 
-  private speak(key: KKey, vars: { line?: string; move?: string } = {}, pri = 1, prefix = '') {
+  private speak(key: KKey, vars: { line?: string; move?: string } = {}, pri = 1, prefix = '', suffix = '') {
     if (this.speechPly === this.ply && pri < this.speechPri) return;
     this.speechPly = this.ply; this.speechPri = pri;
-    this.speech = prefix + say(key, vars);
+    this.speech = prefix + say(key, vars) + suffix;
     this.mood = MOOD[key] ?? 'steady';
   }
 
   closePopup() { this.popup = null; this.emit(); }
 
+  // ---------- "Wat het jou pion gekoop?" ----------
+
+  /**
+   * After Black's move: if a checkpoint is due and he still has lokaas in the water, ask, but only at a
+   * calm moment. While he is fighting for his life (in check, clearly worse, or down to one move that
+   * doesn't lose) the question waits, for at most CHECK_DEFER_PLIES, and is then skipped.
+   */
+  private async maybeCheckpoint() {
+    const ply = this.ply;
+    if (this.chess.turn() !== 'w') return;
+    if ((CHECK_PLIES as readonly number[]).includes(ply)) this.checkDue = ply;
+    if (this.checkDue === null) return;
+    if (ply > this.checkDue + CHECK_DEFER_PLIES || this.bait === 0) { this.checkDue = null; return; }
+    if (this.chess.inCheck()) return; // fighting: try again next move
+    const fen = this.chess.fen();
+    this.thinking = true; // hold his move until we know whether to ask
+    let ev = 0, fighting = false;
+    try {
+      const [e, res] = await Promise.all([this.analyse(fen), engine.search(fen, PRESS_DEPTH, 2, PRESS_MAX_MS)]);
+      ev = e;
+      const [a, b] = res.lines;
+      const mated = !!a && a.mate !== null && a.mate < 0;
+      const onlyMove = !!a && !!b && a.cp - b.cp >= CHECK_ONLY_MOVE_CP;
+      fighting = mated || onlyMove || ev <= CHECK_CALM_EVAL;
+    } catch { /* ask on the board alone */ }
+    if (!this.alive || this.ply !== ply || this.phase === 'over') return;
+    this.thinking = false;
+    if (!fighting) {
+      this.checkDue = null;
+      const r = readPosition(fen, ev);
+      if (r) this.checkpoint = { ply, options: [...ANSWERS], ...r, answered: null };
+    }
+    this.emit();
+  }
+
+  answerCheckpoint(a: Answer) {
+    const cp = this.checkpoint;
+    if (!cp || cp.answered) return;
+    cp.answered = a;
+    cp.correct = cp.truths.includes(a);
+    this.checks.push({ ply: cp.ply, chosen: a, correct: cp.correct });
+    const key: KKey = !cp.correct ? 'CHECK_WRONG' : a === 'niks' ? 'CHECK_HONEST' : 'CHECK_RIGHT';
+    this.speak(key, {}, 4, '', ' ' + say('QUESTION'));
+    this.mood = MOOD[key] ?? 'steady';
+    this.emit();
+  }
+
+  closeCheckpoint() {
+    if (this.checkpoint?.answered) { this.checkpoint = null; this.emit(); }
+  }
+
   // ---------- his move ----------
 
-  /** Returns false if the move was refused (illegal or wrong entry move). */
+  /** Returns false if the move was refused (illegal, wrong entry move, or a checkpoint still to answer). */
   userMove(from: string, to: string): boolean {
     if (this.phase === 'over' || this.thinking || this.chess.turn() !== 'w') return false;
+    if (this.checkpoint && !this.checkpoint.answered) return false;
+    if (this.checkpoint) this.checkpoint = null; // answered: his move closes the card
     const legal = this.chess.moves({ verbose: true }).find(m => m.from === from && m.to === to);
     if (!legal) return false;
     const uci = from + to + (legal.promotion ? 'q' : '');
@@ -113,11 +193,12 @@ export class RoundController {
         this.emit();
         return false;
       }
-      this.play(uci, 'entry');
+      const rec = this.play(uci, 'entry');
       if (this.ply === canon.meta.entry.length) {
         this.phase = 'chart';
         this.speak('BAIT');
         this.pushSteam();
+        this.trackPress(rec);
       }
       this.emit();
       void this.blackTurn();
@@ -140,7 +221,7 @@ export class RoundController {
       const neededTxt = (u?: string) => (u ? numbered(plyIdx, sanOf(before.fen, u)) : '');
       if (r.kind === 'canon') {
         points = 4;
-        this.afterChartArrival(true);
+        this.afterChartArrival(true, this.choiceAt(beforeFen, before.eval, before));
       } else if (r.kind === 'retarget') {
         points = 4;
         this.afterChartArrival(false);
@@ -175,6 +256,10 @@ export class RoundController {
     this.checkBishops();
     this.emit();
 
+    // Did Black just crack under pressure? This move is his answer to it.
+    const crack = this.pendingCrack && this.pendingCrack.replyPly === plyIdx ? this.pendingCrack : null;
+    this.pendingCrack = null;
+
     // engine scoring + steam for the position after his move
     const afterFen = this.chess.fen();
     void (async () => {
@@ -182,13 +267,30 @@ export class RoundController {
       if (!this.alive) return;
       rec.evalAfter = afterEval;
       if (scored && rec.points === null) {
-        const loss = Math.max(0, (await beforeEval) - afterEval);
+        const be = await beforeEval;
+        const loss = Math.max(0, be - afterEval);
         rec.loss = loss;
         rec.points = pointsFromLoss(loss);
-        this.speak(`POINTS_${rec.points}` as KKey, {}, 1);
+        let named = false;
+        if (crack) {
+          // what the crack gave White (depth 14): only name it if it was a real mistake
+          const cost = be - (await this.analyse(crack.fenBefore));
+          if (cost >= CRACK_REAL_CP) {
+            const caught = loss <= CRACK_KEEP_CP;
+            this.cracks.push({ move: crack.move, caught });
+            this.speak(caught ? 'CRACK_CAUGHT' : 'CRACK_ESCAPED', {}, 3);
+            named = true;
+          }
+        }
+        if (!named) {
+          // a good move he had to play still scores, but is not cheered like a free choice
+          const how = rec.points >= 3 ? this.choiceAt(beforeFen, be, canon.nodes[beforeKey]) : 'free';
+          this.speak(how === 'free' ? `POINTS_${rec.points}` as KKey : how === 'rescue' ? 'RESCUE' : 'FORCED', {}, 1);
+        }
       }
       this.emit();
     })();
+    this.trackPress(rec);
 
     if (!this.endIfOver()) void this.blackTurn();
     return true;
@@ -238,7 +340,7 @@ export class RoundController {
         const r = blackChartMove(this.chart, key, Math.random, this.stateOf);
         if (r.kind === 'chartEnd') {
           this.phase = 'engine';
-          this.speak('CHART_END', {}, 2);
+          this.speak('CHART_END', {}, 2, '', ' ' + say('QUESTION'));
           await this.engineBlack();
         } else {
           const rec = this.play(r.uci, 'chart');
@@ -258,27 +360,30 @@ export class RoundController {
     if (!this.endIfOver()) {
       // pre-analyse his position (gauge + scoring of his next move)
       void this.analyse(this.chess.fen());
+      void this.maybeCheckpoint();
       if (this.chess.turn() === 'w' && this.phase === 'chart') {
         const n = canon.nodes[posKey(this.chess)];
         if (n && n.chartEnd) {
           // 16: chart ends on his turn — he plays on, engine phase from Black's next move
           this.phase = 'engine';
-          this.speak('CHART_END', {}, 1);
+          this.speak('CHART_END', {}, 1, '', ' ' + say('QUESTION'));
         }
       }
     }
     this.emit();
   }
 
+  /** Section 5: engine Black, which cracks where the road is narrow (game/pressure.ts, chooseBlackMove). */
   private async engineBlack() {
     const fen = this.chess.fen();
-    const res = await engine.search(fen, BLACK_ENGINE_DEPTH, BLACK_MULTIPV);
+    const [res, press] = await Promise.all([engine.search(fen, BLACK_ENGINE_DEPTH, BLACK_MULTIPV), this.pressFor(fen)]);
     if (!this.alive) return;
-    const lines = res.lines;
-    const best = Math.max(...lines.map(l => l.cp));
-    const ok = lines.filter(l => l.cp >= best - BLACK_WINDOW_CP);
-    const pick = ok[Math.floor(Math.random() * ok.length)] ?? lines[0];
-    this.play(pick.uci, 'engine');
+    if (!res.lines.length) throw new Error('engine returned no move');
+    const choice = chooseBlackMove(res.lines, {
+      press, inCheck: this.chess.inCheck(), lastTo: this.lastMove?.[1] ?? null, crackP: CRACK_P, minPress: CRACK_MIN_PRESS,
+    }, Math.random);
+    const rec = this.play(choice.uci, 'engine');
+    if (choice.crack) this.pendingCrack = { fenBefore: fen, move: numbered(rec.ply, rec.san), replyPly: this.ply };
   }
 
   private blackFlavour(san: string) {
@@ -291,7 +396,7 @@ export class RoundController {
   }
 
   /** After arriving on a chart node: conquest messages (4.1). */
-  private afterChartArrival(praise: boolean) {
+  private afterChartArrival(praise: boolean, how: 'free' | 'forced' | 'rescue' = 'free') {
     const fresh = this.chart.onChart ? conquerAt(this.chart, posKey(this.chess)) : [];
     // conquerAt may already have run inside whiteChartMove; re-check what ends here
     const here = canon.nodes[posKey(this.chess)]?.endOf ?? [];
@@ -303,7 +408,7 @@ export class RoundController {
       if (id === 'lasker-defense') this.speak('SPITS_HOOK', {}, 2);
       else this.speak('LINE_CONQUERED', { line: label(id) }, 2);
     } else if (praise && Math.random() < 0.35) {
-      this.speak('LINE_MOVE');
+      this.speak(how === 'free' ? 'LINE_MOVE' : how === 'rescue' ? 'RESCUE' : 'FORCED');
     }
   }
   private lastAnnouncedPly = -1;
@@ -313,6 +418,12 @@ export class RoundController {
   private play(uci: string, phase: Phase): MoveRec {
     const m = this.chess.move(uciToMove(uci));
     this.lastMove = [m.from, m.to];
+    // the plaque: on the route every bit of material he is down is the gambit's own lokaas
+    const onRoute = (this.phase === 'entry' || this.phase === 'chart') && this.chart.onChart;
+    const baitBefore = this.bait;
+    this.baitCap = nextBaitCap(this.baitCap, imbalance(this.chess).deficit, onRoute);
+    this.ledger = ledgerOf(this.chess, this.baitCap);
+    if (this.bait < baitBefore) this.speak('DEBT_PAID', {}, 1);
     const rec: MoveRec = { san: m.san, ply: this.ply - 1, phase };
     this.moves.push(rec);
     if (this.steamVisible) this.pushSteam();
@@ -330,11 +441,78 @@ export class RoundController {
       else {
         const white = c.turn() === 'w';
         p = engine.search(fen, depth, white ? 2 : 1, maxMs)
-          .then(r => (r.lines[0]?.cp ?? 0) * (white ? 1 : -1));
+          .then(r => {
+            if (white && r.lines.length) this.gaps.set(fen, r.lines.length > 1 ? r.lines[0].cp - r.lines[1].cp : Infinity);
+            return (r.lines[0]?.cp ?? 0) * (white ? 1 : -1);
+          });
       }
       this.analysis.set(k, p);
     }
     return p;
+  }
+
+  /**
+   * Was his move here really a choice? 'forced' when only one move doesn't lose FORCED_GAP_CP (or only one
+   * move is legal); 'rescue' when that is so and he was in trouble too. Uses the runtime MultiPV 2 analysis,
+   * or the canon's top two on the chart.
+   */
+  private choiceAt(fen: string, bestEval: number, node?: CanonNode): 'free' | 'forced' | 'rescue' {
+    let gap = this.gaps.get(fen);
+    if (gap === undefined && node?.top2?.length) gap = node.top2.length > 1 ? node.top2[0].cp - node.top2[1].cp : Infinity;
+    if (new Chess(fen).moves().length === 1) gap = Infinity;
+    if (gap === undefined || gap < FORCED_GAP_CP) return 'free';
+    return bestEval <= RESCUE_EVAL_CP ? 'rescue' : 'forced';
+  }
+
+  /**
+   * Pressure of the move that led to this position (Black to move), in pawns: what Black would lose by
+   * skipping his move. From the data when the position is in the canon, otherwise two searches at the
+   * same depth (the real position and the null move). Cached by FEN.
+   */
+  pressFor(fen: string): Promise<number> {
+    let p = this.pressCache.get(fen);
+    if (p) return p;
+    const c = new Chess(fen);
+    const node = canon.nodes[posKey(c)];
+    if (c.turn() !== 'b' || c.isGameOver()) p = Promise.resolve(0);
+    else if (c.inCheck()) p = Promise.resolve(PRESS_CHECK);
+    else if (node && node.press !== undefined) p = Promise.resolve(node.press ?? PRESS_CHECK);
+    else {
+      p = Promise.all([this.analyse(fen, PRESS_DEPTH, PRESS_MAX_MS), this.analyse(nullFen(fen), PRESS_DEPTH, PRESS_MAX_MS)])
+        .then(([now, ifBlackPasses]) => pressureOf(now, ifBlackPasses));
+    }
+    this.pressCache.set(fen, p);
+    return p;
+  }
+
+  /** The needle follows his moves: after each one, how big a question did it ask? */
+  private trackPress(rec: MoveRec) {
+    const fen = this.chess.fen();
+    const bait = this.bait;
+    void this.pressFor(fen).then(p => {
+      if (!this.alive) return;
+      this.setPress({ ply: rec.ply, press: p, san: rec.san, bait, phase: rec.phase });
+      this.emit();
+    }).catch(() => {});
+  }
+
+  private setPress(pt: PressPt) {
+    if (this.press.length && pt.ply < this.press[this.press.length - 1].ply) return; // stale
+    this.press.push(pt);
+    this.shownPress = pt.press;
+    const z = pressZone(pt.press);
+    // The route chooses his moves on the chart, so the Captain doesn't scold a quiet route move,
+    // and "the steam is leaking" only makes sense while he has a pawn invested.
+    const onChart = this.phase === 'chart' && this.chart.onChart;
+    const leak = z === 'amber' || z === 'cold';
+    const allowed = !leak || (!onChart && pt.bait > 0);
+    if (allowed && this.lastZone && z !== this.lastZone && pt.ply - this.lastZonePly >= 6) {
+      const key = ({ gold: 'STEAM_GOLD', green: 'STEAM_GREEN', amber: 'STEAM_AMBER', cold: 'STEAM_COLD' } as const)[z];
+      this.speak(key, {}, onChart ? 0 : 2, '', z === 'cold' ? ' ' + say('QUESTION') : '');
+      this.lastZonePly = pt.ply;
+    }
+    if (!this.lastZone) this.lastZonePly = pt.ply;
+    this.lastZone = z;
   }
 
   private pushSteam() {
@@ -356,7 +534,6 @@ export class RoundController {
   }
 
   private setSteam(ply: number, s: number, debt: number, smooth: boolean) {
-    const prevDebt = this.debt;
     const shown = smooth && this.steam.length ? STEAM_SMOOTHING * s + (1 - STEAM_SMOOTHING) * this.shownSteam : s;
     this.shownSteam = shown;
     this.debt = debt;
@@ -364,26 +541,6 @@ export class RoundController {
     const pt = { ply, steam: shown, debt };
     if (i >= 0) this.steam[i] = pt; else this.steam.push(pt);
     this.steam.sort((a, b) => a.ply - b.ply);
-    if (debt < prevDebt && this.steam.length > 1) { this.speak('DEBT_PAID', {}, 1); return; }
-    const z = zoneOf(shown, debt);
-    // On the chart the needle follows the line's own theory: a real dip there is the price of the line,
-    // not his mistake. Say so once, and keep the usual "steam is leaking" lines for off-chart play.
-    const onChart = this.phase === 'chart' && this.chart.onChart && !!this.chart.target;
-    if (onChart && (z === 'amber' || z === 'cold')) {
-      if (!this.theorySaid && shown - debt <= THEORY_DIP) {
-        this.theorySaid = true;
-        this.speak('STEAM_THEORY', { line: label(this.chart.target!) }, 1);
-        this.lastZonePly = ply;
-      }
-      this.lastZone = z;
-      return;
-    }
-    if (this.lastZone && z !== this.lastZone && ply - this.lastZonePly >= 6) {
-      this.speak(({ gold: 'STEAM_GOLD', green: 'STEAM_GREEN', amber: 'STEAM_AMBER', cold: 'STEAM_COLD' } as const)[z], {}, 0);
-      this.lastZonePly = ply;
-    }
-    if (!this.lastZone) this.lastZonePly = ply;
-    this.lastZone = z;
   }
 
   private checkBishops() {
@@ -430,6 +587,12 @@ export class RoundController {
     const moments: RoundResult['moments'] = [];
     const firstMiss = Object.entries(this.missed)[0];
     if (firstMiss) moments.push({ kind: 'missed', line: label(firstMiss[0]), move: firstMiss[1] });
+    const crackM = this.cracks.find(c => c.caught) ?? this.cracks[0];
+    if (crackM) moments.push({ kind: 'crack', move: crackM.move, caught: crackM.caught });
+    // his quietest open-sea move while he had a pawn invested: the moment the steam escaped
+    const quiet = this.press.filter(p => p.phase === 'engine' && p.bait > 0 && p.press < PRESS_ZONES.amber)
+      .sort((a, b) => a.press - b.press)[0];
+    if (quiet) moments.push({ kind: 'quiet', move: numbered(quiet.ply, quiet.san) });
     let drop = 0, dropPly = -1;
     for (let i = 1; i < this.steam.length; i++) {
       const d = this.steam[i - 1].steam - this.steam[i].steam;
@@ -445,8 +608,9 @@ export class RoundController {
 
     this.result = {
       score, gold, finalEval, ending,
+      checks: { right: this.checks.filter(c => c.correct).length, n: this.checks.length },
       conquered: [...this.chart.conquered],
-      missed: this.missed, moments,
+      missed: this.missed, moments: moments.slice(0, 3),
     };
     this.thinking = false;
     this.speak(ending === 'mates' ? 'END_WHITE_MATES' : ending === 'mated' ? 'END_WHITE_MATED'
