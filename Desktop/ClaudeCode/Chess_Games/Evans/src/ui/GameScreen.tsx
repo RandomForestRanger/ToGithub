@@ -86,6 +86,7 @@ export function GameScreen({ ctl, lights, onEnd, onRestart, bg }: {
   }
 
   const target = ctl.target ? LINES[ctl.target] : null;
+  const t = ctl.toernooi;
   const moveNo = Math.min(20, Math.max(1, Math.ceil(ctl.ply / 2)));
   const pairs: { n: number; w?: (typeof ctl.moves)[number]; b?: (typeof ctl.moves)[number] }[] = [];
   ctl.moves.forEach(m => {
@@ -113,26 +114,36 @@ export function GameScreen({ ctl, lights, onEnd, onRestart, bg }: {
         />
       </div>
       <aside className="panel">
-        <div className="target-banner">
-          <span className="tag">{UI.target}</span>
-          {target ? <><b>“{target.label}”</b> <span className="mono sub">{target.sub}</span></> : <i>—</i>}
-        </div>
-        <Stoomdruk press={ctl.shownPress} ledger={ctl.ledger} visible={ctl.steamVisible} caption={ctl.pressCaption} />
-        <div className="captain">
-          <CaptainFace mood={ctl.mood} />
-          <div className="bubble-speech">{ctl.thinking && !ctl.speech ? UI.thinking : ctl.speech || '…'}
-            {ctl.thinking && <span className="dots"> · {UI.thinking}</span>}
+        {t ? (
+          // toernooi: no aids, just the game (points only at the end)
+          <div className="target-banner">
+            <span className="tag">{UI.toernooi}</span>
+            <span className="toernooi-note">{ctl.phase === 'entry' ? UI.toernooiEntry : UI.toernooiOpen}</span>
           </div>
-        </div>
+        ) : (
+          <>
+            <div className="target-banner">
+              <span className="tag">{UI.target}</span>
+              {target ? <><b>“{target.label}”</b> <span className="mono sub">{target.sub}</span></> : <i>—</i>}
+            </div>
+            <Stoomdruk press={ctl.shownPress} ledger={ctl.ledger} visible={ctl.steamVisible} caption={ctl.pressCaption} />
+            <div className="captain">
+              <CaptainFace mood={ctl.mood} />
+              <div className="bubble-speech">{ctl.thinking && !ctl.speech ? UI.thinking : ctl.speech || '…'}
+                {ctl.thinking && <span className="dots"> · {UI.thinking}</span>}
+              </div>
+            </div>
+          </>
+        )}
         <div className="stat-row">
           <span>{UI.move(moveNo)}</span>
-          <span>{UI.points(ctl.score)}</span>
+          {t ? <span className="dots">{ctl.thinking && ctl.phase !== 'over' ? UI.blackThinking : ''}</span> : <span>{UI.points(ctl.score)}</span>}
         </div>
         <div className="movelist mono" hidden={!pairs.length}>
           {pairs.map(p => (
             <div key={p.n} className="mrow">
               <span className="mn">{p.n}.</span>
-              <span className="mw">{p.w?.san}{p.w && p.w.points !== undefined && (
+              <span className="mw">{p.w?.san}{p.w && !t && p.w.points !== undefined && (
                 <i className={`pchip p${p.w.points ?? 'x'}`}>{p.w.points ?? '…'}</i>)}</span>
               <span className="mb">{p.b?.san}</span>
             </div>

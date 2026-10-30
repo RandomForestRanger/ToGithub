@@ -73,3 +73,14 @@ export function chooseBlackMove(
   }
   return { uci: safe[Math.floor(rng() * safe.length)].uci, crack: false };
 }
+
+/**
+ * Toernooi: Black's occasional wobble. A random candidate that costs Black between minCp and maxCp
+ * against its best (a real slip, never a hung queen), or null when no candidate is in that band.
+ */
+export function wobbleMove(lines: Candidate[], minCp: number, maxCp: number, rng: () => number): string | null {
+  if (!lines.length) return null;
+  const best = Math.max(...lines.map(l => l.cp));
+  const band = lines.filter(l => best - l.cp >= minCp && best - l.cp <= maxCp);
+  return band.length ? band[Math.floor(rng() * band.length)].uci : null;
+}

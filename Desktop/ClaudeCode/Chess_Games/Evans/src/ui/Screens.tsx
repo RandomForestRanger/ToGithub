@@ -39,23 +39,31 @@ export function RoundIntro({ target, state, onGo }: { target: string; state: Lin
   );
 }
 
-export function RoundEnd({ ctl, onAgain, onHome }: { ctl: RoundController; onAgain: () => void; onHome: () => void }) {
+export function RoundEnd({ ctl, record, best, onAgain, onHome }: {
+  ctl: RoundController; record: boolean; best: number | null; onAgain: () => void; onHome: () => void;
+}) {
   const r = ctl.result!;
   const chips = r.conquered.filter(id => id !== 'evans-gambit');
+  const t = ctl.toernooi;
   return (
     <div className="screen center">
       <div className="card end-card">
-        <div className="score-big">{r.score}<small>/64</small></div>
+        {t && <h2 className="end-mode">{UI.toernooi}</h2>}
+        <div className="score-big">{r.score}{!t && <small>/64</small>}</div>
+        {t && <p className="mono score-split">{UI.toernooiScore(r.score - r.bonus, r.bonus)}</p>}
+        <p className={record ? 'record new' : 'record'}>{record ? UI.newRecord : best !== null ? UI.record(best) : ''}</p>
         <div className="end-captain"><CaptainFace mood={ctl.mood} size={96} /><p className="end-say">{ctl.speech}</p></div>
         {r.checks.n > 0 && <p className="check-tally">{UI.checkTally(r.checks.right, r.checks.n)}</p>}
         <p className="mono">Eindtelling: {r.finalEval >= 0 ? '+' : ''}{Math.abs(r.finalEval) >= 100 ? 'mat' : r.finalEval.toFixed(2)}</p>
-        <h3>{UI.coloured}</h3>
-        <div className="chips">
-          {chips.length ? chips.map(id => (
-            <span key={id} className={`chip chip-${r.gold ? 'gold' : 'green'}`}>{LINES[id].label}</span>
-          )) : <i>{UI.noneColoured}</i>}
-        </div>
-        <h3>{UI.steamGraph}</h3>
+        {!t && <>
+          <h3>{UI.coloured}</h3>
+          <div className="chips">
+            {chips.length ? chips.map(id => (
+              <span key={id} className={`chip chip-${r.gold ? 'gold' : 'green'}`}>{LINES[id].label}</span>
+            )) : <i>{UI.noneColoured}</i>}
+          </div>
+        </>}
+        <h3>{t ? UI.evalGraph : UI.steamGraph}</h3>
         <SteamGraph pts={ctl.steam} press={ctl.press} />
         {r.moments.length > 0 && <>
           <h3>{UI.keyMoments}</h3>
@@ -69,7 +77,7 @@ export function RoundEnd({ ctl, onAgain, onHome }: { ctl: RoundController; onAga
           </ul>
         </>}
         <div className="btn-row">
-          <button className="btn primary" onClick={onAgain}>{UI.again}</button>
+          <button className="btn primary" onClick={onAgain}>{t ? UI.againToernooi : UI.again}</button>
           <button className="btn" onClick={onHome}>{UI.backToForest}</button>
         </div>
       </div>

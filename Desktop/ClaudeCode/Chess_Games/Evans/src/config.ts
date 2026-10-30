@@ -1,6 +1,6 @@
 // All tunable numbers (CLAUDE.md section 15).
 export const TOP2_TOLERANCE_CP = 30;
-export const BLACK_ENGINE_DEPTH = 6;
+export const BLACK_ENGINE_DEPTH = 5; // was 6 until 30 Oct: a smidge easier
 export const BLACK_MULTIPV = 3;
 export const BLACK_WINDOW_CP = 50; // a Black candidate this close to the best is "safe"
 export const ANALYSIS_DEPTH = 14;
@@ -61,3 +61,16 @@ export const GHOST_AFTER_ROUNDS = 3;
 // instead of the usual praise; RESCUE when he was also in trouble (best eval at RESCUE_EVAL_CP or worse).
 export const FORCED_GAP_CP = 150;   // the same idea as CHECK_ONLY_MOVE_CP
 export const RESCUE_EVAL_CP = -150;
+
+// Toernooi mode (since 30 Oct): only the four Evans moves are set, then it's open play, moves 5 to 20 scored.
+// No aids on the screen (no needle, no Captain, no points until the end); the Kelpwoud is untouched.
+export const TOERNOOI_WOBBLE_P = 0.1;     // about once in 10 moves Black plays a random, not quite catastrophic move...
+export const WOBBLE_MIN_CP = 50;          // ...one that costs it at least half a pawn
+export const WOBBLE_MAX_CP = 150;         // ...and at most a pawn and a half
+export const WOBBLE_MULTIPV = 8;          // candidates searched when Black wobbles
+export const PERFECT_FROM_PLY = 31;       // after White's 16th move...
+export const PERFECT_EVAL_CP = 300;       // ...if White is this far ahead, Black plays its best to the end (no slips)
+export const PERFECT_DEPTH = 12;
+export const PERFECT_MAX_MS = 4000;
+export const TOERNOOI_BONUS = 10;         // final eval at GOLD_EVAL or better
+export const TOERNOOI_BONUS_MATE = 20;    // he gave checkmate (plus 4 for every unplayed move, as in verkenning)

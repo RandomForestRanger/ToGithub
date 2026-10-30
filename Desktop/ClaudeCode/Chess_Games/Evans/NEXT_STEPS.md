@@ -1,8 +1,13 @@
 # Next steps: Stoomdruk (Evans)
 
-**Live:** https://stoomdruk-evans.netlify.app (still the 27 Oct build) · **Last session:** 28 October 2026 · All 28 unit tests pass · the 28 Oct changes are local only, not deployed yet.
+**Live:** https://stoomdruk-evans.netlify.app (30 Oct build) · **Last session:** 30 October 2026 · All 45 unit tests pass.
 
 ## Pick up here (start of next session)
+
+**30 Oct: toernooi mode, easier Black, roadmap PDF** (CLAUDE.md §0.2). Deployed.
+- [ ] Watch him play a few toernooi games: is the wobble (`TOERNOOI_WOBBLE_P` 0.1) noticeable, does perfect Black after move 16 (+3.00) feel fair, are the bonuses (10 / 20) the right size?
+- [ ] Wording pass on the new drafts: `END_TOERNOOI_WON`, `END_TOERNOOI`, and in `UI`: `toernooiBegin`, `toernooiEntry`, `toernooiOpen`, `records`, `newRecord`, `toernooiScore`, `againToernooi`, `evalGraph`.
+- [ ] Roadmap PDF (`Evans_Padkaart.pdf`, `tools/roadmap.py`): split the big blue Main Line branch into its own colours if it is hard to follow on paper.
 
 **28 Oct, evening: second pass after Martin's first test** (CLAUDE.md §0.1 "Second pass", §8, §9, §9a, §11a): the plaque now separates *Lokaas* (route bait only) from *Verloor* and *Vangs*, with piece icons; the needle names its move ("Druk van 9.Qb3"); checkpoints wait for a calm moment; new lines come in by tier, softly and interleaved, and gold lines return in about 1 round in 5; *Die Spookskip* plays once after his third round and from the lesson popup. 40 tests pass.
 

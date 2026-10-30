@@ -90,8 +90,8 @@ export function routeOf(id: string): string[] {
 
 const reducedMotion = () => typeof matchMedia !== 'undefined' && matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-export function Kelpwoud({ store, changed, onBegin, onToggleLights, route, overlay, onGhost }: {
-  store: Store; changed: string[]; onBegin: () => void; onToggleLights: () => void;
+export function Kelpwoud({ store, changed, onBegin, onToernooi, onToggleLights, route, overlay, onGhost }: {
+  store: Store; changed: string[]; onBegin: () => void; onToernooi: () => void; onToggleLights: () => void;
   /** open Die Spookskip (from the lesson popup) */
   onGhost?: () => void;
   /** round intro: light up the path to this line and pan to it */
@@ -272,7 +272,12 @@ export function Kelpwoud({ store, changed, onBegin, onToggleLights, route, overl
           <h1>{UI.title} <small>{UI.subtitle}</small></h1>
           <img src={wapen} className="wapen" alt="" draggable={false} />
         </div>
-        <div className="counter">{UI.counter(greens, golds, ids.length)}</div>
+        <div className="counters">
+          <div className="counter">{UI.counter(greens, golds, ids.length)}</div>
+          {(store.best.verkenning !== null || store.best.toernooi !== null) && (
+            <div className="counter records">{UI.records(store.best.verkenning, store.best.toernooi)}</div>
+          )}
+        </div>
       </header>
       <svg ref={svgRef} className={`forest ${route ? 'routing' : ''}`} viewBox={vb.join(' ')} preserveAspectRatio="xMidYMax meet"
            onPointerDown={onDown} onPointerMove={onMove} onPointerUp={onUp} onPointerCancel={e => { ptrs.current.delete(e.pointerId); }} onPointerLeave={e => { ptrs.current.delete(e.pointerId); }} onWheel={onWheel}>
@@ -459,6 +464,7 @@ export function Kelpwoud({ store, changed, onBegin, onToggleLights, route, overl
         <footer className="kelp-bottom">
           <label className="lights"><input type="checkbox" checked={store.settings.bishopLights} onChange={onToggleLights} /> {UI.lights}</label>
           <button className="btn primary" onClick={onBegin}>{UI.begin}</button>
+          <button className="btn toernooi-btn" onClick={onToernooi}>{UI.toernooiBegin}</button>
           <button className="btn why-btn" onClick={() => setWhy(true)}><span className="why-long">{UI.why}</span><span className="why-short">{UI.whyShort}</span></button>
           <button className="btn ghost" onClick={fitView} aria-label="Pas">⤢</button>
         </footer>

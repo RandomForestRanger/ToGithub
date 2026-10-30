@@ -45,6 +45,17 @@ Why: a review found the game rewarded following the route, not understanding the
 - **No cheering for forced moves** (§12): a good move he had to play still scores, but the Captain says `FORCED` / `RESCUE` instead of the usual praise.
 - **Sea life:** the whale shark's and the dolphin's dorsal fins now sweep back toward the tail (they leaned forward).
 
+### 0.2 Toernooi mode and the roadmap (30 October 2026)
+
+- **Easier Black everywhere:** `BLACK_ENGINE_DEPTH` 6 → 5.
+- **Toernooi** (`Speel 'n toernooi` on the Kelpwoud; `RoundController` with `mode: 'toernooi'`): he must play 1.e4, 2.Nf3, 3.Bc4, 4.b4 (Black's e5, Nc6, Bc5 are automatic); Black's 4th move is drawn from the master replies after 4.b4, weighted by games + 1 (so mostly 4...Bxb4, sometimes 4...Bb6, rarely the countergambits). Then open play, no chart, no target. Moves 5–20 are engine-scored as usual.
+- **Black in a toernooi:** the normal engine Black (depth 5, 50 cp window, cracks under pressure), plus a **wobble**: with `TOERNOOI_WOBBLE_P` (0.1) per move, a random candidate costing Black `WOBBLE_MIN_CP`–`WOBBLE_MAX_CP` (50–150) from a MultiPV `WOBBLE_MULTIPV` (8) search (`wobbleMove`, `game/pressure.ts`). **Perfect Black:** from his 16th move on (`PERFECT_FROM_PLY` 31), once White is `PERFECT_EVAL_CP` (+3.00) or better, Black plays its best move at `PERFECT_DEPTH` 12 to the end of the game, no cracks, no wobbles (`ctl.perfect`, sticky).
+- **No aids:** no needle, plaque, Captain (he speaks only the end line: `END_TOERNOOI_WON` / `END_TOERNOOI` / the mate and draw lines), checkpoints, bishop lights or points chips; the panel shows `Toernooi`, the entry instruction, the move number and the move list. The end card shows the score, the split `Skuiwe n/64 · Bonus b`, and the eval chart without the pressure bars.
+- **Bonus:** `TOERNOOI_BONUS` (10) if the final eval is ≥ `GOLD_EVAL`; `TOERNOOI_BONUS_MATE` (20) for giving mate (plus 4 per unplayed move, as in verkenning).
+- **Records:** two separate top scores in the store, `best.verkenning` and `best.toernooi` (filled in from old rounds on first load), shown under the counter on the Kelpwoud, and `Nuwe rekord!` on the end card. Toernooi games go to `toernooi` (last 50), never to `rounds` or `lines`: **the Kelpwoud is untouched**.
+- Tests: `game/controller.toernooi.test.ts`. Browser smoke: `tools/smoke_toernooi.mjs` (`SMOKE_W`/`SMOKE_H` for a phone).
+- **Roadmap PDF** (not part of the game): `python3 tools/roadmap.py` writes `Evans_Padkaart.pdf`, two A4 landscape pages (accepted; declined + countergambits), every named line to move 10 with its moves, one bright colour per branch, built from the canon via headless Chrome.
+
 ---
 
 ## 1. Stack and layout
@@ -214,7 +225,7 @@ From `before.top2` (precomputed, depth 18):
 
 ## 5. The engine phase
 
-**Black's move:** Stockfish **depth 6, MultiPV 3**. Keep the candidates whose score (from Black's side) is within `BLACK_WINDOW_CP` (50) of the best, and choose one uniformly at random. Mate scores count as +-10000. Thinking delay 400 to 900 ms.
+**Black's move:** Stockfish **depth 5, MultiPV 3** (6 until 30 Oct). Keep the candidates whose score (from Black's side) is within `BLACK_WINDOW_CP` (50) of the best, and choose one uniformly at random. Mate scores count as +-10000. Thinking delay 400 to 900 ms.
 
 **Black cracks where the road is narrow** (since 28 Oct, `chooseBlackMove` in `game/pressure.ts`): if exactly one candidate is inside the window, the others are outside it, his last move's pressure is at least `CRACK_MIN_PRESS` (0.8) or Black is in check, and the safe move is not a take-back on the square White just moved to, then with probability `CRACK_P` (0.3) Black plays the best unsafe candidate instead. This is how an opponent facing an unfamiliar gambit actually goes wrong, and it is what makes pressure pay.
 
@@ -464,7 +475,7 @@ One key, `stoomdruk.v1`:
 | Name | Default | Used in |
 |---|---|---|
 | `TOP2_TOLERANCE_CP` | 30 | 4.5 |
-| `BLACK_ENGINE_DEPTH` / `BLACK_MULTIPV` / `BLACK_WINDOW_CP` | 6 / 3 / 50 | 5 |
+| `BLACK_ENGINE_DEPTH` / `BLACK_MULTIPV` / `BLACK_WINDOW_CP` | 5 / 3 / 50 | 5 |
 | `ANALYSIS_DEPTH` / `ANALYSIS_MAX_MS` / `ANALYSIS_MIN_DEPTH` | 14 / 2500 / 10 | 5 |
 | `FINAL_EVAL_DEPTH` | 16 | 7 |
 | `GOLD_EVAL` | 1.00 (pawns) | 7, 9 |

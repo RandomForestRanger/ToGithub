@@ -55,6 +55,9 @@ export const K = {
   END_WHITE_MATES: ['Skaakmat! Die vangs van die dag! Jy\'s \'n goeie seeman.'],
   END_WHITE_MATED: ['Ons het gesink. Maar elke kaptein word \'n paar maal nat!'],
   END_DRAW: ['Gelykop! Nou toe, die see is kalm vandag.'],
+  // toernooi (since 30 Oct; drafts for Martin to edit): said only at the end of a toernooi game
+  END_TOERNOOI_WON: ['Die toernooi is joune! Die pion het druk gekoop, en jy het die druk wins gemaak.'],
+  END_TOERNOOI: ['Die toernooi is klaar. Volgende keer: maak die druk wins.'],
 } as const;
 
 export type KKey = keyof typeof K;
@@ -66,7 +69,7 @@ export const MOOD: Partial<Record<KKey, Mood>> = {
   STEAM_GREEN: 'pleased', DEBT_PAID: 'pleased', POINTS_4: 'pleased',
   BISHOP_STUURBOORD: 'pleased', BISHOP_BAKBOORD: 'pleased', END_GREEN: 'pleased',
   LINE_CONQUERED: 'overjoyed', SPITS_HOOK: 'overjoyed', GREEDY: 'overjoyed', STEAM_GOLD: 'overjoyed',
-  END_GOLD: 'overjoyed', END_WHITE_MATES: 'overjoyed',
+  END_GOLD: 'overjoyed', END_WHITE_MATES: 'overjoyed', END_TOERNOOI_WON: 'overjoyed',
   ENTRY_WRONG: 'worried', COUNTERGAMBIT: 'worried', MISSED: 'worried', STEAM_AMBER: 'worried', STEAM_COLD: 'worried',
   POINTS_2: 'worried', POINTS_1: 'worried', END_MISSED: 'worried', END_WHITE_MATED: 'worried',
   CRACK_CAUGHT: 'overjoyed', CHECK_RIGHT: 'pleased', CRACK_ESCAPED: 'worried', CHECK_WRONG: 'worried',
@@ -84,6 +87,20 @@ export const UI = {
   title: 'Stoomdruk',
   subtitle: 'Kaptein Evans se Kelpwoud',
   begin: 'Begin \'n rondte',
+  // toernooi mode (since 30 Oct)
+  toernooi: 'Toernooi',
+  verkenning: 'Verkenning',
+  toernooiBegin: "Speel 'n toernooi",
+  toernooiEntry: 'Speel die Evans: 1.e4, 2.Nf3, 3.Bc4, 4.b4. Daarna is jy op jou eie.',
+  toernooiOpen: 'Oop see: elke skuif tel.',
+  blackThinking: 'Swart dink...',
+  records: (v: number | null, t: number | null) =>
+    'Rekord: ' + [v !== null && `Verkenning ${v}`, t !== null && `Toernooi ${t}`].filter(Boolean).join(' · '),
+  evalGraph: 'Die telling oor die spel',
+  newRecord: 'Nuwe rekord!',
+  record: (n: number) => `Rekord: ${n}`,
+  toernooiScore: (moves: number, bonus: number) => `Skuiwe ${moves}/64 · Bonus ${bonus}`,
+  againToernooi: "Nog 'n toernooi",
   ready: 'Ek is gereed!',
   route: 'Die roete',
   routeMoves: 'Die skuiwe',

@@ -8,11 +8,17 @@ export interface LineRecord {
 export interface RoundRecord {
   date: string; target: string; conquered: string[]; gold: boolean; score: number; finalEval: number;
 }
+/** A toernooi game (it never touches the Kelpwoud). */
+export interface ToernooiRecord { date: string; score: number; bonus: number; finalEval: number; ending: string }
 export interface Store {
   profile: { name: string };
   lines: Record<string, LineRecord>;
   rounds: RoundRecord[];
   recentTargets: string[];
+  /** top scores, kept apart so the toernooi (with its bonus) doesn't swamp the verkenning record */
+  best: { verkenning: number | null; toernooi: number | null };
+  /** the last 50 toernooi games */
+  toernooi: ToernooiRecord[];
   /** ghostSeen: the Spookskip film has been shown once (after his third round) */
   settings: { bishopLights: boolean; ghostSeen?: boolean };
 }
@@ -20,7 +26,10 @@ export interface Store {
 const KEY = 'stoomdruk.v1';
 
 export function emptyStore(): Store {
-  return { profile: { name: '' }, lines: {}, rounds: [], recentTargets: [], settings: { bishopLights: true } };
+  return {
+    profile: { name: '' }, lines: {}, rounds: [], recentTargets: [], settings: { bishopLights: true },
+    best: { verkenning: null, toernooi: null }, toernooi: [],
+  };
 }
 
 export function loadStore(): Store {
@@ -29,7 +38,12 @@ export function loadStore(): Store {
     if (!raw) return emptyStore();
     const s = JSON.parse(raw);
     const e = emptyStore();
-    return { ...e, ...s, settings: { ...e.settings, ...(s.settings || {}) }, lines: s.lines || {} };
+    const out: Store = { ...e, ...s, settings: { ...e.settings, ...(s.settings || {}) }, lines: s.lines || {} };
+    // stores from before the records: the verkenning record is the best round still on file
+    out.best = { ...e.best, ...(s.best || {}) };
+    if (!s.best && out.rounds.length) out.best.verkenning = Math.max(...out.rounds.map(r => r.score));
+    out.toernooi = Array.isArray(s.toernooi) ? s.toernooi : [];
+    return out;
   } catch {
     return emptyStore();
   }
@@ -66,7 +80,17 @@ export function applyRound(s: Store, r: RoundRecord, targets: string[], missed: 
     s.lines[id] = next;
   }
   s.rounds = [...s.rounds, r].slice(-100);
+  if (s.best.verkenning === null || r.score > s.best.verkenning) s.best = { ...s.best, verkenning: r.score };
   s.recentTargets = [...s.recentTargets, r.target].slice(-10);
   saveStore(s);
   return changed;
+}
+
+/** Record a toernooi game. Returns true if it set a new toernooi record. */
+export function applyToernooi(s: Store, r: ToernooiRecord): boolean {
+  const record = s.best.toernooi === null || r.score > s.best.toernooi;
+  if (record) s.best = { ...s.best, toernooi: r.score };
+  s.toernooi = [...s.toernooi, r].slice(-50);
+  saveStore(s);
+  return record;
 }

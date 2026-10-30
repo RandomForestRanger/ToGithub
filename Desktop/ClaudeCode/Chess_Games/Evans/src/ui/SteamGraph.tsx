@@ -12,7 +12,8 @@ import { pressZone } from '../game/pressure';
  */
 export function SteamGraph({ pts, press }: { pts: SteamPt[]; press: PressPt[] }) {
   if (pts.length < 2 && press.length < 2) return null;
-  const W = 340, P = 24, PR = 74, TOP_H = 92, BOT_H = 100, GAP = 8; // PR: room on the right for the line labels
+  const withPress = press.length > 0; // a toernooi has no needle: the score chart alone
+  const W = 340, P = 24, PR = 74, TOP_H = withPress ? 92 : 0, BOT_H = 100, GAP = 8; // PR: room on the right for the line labels
   // SteamPt.ply counts half-moves played; PressPt.ply is the 0-based index of his move, so +1 puts both on one axis
   const plies = [...pts.map(p => p.ply), ...press.map(p => p.ply + 1)];
   const x0 = Math.min(...plies), x1 = Math.max(Math.max(...plies), x0 + 1);
@@ -38,6 +39,7 @@ export function SteamGraph({ pts, press }: { pts: SteamPt[]; press: PressPt[] })
     <svg viewBox={`0 0 ${W} ${H}`} width="100%" className="steam-graph" role="img"
       aria-label={`${UI.graphPress}; ${UI.graphEval}`}>
       {/* top: pressure */}
+      {withPress && <>
       <text x={P} y={12} className="graph-title">{UI.graphPress}</text>
       <line x1={P} x2={W - PR} y1={tBase} y2={tBase} className="graph-axis" />
       {[PRESS_ZONES.green, PRESS_ZONES.gold].map(z => (
@@ -56,6 +58,7 @@ export function SteamGraph({ pts, press }: { pts: SteamPt[]; press: PressPt[] })
           </rect>
         );
       })}
+      </>}
       {/* bottom: score */}
       <text x={P} y={bTop - 6} className="graph-title">{UI.graphEval}</text>
       <line x1={P} x2={W - PR} y1={EY(0)} y2={EY(0)} stroke="#e74c3c" strokeWidth={2} strokeDasharray="4 3" />

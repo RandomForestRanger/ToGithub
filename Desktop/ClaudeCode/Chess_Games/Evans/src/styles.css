@@ -481,3 +481,13 @@ body {
 .why-card .btn:not(.primary), .ghost-card .btn:not(.primary) { color: #2a1d0e; background: #fff6df; border: 2px solid #8b6b3a; }
 .why-card .why-ghost { justify-content: flex-start; margin: 8px 0 0; }
 @media (max-width: 860px) { .stoomdruk .dial-caption { margin-top: 2px; } }
+
+/* Toernooi mode (30 Oct): records under the counter, the toernooi button, the end card */
+.counters { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
+.counter.records { font-size: 13px; }
+.toernooi-btn { background: #8e44ad; border-color: #b57edc; color: #fff; }
+.toernooi-note { display: block; margin-top: 4px; font-size: 15px; }
+.end-card .end-mode { text-align: center; margin: 0; color: #c39bd3; }
+.end-card .score-split { text-align: center; margin: 2px 0 0; }
+.end-card .record { text-align: center; margin: 4px 0 0; color: var(--muted); min-height: 1em; }
+.end-card .record.new { color: #ffd700; font-weight: 700; animation: scorePopIn .5s ease; }

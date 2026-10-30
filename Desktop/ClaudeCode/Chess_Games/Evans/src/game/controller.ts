@@ -7,6 +7,8 @@ import {
   PRESS_CHECK, PRESS_DEPTH, PRESS_MAX_MS, PRESS_ZONES,
   CRACK_KEEP_CP, CRACK_MIN_PRESS, CRACK_P, CRACK_REAL_CP, CHECK_PLIES,
   CHECK_CALM_EVAL, CHECK_DEFER_PLIES, CHECK_ONLY_MOVE_CP, FORCED_GAP_CP, RESCUE_EVAL_CP,
+  TOERNOOI_WOBBLE_P, WOBBLE_MIN_CP, WOBBLE_MAX_CP, WOBBLE_MULTIPV, PERFECT_FROM_PLY, PERFECT_EVAL_CP,
+  PERFECT_DEPTH, PERFECT_MAX_MS, TOERNOOI_BONUS, TOERNOOI_BONUS_MATE,
 } from '../config';
 import { canon, LINES, type CanonNode } from '../data';
 import { engine } from '../engine/EngineService';
@@ -14,12 +16,14 @@ import { MOOD, say, type KKey, type Mood } from '../content/kaptein';
 import { material, numbered, posKey, sanOf, uciToMove } from './chessUtil';
 import { blackChartMove, conquerAt, newChartState, whiteChartMove, type ChartState } from './round';
 import { pointsFromLoss } from './scoring';
-import { chooseBlackMove, nullFen, pressureOf, pressZone, type Zone } from './pressure';
+import { chooseBlackMove, nullFen, pressureOf, pressZone, wobbleMove, type Zone } from './pressure';
 import { ANSWERS, readPosition, type Answer } from './checkpoint';
 import { imbalance, ledgerOf, nextBaitCap, total, zero, type Counts, type Ledger } from './ledger';
 import type { LineState } from './targets';
 
 export type Phase = 'entry' | 'chart' | 'engine' | 'over';
+/** verkenning: the Kelpwoud rounds (chart, target, aids). toernooi: the four Evans moves, then open play, no aids. */
+export type Mode = 'verkenning' | 'toernooi';
 export type { Zone } from './pressure';
 
 export interface MoveRec { san: string; ply: number; points?: number | null; phase: Phase; evalAfter?: number; loss?: number }
@@ -38,7 +42,10 @@ export interface Checkpoint {
   answered: Answer | null; correct?: boolean;
 }
 export interface RoundResult {
+  /** move points plus bonus */
   score: number; gold: boolean; finalEval: number;
+  /** toernooi: the bonus for the final position (included in score); 0 in verkenning */
+  bonus: number;
   /** checkpoint answers this round */
   checks: { right: number; n: number };
   ending: 'mates' | 'mated' | 'draw' | 'moves';
@@ -100,10 +107,16 @@ export class RoundController {
   private speechPly = -1;
   private speechPri = 0;
 
-  constructor(target: string, private stateOf: (id: string) => LineState) {
+  /** toernooi: Black has played its best since White got well ahead after move 16 (no slips from then on) */
+  perfect = false;
+
+  constructor(target: string, private stateOf: (id: string) => LineState, readonly mode: Mode = 'verkenning') {
     this.startTarget = target;
     this.chart = newChartState(target);
+    if (mode === 'toernooi') this.chart.onChart = false;
   }
+
+  get toernooi() { return this.mode === 'toernooi'; }
 
   onChange(fn: () => void) { this.listeners.add(fn); return () => { this.listeners.delete(fn); }; }
   private emit() { this.listeners.forEach(f => f()); }
@@ -116,6 +129,7 @@ export class RoundController {
   get steamVisible() { return this.ply >= canon.meta.entry.length; }
 
   private speak(key: KKey, vars: { line?: string; move?: string } = {}, pri = 1, prefix = '', suffix = '') {
+    if (this.toernooi && pri < 9) return; // no Captain during a toernooi game, only at the end
     if (this.speechPly === this.ply && pri < this.speechPri) return;
     this.speechPly = this.ply; this.speechPri = pri;
     this.speech = prefix + say(key, vars) + suffix;
@@ -133,7 +147,7 @@ export class RoundController {
    */
   private async maybeCheckpoint() {
     const ply = this.ply;
-    if (this.chess.turn() !== 'w') return;
+    if (this.chess.turn() !== 'w' || this.toernooi) return;
     if ((CHECK_PLIES as readonly number[]).includes(ply)) this.checkDue = ply;
     if (this.checkDue === null) return;
     if (ply > this.checkDue + CHECK_DEFER_PLIES || this.bait === 0) { this.checkDue = null; return; }
@@ -195,7 +209,7 @@ export class RoundController {
       }
       const rec = this.play(uci, 'entry');
       if (this.ply === canon.meta.entry.length) {
-        this.phase = 'chart';
+        this.phase = this.toernooi ? 'engine' : 'chart';
         this.speak('BAIT');
         this.pushSteam();
         this.trackPress(rec);
@@ -335,6 +349,13 @@ export class RoundController {
       if (!this.alive) return;
       if (this.phase === 'entry') {
         this.play(sanToUci(this.chess, canon.meta.entry[this.ply]), 'entry');
+      } else if (this.toernooi && this.ply === canon.meta.entry.length) {
+        // Black's 4th move: accept, decline or countergambit, as often as masters do
+        const root = canon.nodes[canon.meta.rootKey];
+        const total = root.moves.reduce((a, m) => a + m.games + 1, 0);
+        let r = Math.random() * total;
+        const m = root.moves.find(x => (r -= x.games + 1) < 0) ?? root.moves[0];
+        this.play(m.uci, 'engine');
       } else if (this.phase === 'chart') {
         const key = posKey(this.chess);
         const r = blackChartMove(this.chart, key, Math.random, this.stateOf);
@@ -376,6 +397,23 @@ export class RoundController {
   /** Section 5: engine Black, which cracks where the road is narrow (game/pressure.ts, chooseBlackMove). */
   private async engineBlack() {
     const fen = this.chess.fen();
+    if (this.toernooi) {
+      if (!this.perfect && this.ply >= PERFECT_FROM_PLY && (await this.analyse(fen)) >= PERFECT_EVAL_CP) this.perfect = true;
+      if (!this.alive) return;
+      if (this.perfect) {
+        const best = await engine.search(fen, PERFECT_DEPTH, 1, PERFECT_MAX_MS);
+        if (!this.alive) return;
+        if (!best.lines.length) throw new Error('engine returned no move');
+        this.play(best.lines[0].uci, 'engine');
+        return;
+      }
+      if (Math.random() < TOERNOOI_WOBBLE_P) {
+        const wide = await engine.search(fen, BLACK_ENGINE_DEPTH, WOBBLE_MULTIPV);
+        if (!this.alive) return;
+        const w = wobbleMove(wide.lines, WOBBLE_MIN_CP, WOBBLE_MAX_CP, Math.random);
+        if (w) { this.play(w, 'engine'); return; }
+      }
+    }
     const [res, press] = await Promise.all([engine.search(fen, BLACK_ENGINE_DEPTH, BLACK_MULTIPV), this.pressFor(fen)]);
     if (!this.alive) return;
     if (!res.lines.length) throw new Error('engine returned no move');
@@ -487,6 +525,7 @@ export class RoundController {
 
   /** The needle follows his moves: after each one, how big a question did it ask? */
   private trackPress(rec: MoveRec) {
+    if (this.toernooi) return; // no needle in a toernooi
     const fen = this.chess.fen();
     const bait = this.bait;
     void this.pressFor(fen).then(p => {
@@ -583,6 +622,8 @@ export class RoundController {
     const lastWhiteNo = Math.floor((this.ply - 1) / 2) + 1;
     if (ending === 'mates') score += 4 * Math.max(0, MOVES_PER_ROUND - Math.max(4, lastWhiteNo));
     const gold = ending === 'mates' || (ending === 'moves' && finalEval >= GOLD_EVAL);
+    const bonus = !this.toernooi ? 0 : ending === 'mates' ? TOERNOOI_BONUS_MATE : gold ? TOERNOOI_BONUS : 0;
+    score += bonus;
 
     const moments: RoundResult['moments'] = [];
     const firstMiss = Object.entries(this.missed)[0];
@@ -607,14 +648,15 @@ export class RoundController {
     if (best) moments.push({ kind: 'best', move: numbered(best.ply, best.san) });
 
     this.result = {
-      score, gold, finalEval, ending,
+      score, gold, finalEval, ending, bonus,
       checks: { right: this.checks.filter(c => c.correct).length, n: this.checks.length },
       conquered: [...this.chart.conquered],
       missed: this.missed, moments: moments.slice(0, 3),
     };
     this.thinking = false;
     this.speak(ending === 'mates' ? 'END_WHITE_MATES' : ending === 'mated' ? 'END_WHITE_MATED'
-      : ending === 'draw' ? 'END_DRAW' : gold ? 'END_GOLD'
+      : ending === 'draw' ? 'END_DRAW' : gold ? (this.toernooi ? 'END_TOERNOOI_WON' : 'END_GOLD')
+      : this.toernooi ? 'END_TOERNOOI'
       : this.chart.conquered.has(this.startTarget) ? 'END_GREEN' : 'END_MISSED', {}, 9);
     this.emit();
   }
