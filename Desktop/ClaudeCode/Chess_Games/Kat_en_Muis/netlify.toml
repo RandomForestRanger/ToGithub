@@ -1,0 +1,7 @@
+[build]
+  publish = "."
+
+[[headers]]
+  for = "/vendor/stockfish/*.wasm"
+  [headers.values]
+    Content-Type = "application/wasm"

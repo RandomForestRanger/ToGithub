@@ -1,0 +1,88 @@
+{
+ "version": 1,
+ "generated": "2026-10-30",
+ "mateIn": 10,
+ "minUnits": 17,
+ "count": 1,
+ "positions": [
+  {
+   "id": "km-6e49e552",
+   "fen": "2k3qr/2r1bQp1/p6p/P3p3/4P3/P6P/1B3PP1/1R1R2K1 w - - 4 31",
+   "attacker": "w",
+   "mateIn": 10,
+   "units": 20,
+   "pv": [
+    "f7f5",
+    "c8b8",
+    "b2e5",
+    "b8a8",
+    "e5c7",
+    "g8c4",
+    "f5d7",
+    "c4e4",
+    "c7b6",
+    "e4b7",
+    "b6e3",
+    "e7b4",
+    "b1b4",
+    "h8b8",
+    "b4b7",
+    "b8b7",
+    "d7c8",
+    "b7b8",
+    "c8a6"
+   ],
+   "perfectAlternatives": {
+    "0": [
+     "f7f5"
+    ],
+    "2": [
+     "b2e5"
+    ],
+    "4": [
+     "e5c7"
+    ],
+    "6": [
+     "f5d7"
+    ],
+    "8": [
+     "c7b6",
+     "c7e5",
+     "c7f4",
+     "c7g3",
+     "c7h2",
+     "d1e1"
+    ],
+    "10": [
+     "b6e3"
+    ],
+    "12": [
+     "b1b4"
+    ],
+    "14": [
+     "b4b7",
+     "d7b7"
+    ],
+    "16": [
+     "d7c6",
+     "d7c8"
+    ],
+    "18": [
+     "c8a6"
+    ]
+   },
+   "quietMoves": 6,
+   "defenderChoices": 188,
+   "flags": [],
+   "difficulty": 71.4,
+   "source": {
+    "type": "dev"
+   },
+   "verified": {
+    "engine": "Stockfish 18",
+    "nodes": 20000000,
+    "date": "2026-10-30"
+   }
+  }
+ ]
+}
