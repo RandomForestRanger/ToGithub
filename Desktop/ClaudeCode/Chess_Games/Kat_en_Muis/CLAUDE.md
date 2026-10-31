@@ -154,3 +154,8 @@ An easier mode for the real game, chosen on the start screen.
 4. Ordering: free choice of positions, or a ladder by difficulty?
 5. Does "more than 16 pieces" count all units including kings and pawns? (Assumed yes above.)
 6. Portal: does Kat en Muis share progress storage with the other games in the suite?
+
+## Deploy
+
+- Live at <https://kat-en-muis.netlify.app> (Netlify site id `3af94a87-a640-4c1a-87ad-7c3d2ecf5761`, deployed 31 Oct 2026), with a card on Lekker Bekker (`Speletjies_Altesaam/`, icon `img/kat-en-muis.svg` is the game logo).
+- Deploy only the game files, not `pipeline/` or this file: copy `index.html netlify.toml css js data vendor` into a clean folder, then `npx netlify-cli deploy --prod --dir <folder> --no-build --site 3af94a87-a640-4c1a-87ad-7c3d2ecf5761` (with `PATH="/usr/local/opt/node/bin:$PATH"`).

@@ -18,6 +18,7 @@ Bou 'n enkele HTML-bladsy wat as 'n vriendelike, kleurvolle portaal dien vir 'n 
 | Adi – Die Mancala Speletjie | https://adi-joy.netlify.app/ |
 | D6 Dynamos | https://indiese-verdediging.netlify.app/ |
 | Kaptein Evans se Kelpwoud | https://stoomdruk-evans.netlify.app/ |
+| Kat en Muis | https://kat-en-muis.netlify.app/ |
 
 ---
 
@@ -66,6 +67,7 @@ Gebruik hierdie beskrywings op die kaarte:
 - **Adi – Die Mancala Speletjie** – "Speel Adi, 'n ou Afrika-speletjie met klippies en komme. Baie pret!"
 - **D6 Dynamos** – "Speel soos 'n krieket-kampioen en leer die Ou-Indiese verdediging – blok enige aanval met jou handinge d6-pion!"
 - **Kaptein Evans se Kelpwoud** – "Vaar saam met Kaptein Evans, offer 'n pion vir tyd, en laat die kelpwoud groen en goud word!"
+- **Kat en Muis** – "Jy is die kat en die koning is die muis. Kyk mooi, en vang hom in presies 10 skuiwe!"
 
 ---
 
