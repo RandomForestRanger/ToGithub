@@ -74,6 +74,21 @@ function saveStore() {
   writeKey(progressKey(player, mode), saved);
 }
 
+// Older results have no `caught` flag; any stars mean the mouse was caught.
+const isCaught = (res) => !!res && (res.caught || res.stars > 0);
+
+function tally(p, m) {
+  const results = readKey(progressKey(p, m), {}).results || {};
+  let caught = 0, stars = 0, perfect = 0;
+  for (const pos of bank) {
+    const res = results[pos.id];
+    if (isCaught(res)) caught++;
+    stars += res?.stars || 0;
+    if (res?.perfect) perfect++;
+  }
+  return { caught, stars, perfect };
+}
+
 // Each player keeps their own colours; before anyone is chosen, the last player's.
 const themeKey = (p) => `${GAME_PREFIX}_${p || 'gas'}_kleur`;
 let theme = readKey(themeKey(player), null);
@@ -518,6 +533,7 @@ function finish(outcome) {
   const key = r.pos.id;
   const prev = saved.results[key] || { stars: 0, perfect: false, tries: 0 };
   saved.results[key] = {
+    caught: isCaught(prev) || outcome.result === 'win',
     stars: Math.max(prev.stars, stars),
     perfect: prev.perfect || perfect,
     tries: prev.tries + 1,
@@ -720,6 +736,7 @@ function renderNav() {
   const busy = round && (round.phase === 'play' || round.phase === 'busy' || round.phase === 'oops');
   $('vorige').disabled = busy || !round || round.index === 0;
   $('volgende-pos').disabled = busy || !round || round.index >= bank.length - 1;
+  $('vk-btn').disabled = busy;
   if (!round) return;
   const res = saved.results[round.pos.id];
   const mark = res?.stars ? ` ${'★'.repeat(res.stars)}` : '';
@@ -736,6 +753,7 @@ function wire() {
   $('speler-kaarte').innerHTML = PLAYERS.map((p, i) => `
     <button class="card speler" data-speler="${p}" role="radio" style="--h:${[28, 205, 140][i]}">
       <span class="avatar">${p === 'Besoeker' ? '?' : p[0]}</span><b>${p}</b>
+      <small class="vk-mini" data-mini="${p}"></small>
     </button>`).join('');
   $('speler-kaarte').addEventListener('click', (e) => {
     const card = e.target.closest('.card');
@@ -755,6 +773,27 @@ function wire() {
   }
   $('begin').addEventListener('click', showGame);
   $('tuis-btn').addEventListener('click', showStart);
+
+  // Vangkas: every position, caught or not, with its stars
+  $('vk-oop').addEventListener('click', () => showVangkas('tuis'));
+  $('vk-btn').addEventListener('click', () => showVangkas('spel'));
+  $('vk-terug').addEventListener('click', () => (vkFrom === 'spel' ? showGame() : showStart()));
+  for (const chip of document.querySelectorAll('[data-vk-mode]')) {
+    chip.addEventListener('click', () => {
+      vkMode = Number(chip.dataset.vkMode);
+      renderVangkas();
+    });
+  }
+  $('vk-rooster').addEventListener('click', (e) => {
+    const tile = e.target.closest('.vk-tile');
+    if (!tile) return;
+    mode = vkMode;
+    writeKey(`${GAME_PREFIX}_modus`, mode);
+    const s = readKey(progressKey(player, mode), {});
+    s.index = Number(tile.dataset.i);
+    writeKey(progressKey(player, mode), s);
+    showGame();
+  });
   $('logo').closest('a').addEventListener('click', (e) => {
     e.preventDefault();
     showStart();
@@ -824,29 +863,95 @@ function renderStart() {
   }
   $('begin').disabled = !player || !mode || !bank.length;
   $('begin').textContent = player && mode ? `Begin, ${player}!` : 'Begin!';
+  $('vk-oop').hidden = !player || !bank.length;
+  $('vk-oop').textContent = `\u{1F42D} Kyk in ${player} se vangkas`;
+  for (const el of document.querySelectorAll('.vk-mini')) {
+    const stars = bank.length ? tally(el.dataset.mini, MATE_SHORT).stars + tally(el.dataset.mini, MATE_N).stars : 0;
+    el.textContent = stars ? `★ ${stars}` : '';
+  }
 }
 
-function showStart() {
+// Leaving the board (for the start screen or the vangkas) stops the round.
+function leaveGame() {
   stopReplay();
   roundToken++;       // anything still running for the old round now stops
   round = null;
   replay = null;
   $('spel').hidden = true;
-  $('tuis').hidden = false;
   $('pos-nav').hidden = true;
+}
+
+function showStart() {
+  leaveGame();
+  $('vangkas').hidden = true;
+  $('tuis').hidden = false;
   $('tuis-btn').hidden = true;
+  $('vk-btn').hidden = true;
   $('speler-tag').hidden = true;
   $('modus-label').textContent = 'Vang die muis';
   renderStart();
+}
+
+let vkMode = MATE_N;
+let vkFrom = 'tuis';  // where Terug goes
+
+function showVangkas(from) {
+  if (!player || !bank.length) return;
+  vkFrom = from;
+  vkMode = mode || MATE_N;
+  leaveGame();
+  $('tuis').hidden = true;
+  $('vangkas').hidden = false;
+  $('tuis-btn').hidden = false;
+  $('vk-btn').hidden = true;
+  $('speler-tag').hidden = false;
+  $('speler-tag').textContent = player;
+  $('modus-label').textContent = 'Vangkas';
+  renderVangkas();
+  window.scrollTo(0, 0);
+}
+
+function renderVangkas() {
+  const store = readKey(progressKey(player, vkMode), {});
+  const results = store.results || {};
+  const t = tally(player, vkMode);
+  $('vk-titel').textContent = `${player} se vangkas`;
+  for (const c of document.querySelectorAll('[data-vk-mode]')) {
+    c.setAttribute('aria-checked', String(Number(c.dataset.vkMode) === vkMode));
+  }
+  $('vk-som').innerHTML =
+    `<span><b>${t.caught}</b> van ${bank.length} muise gevang</span>` +
+    `<span class="ster">★ <b>${t.stars}</b> van ${bank.length * 3}</span>` +
+    `<span>Presies ${vkMode}: <b>${t.perfect}</b></span>`;
+  $('vk-bar').style.width = `${(100 * t.caught) / bank.length}%`;
+  $('vk-rooster').innerHTML = bank.map((pos, i) => {
+    const res = results[pos.id];
+    const caught = isCaught(res);
+    const cls = ['vk-tile', caught ? 'caught' : res?.tries ? 'tried' : '',
+      res?.perfect ? 'perfect' : '', i === (store.index || 0) ? 'now' : ''].join(' ');
+    const n = res?.stars || 0;
+    const marks = caught
+      ? (n ? '★'.repeat(n) + `<i>${'★'.repeat(3 - n)}</i>` : '✓')
+      : '';
+    const title = caught
+      ? `Posisie ${i + 1}: gevang${n ? `, ${n} ${n === 1 ? 'ster' : 'sterre'}` : ''}${res.perfect ? `, presies ${vkMode}` : ''}`
+      : res?.tries
+        ? `Posisie ${i + 1}: nog nie gevang nie (${res.tries} keer probeer)`
+        : `Posisie ${i + 1}: nog nie probeer nie`;
+    return `<button class="${cls}" data-i="${i}" title="${title}" aria-label="${title}">` +
+      `<span class="n">${i + 1}</span><span class="st">${marks}</span></button>`;
+  }).join('');
 }
 
 function showGame() {
   if (!player || !mode || !bank.length) return;
   saved = loadPlayer(player);
   $('tuis').hidden = true;
+  $('vangkas').hidden = true;
   $('spel').hidden = false;
   $('pos-nav').hidden = false;
   $('tuis-btn').hidden = false;
+  $('vk-btn').hidden = false;
   $('speler-tag').hidden = false;
   $('speler-tag').textContent = player;
   $('modus-label').textContent = `Mat in ${mode}`;

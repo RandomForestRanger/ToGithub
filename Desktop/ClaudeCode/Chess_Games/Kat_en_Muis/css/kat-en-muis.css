@@ -170,6 +170,79 @@ cg-board {
 .mode-badge.big { background: var(--orange); transform: rotate(4deg); }
 .tuis .big-btn { max-width: 360px; margin: 30px auto 0; text-transform: none; font-size: 22px; }
 .big-btn:disabled { opacity: .4; cursor: default; animation: none; }
+.vk-mini { font-size: 15px; font-weight: 700; color: var(--gold); min-height: 1.3em; }
+.vk-link {
+  display: block;
+  margin: 16px auto 0;
+  background: none;
+  border: 0;
+  color: var(--blue);
+  font-size: 17px;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* ---------- vangkas ---------- */
+
+.vangkas { max-width: 860px; }
+.vangkas .chips { max-width: 320px; margin: 16px auto 0; }
+.vk-som {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px 24px;
+  margin: 18px 0 10px;
+  font-size: 17px;
+}
+.vk-som b { font-size: 24px; color: var(--text-strong); }
+.vk-som .ster, .vk-som .ster b { color: var(--gold); }
+.vk-bar { max-width: 420px; height: 10px; margin: 0 auto 20px; border-radius: 5px; background: var(--pip); overflow: hidden; }
+.vk-bar i { display: block; width: 0; height: 100%; background: var(--green); transition: width .6s ease-out; }
+.vk-rooster { display: grid; grid-template-columns: repeat(auto-fill, minmax(66px, 1fr)); gap: 8px; }
+.vk-tile {
+  aspect-ratio: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  padding: 0;
+  background: var(--panel);
+  border: 2px solid var(--line);
+  border-radius: 10px;
+  color: var(--muted);
+  font-size: 19px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform .12s, border-color .12s;
+}
+.vk-tile:hover { transform: translateY(-2px); border-color: var(--muted); }
+.vk-tile .st { font-size: 12px; letter-spacing: 1px; color: var(--gold); min-height: 1.2em; }
+.vk-tile .st i { font-style: normal; color: var(--pip); }
+.vk-tile.tried { border-style: dashed; border-color: var(--muted); color: var(--text); }
+.vk-tile.caught { background: color-mix(in srgb, var(--green) 22%, var(--panel)); border-color: var(--green); color: var(--text-strong); }
+.vk-tile.perfect { border-color: var(--gold); box-shadow: 0 0 10px color-mix(in srgb, var(--gold) 45%, transparent); }
+.vk-tile.now { outline: 3px solid var(--blue); outline-offset: 2px; }
+.vk-legend { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px 18px; margin-top: 18px; font-size: 14px; color: var(--muted); }
+.vk-legend i {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  margin-right: 6px;
+  vertical-align: -2px;
+  border: 2px solid var(--line);
+  border-radius: 4px;
+  background: var(--panel);
+}
+.vk-legend i.caught { background: color-mix(in srgb, var(--green) 22%, var(--panel)); border-color: var(--green); }
+.vk-legend i.tried { border-style: dashed; border-color: var(--muted); }
+.vk-legend i.perfect { border-color: var(--gold); }
+.vk-legend i.now { outline: 2px solid var(--blue); outline-offset: 1px; }
+.vk-wenk { margin: 12px 0 0; font-size: 15px; }
+.vk-terug { display: block; width: 100%; max-width: 260px; margin: 18px auto 0; font-size: 17px; }
+.kleur-btn:disabled { opacity: .4; cursor: default; }
 
 /* ---------- top bar ---------- */
 
@@ -541,6 +614,14 @@ cg-board {
   .card b { font-size: 18px; }
   .avatar { width: 52px; height: 52px; font-size: 26px; }
   .tuis h1 { font-size: 32px; }
+  .vk-rooster { grid-template-columns: repeat(auto-fill, minmax(54px, 1fr)); gap: 6px; }
+  .vk-tile { font-size: 16px; }
+  .vk-tile .st { font-size: 10px; letter-spacing: 0; }
+}
+
+@media (max-width: 480px) {
+  /* narrow phones: the logo alone, so the header buttons all fit */
+  .brand-text { display: none; }
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -20,6 +20,9 @@
       <span class="palet" aria-hidden="true"><i></i><i></i><i></i></span><span class="long">Gee my 'n nuwe kleur</span>
     </button>
     <span class="player-tag" id="speler-tag" hidden></span>
+    <button id="vk-btn" class="kleur-btn" title="Vangkas" hidden>
+      <span aria-hidden="true">&#x1F42D;</span><span class="long">Vangkas</span>
+    </button>
     <nav class="pos-nav" id="pos-nav" aria-label="Posisies" hidden>
       <button id="vorige" class="icon-btn" title="Vorige posisie" aria-label="Vorige posisie">&#x2039;</button>
       <span id="pos-label">Posisie 1</span>
@@ -54,6 +57,26 @@
     </div>
 
     <button id="begin" class="big-btn" disabled>Begin!</button>
+    <button id="vk-oop" class="vk-link" hidden></button>
+  </section>
+
+  <section class="tuis vangkas" id="vangkas" hidden>
+    <h1 id="vk-titel">Vangkas</h1>
+    <div class="chips" role="radiogroup" aria-label="Watter speletjie?">
+      <button class="chip" data-vk-mode="5" role="radio">Mat in 5</button>
+      <button class="chip" data-vk-mode="10" role="radio">Mat in 10</button>
+    </div>
+    <div class="vk-som" id="vk-som"></div>
+    <div class="vk-bar"><i id="vk-bar"></i></div>
+    <div class="vk-rooster" id="vk-rooster"></div>
+    <div class="vk-legend">
+      <span><i class="caught"></i>Gevang</span>
+      <span><i class="tried"></i>Probeer, nog nie gevang nie</span>
+      <span><i class="perfect"></i>Presies</span>
+      <span><i class="now"></i>Hier is jy</span>
+    </div>
+    <p class="vk-wenk">Tik op 'n nommer om daardie posisie te speel.</p>
+    <button id="vk-terug" class="btn vk-terug">Terug</button>
   </section>
 
   <main class="layout" id="spel" hidden>
