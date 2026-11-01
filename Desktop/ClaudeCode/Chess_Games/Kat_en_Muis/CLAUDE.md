@@ -126,7 +126,7 @@ Order positions by the number of quiet attacker moves on the principal variation
 
 - **Files.** `index.html`, `css/kat-en-muis.css`, `js/app.js` (game), `js/enjin.js` (Stockfish worker), `js/kuns.js` (cat and mouse SVGs), `js/kleur.js` (random colour themes), `data/posisies.json` (bank), `vendor/` (chessground 9.2.1, chess.js 1.4.0, Stockfish 19 lite single-threaded, the same engine build Evans uses), `pipeline/` (bank builder and its README), `netlify.toml`.
 - **Serving.** Must be served over HTTP like the rest of the suite: `python3 -m http.server 8000` from this folder, then open <http://localhost:8000>.
-- **Start screen (31 Oct 2026).** Kid-friendly: *Wie speel?* (Thomas, Jacobus, Ander; Martin's choice for this game, replacing the suite's J/L/KC/... list) and *Wat speel ons?* (Mat in 5 or Mat in 10), then **Begin, {naam}!**. The house button (and the logo) go back to it. `katEnMuis_speler` and `katEnMuis_modus` remember the last choice; `katEnMuis_{player}_vordering` (Mat in 10) and `katEnMuis_{player}_vordering5` (Mat in 5) hold results, handicap, current position and games played.
+- **Start screen (31 Oct 2026).** Kid-friendly: *Wie speel?* (Thomas, Jacobus, Besoeker for visitors, renamed from Ander on 1 Nov 2026 with saved data carried over; Martin's choice for this game, replacing the suite's J/L/KC/... list) and *Wat speel ons?* (Mat in 5 or Mat in 10), then **Begin, {naam}!**. The house button (and the logo) go back to it. `katEnMuis_speler` and `katEnMuis_modus` remember the last choice; `katEnMuis_{player}_vordering` (Mat in 10) and `katEnMuis_{player}_vordering5` (Mat in 5) hold results, handicap, current position and games played.
 - **Colours.** **Gee my 'n nuwe kleur** in the header, always available: `js/kleur.js` picks a random hue, dark or light, one of eight drifting background textures (dots, stripes, grid, waves, blocks, paw prints, stars, grain) and one of nine board colour pairs, and spreads it from the button in a circle (View Transitions; instant where unsupported or with reduced motion). Saved per player in `katEnMuis_{player}_kleur`. The board squares are drawn with a CSS conic gradient from `--board-light`/`--board-dark`.
 - **Look.** Deliberately Lichess-style (dark Lichess palette, light variant for light-mode devices) rather than the suite's glassmorphism, as asked for this game. Tap-to-move works, drag-and-drop too.
 - **Notation.** Figurine notation in the move list, so no choice between Afrikaans piece letters is needed.
@@ -144,7 +144,7 @@ An easier mode for the real game, chosen on the start screen.
 - **Retry** (*Probeer weer*) skips the opening show and goes straight to the position.
 - Same budget chips (+1/+3/+5, so 6, 8 or 10 moves), stars and take-back rules; perfect is *Presies 5!*.
 - Side-effect, deliberately kept: a child who has done a Mat in 5 has seen the end of the matching Mat in 10.
-- Still open: whether +5 is too generous for a mate in 5, and whether Mat in 5 should unlock Mat in 10.
+- Decided 1 Nov 2026: keep +1/+3/+5, and Mat in 5 does not unlock Mat in 10 (free choice).
 
 ## Open questions
 

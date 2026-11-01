@@ -17,7 +17,7 @@ const STILL_CRUSHING_CP = 300;   // no mate found but attacker still this far ah
 const BANK_REPLY_DELAY = 450;
 const REPLAY_STEP_MS = 2200;     // slow enough for a child to follow each move
 const GAME_PREFIX = 'katEnMuis';                    // suite key pattern: {prefix}_{player}_{data}
-const PLAYERS = ['Thomas', 'Jacobus', 'Ander'];
+const PLAYERS = ['Thomas', 'Jacobus', 'Besoeker'];
 
 const MAANDE = ['Januarie', 'Februarie', 'Maart', 'April', 'Mei', 'Junie', 'Julie',
   'Augustus', 'September', 'Oktober', 'November', 'Desember'];
@@ -45,6 +45,13 @@ function writeKey(key, value) {
     /* ignore */
   }
 }
+
+// "Ander" was renamed "Besoeker" on 1 Nov 2026; carry its saved data over once.
+for (const kind of ['vordering', 'vordering5', 'kleur']) {
+  const old = readKey(`${GAME_PREFIX}_Ander_${kind}`, null);
+  if (old !== null && readKey(`${GAME_PREFIX}_Besoeker_${kind}`, null) === null) writeKey(`${GAME_PREFIX}_Besoeker_${kind}`, old);
+}
+if (readKey(`${GAME_PREFIX}_speler`, null) === 'Ander') writeKey(`${GAME_PREFIX}_speler`, 'Besoeker');
 
 let player = readKey(`${GAME_PREFIX}_speler`, null);
 if (!PLAYERS.includes(player)) player = null;
@@ -728,7 +735,7 @@ function wire() {
   // start screen: pick a player and a game, then Begin!
   $('speler-kaarte').innerHTML = PLAYERS.map((p, i) => `
     <button class="card speler" data-speler="${p}" role="radio" style="--h:${[28, 205, 140][i]}">
-      <span class="avatar">${p === 'Ander' ? '?' : p[0]}</span><b>${p}</b>
+      <span class="avatar">${p === 'Besoeker' ? '?' : p[0]}</span><b>${p}</b>
     </button>`).join('');
   $('speler-kaarte').addEventListener('click', (e) => {
     const card = e.target.closest('.card');
