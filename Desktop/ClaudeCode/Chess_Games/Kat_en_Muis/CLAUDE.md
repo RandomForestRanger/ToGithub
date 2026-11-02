@@ -147,16 +147,11 @@ An easier mode for the real game, chosen on the start screen.
 - Side-effect, deliberately kept: a child who has done a Mat in 5 has seen the end of the matching Mat in 10.
 - Decided 1 Nov 2026: keep +1/+3/+5, and Mat in 5 does not unlock Mat in 10 (free choice).
 
-## Open questions
+## Decisions (formerly open questions, all closed 2 Nov 2026 with Martin)
 
-1. Is there a +0 option (exactly 10, no slack) for the strongest players, or is +1 the floor?
-2. ~~Rewards~~ Closed 2 Nov 2026: stars by handicap (+1 = three, +3 = two, +5 = one) plus a *Presies* badge; see Implementation notes.
-3. Retry: can a failed position be retried at once, or does it come back later?
-4. Ordering: free choice of positions, or a ladder by difficulty?
-5. Does "more than 16 pieces" count all units including kings and pawns? (Assumed yes above.)
-6. Portal: does Kat en Muis share progress storage with the other games in the suite?
-
-## Deploy
-
-- Live at <https://kat-en-muis.netlify.app> (Netlify site id `3af94a87-a640-4c1a-87ad-7c3d2ecf5761`, deployed 31 Oct 2026), with a card on Lekker Bekker (`Speletjies_Altesaam/`, icon `img/kat-en-muis.svg` is the game logo).
-- Deploy only the game files, not `pipeline/` or this file: copy `index.html netlify.toml css js data vendor` into a clean folder, then `npx netlify-cli deploy --prod --dir <folder> --no-build --site 3af94a87-a640-4c1a-87ad-7c3d2ecf5761` (with `PATH="/usr/local/opt/node/bin:$PATH"`).
+1. **No +0 option.** +1 is the floor; it is hard enough for players at this level.
+2. **Rewards.** Stars by handicap (+1 = three, +3 = two, +5 = one) plus a *Presies* badge; see Implementation notes.
+3. **Retry.** Any position can be replayed at once: *Probeer weer*, the ‹ › arrows in the header, or a tile in the vangkas.
+4. **Ordering.** Free choice; no enforced ladder. (The bank happens to run from fewest to most quiet moves, so *Volgende* drifts from easier to harder.)
+5. **Unit count.** "More than 16 pieces" counts every unit, kings and pawns included.
+6. **Portal.** Progress stays in Kat en Muis's own storage; nothing is shared with the other games in the suite.
