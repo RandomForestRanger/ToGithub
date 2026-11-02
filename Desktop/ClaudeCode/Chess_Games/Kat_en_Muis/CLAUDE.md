@@ -133,7 +133,7 @@ Order positions by the number of quiet attacker moves on the principal variation
 - **Notation.** Figurine notation in the move list, so no choice between Afrikaans piece letters is needed.
 - **Early end.** First check 1.5 s, second check 3 s. If the engine finds no mate at all but the attacker is still at least +3 ahead, the round carries on and the budget decides.
 - **Lost pace.** After an off-line attacker move the engine's mate distance is compared with one less than before; the difference is shown as an orange `+n` tag in *Jou spel*. Perfect alternatives get a blue tag.
-- **Stars (provisional, open question 2).** Win with +1 = three stars, +3 = two, +5 = one; a mate in exactly 10 adds *Presies 10!*.
+- **Stars (settled with Martin, 2 Nov 2026).** Win with +1 = three stars, +3 = two, +5 = one, in both modes; a mate in exactly 10 (or 5) adds *Presies*. A win after a take-back counts as caught with no stars. Each position keeps its best result.
 - **Test positions.** The engine-made test bank (`"source": {"type": "dev"}`, labelled *Toetsposisie* in the game) is kept in `pipeline/uitvoer/toetsposisies-dev.json`.
 - **Bank (30 Oct 2026).** `data/posisies.json` now holds 70 certified positions from the January 2015 Lichess dump (build order step 1 done, step 2 started). Build into `pipeline/uitvoer/` (the resume cache lives there) and copy the JSON into `data/`. Yield and cost are in `pipeline/README.md`: about 100 positions per 45 minutes of engine time.
 
@@ -150,7 +150,7 @@ An easier mode for the real game, chosen on the start screen.
 ## Open questions
 
 1. Is there a +0 option (exactly 10, no slack) for the strongest players, or is +1 the floor?
-2. Rewards: stars by handicap (for example +1 = three stars, +3 = two, +5 = one) with a perfect-10 bonus, or something suite-specific?
+2. ~~Rewards~~ Closed 2 Nov 2026: stars by handicap (+1 = three, +3 = two, +5 = one) plus a *Presies* badge; see Implementation notes.
 3. Retry: can a failed position be retried at once, or does it come back later?
 4. Ordering: free choice of positions, or a ladder by difficulty?
 5. Does "more than 16 pieces" count all units including kings and pawns? (Assumed yes above.)
