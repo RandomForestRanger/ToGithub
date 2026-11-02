@@ -12,12 +12,125 @@ const PLAYERS = ['J', 'L', 'KC', 'CA', 'MB', 'T'];
 const STORAGE_PREFIX = 'ruylopez_trainer_';
 const BADGE_VERSION = 2;
 
+// A move's score is capped by how much it throws away, whatever its rank or popularity.
+// Loss is measured on the win-chance scale Lichess uses for its own move labels (-1 to +1).
+// Set for Stockfish at ENGINE_DEPTH, which reads losses a little larger than a deep search does:
+// every blunder tested sat at 0.45 or more, and no main-line move above 0.06.
+const EVAL_LOSS_BANDS = [
+    { minLoss: 0.40, cap: 1, label: 'flater' },
+    { minLoss: 0.25, cap: 2, label: 'fout' },
+    { minLoss: 0.15, cap: 3, label: 'onakkuraat' }
+];
+
+// Hints cost points: the most a move can score after the idea, and after the move itself
+const HINT_IDEA_CAP = 4;
+const HINT_MOVE_CAP = 3;
+
+// How often Black steers toward a named line this player hasn't earned yet
+const STEER_CHANCE = 0.6;
+
+// One engine at one depth for every position, first move to last, so the eval can't jump
+// because its source or depth changed
+const ENGINE_DEPTH = 14;
+const ENGINE_DEPTH_FALLBACK = 10;  // The older JavaScript build is too slow for ENGINE_DEPTH
+const ENGINE_TIME_LIMIT = 8000;  // ms, then the search stops and reports what it has
+const ENGINE_LOAD_LIMIT = 15000;  // ms to reach uciok before trying the next way of running it
+const STOCKFISH_CDN = 'https://cdnjs.cloudflare.com/ajax/libs/stockfish.js/10.0.2/';
+
+// The review: how long each step stays up, in ms
+const REVIEW_WHITE_MS = 2000;
+const REVIEW_BLACK_MS = 1500;
+const REVIEW_FORCED_MS = 700;  // The forced opening moves have no choice to look at
+const REVIEW_MOVE_MS = 450;    // Room for the piece to slide
+const REVIEW_POPUP_MS = 1500;
+const REVIEW_PREP_LIMIT = 1500;  // Don't hold the run up for a slow engine
+// How close to the engine's top line a move must be (win-chance scale) to get an arrow
+const REVIEW_BEST_MARGIN = 0.10;
+const REVIEW_OPTION_MARGIN = 0.25;
+
 // Forced opening moves (Ruy Lopez)
 const FORCED_MOVES = {
     1: { white: 'e4', black: 'e5' },
     2: { white: 'Nf3', black: 'Nc6' },
     3: { white: 'Bb5', black: null }  // Black's 3rd move is not forced
 };
+
+// Named Spanish positions. A badge is earned on reaching the exact position, so any move order
+// counts and unrelated lines with the same move at the same move number don't.
+const LINE_SPANISH = 'e4 e5 Nf3 Nc6 Bb5';
+const LINE_CASTLED = `${LINE_SPANISH} a6 Ba4 Nf6 O-O`;       // after 5.O-O
+const LINE_BB3 = `${LINE_CASTLED} Be7 Re1 b5 Bb3`;           // after 7.Bb3
+const LINE_H3 = `${LINE_BB3} O-O c3 d6 h3`;                  // after 9.h3, the Closed Spanish tabiya
+const LINE_NOAH_SET = `${LINE_SPANISH} a6 Ba4 d6 d4 b5 Bb3 Nxd4 Nxd4 exd4`;
+const LINE_NOAH_SPRUNG = `${LINE_NOAH_SET} Qxd4 c5 Qd5 Be6 Qc6+ Bd7 Qd5 c4`;
+
+const BADGE_LINES = {
+    morphy: [`${LINE_SPANISH} a6`],
+    berlin: [`${LINE_SPANISH} Nf6`],
+    bird: [`${LINE_SPANISH} Nd4`],
+    steinitz: [`${LINE_SPANISH} d6`],
+    schliemann: [`${LINE_SPANISH} f5`],
+    cozio: [`${LINE_SPANISH} Nge7`],
+    classical: [`${LINE_SPANISH} Bc5`],
+    open: [`${LINE_CASTLED} Nxe4`, `${LINE_CASTLED} b5 Bb3 Nxe4`],
+    closed: [`${LINE_CASTLED} Be7`, `${LINE_CASTLED} b5 Bb3 Be7`],
+    averbakh: [`${LINE_CASTLED} Be7 Re1 d6`],
+    archangel: [`${LINE_CASTLED} b5 Bb3 Bb7`],
+    marshall: [`${LINE_BB3} O-O c3 d5`],
+    breyer: [`${LINE_H3} Nb8`],
+    zaitsev: [`${LINE_H3} Bb7`],
+    chigorin: [`${LINE_H3} Na5`],
+    smyslov: [`${LINE_H3} h6`],
+    kholmov: [`${LINE_H3} Be6`],
+    keres: [`${LINE_H3} a5`, `${LINE_H3} Nd7`],
+    gajewski: [`${LINE_H3} Na5 Bc2 d5`],
+    anti_marshall: [`${LINE_BB3} O-O a4`],
+    worrall: [`${LINE_CASTLED} Be7 Qe2`]
+};
+
+const boardOf = (fen) => fen.split(' ')[0];
+
+function boardAfterLine(line) {
+    const g = new Chess();
+    line.split(' ').forEach((san) => g.move(san));
+    return boardOf(g.fen());
+}
+
+const NOAH_TRAP_BOARD = boardAfterLine(LINE_NOAH_SET);
+const LINE_AWARDS = new Map();  // exact position -> badges earned on reaching it
+const STEER_MAP = new Map();    // position with Black to move -> [{ san, badge }] toward locked lines
+const TRAP_REPLIES = new Map(); // once White takes the poisoned pawn, Black springs the trap
+
+function addSteerEntries(badge, line) {
+    const g = new Chess();
+    line.split(' ').forEach((san) => {
+        if (g.turn() === 'b') {
+            const key = boardOf(g.fen());
+            if (!STEER_MAP.has(key)) STEER_MAP.set(key, []);
+            STEER_MAP.get(key).push({ san, badge });
+        }
+        g.move(san);
+    });
+}
+
+Object.entries(BADGE_LINES).forEach(([badge, lines]) => {
+    lines.forEach((line) => {
+        const end = boardAfterLine(line);
+        if (!LINE_AWARDS.has(end)) LINE_AWARDS.set(end, []);
+        LINE_AWARDS.get(end).push(badge);
+        addSteerEntries(badge, line);
+    });
+});
+addSteerEntries('noahs_ark', LINE_NOAH_SET);  // earned by White's reply, see checkBadges
+
+(() => {
+    const g = new Chess();
+    const setPlies = LINE_NOAH_SET.split(' ').length;
+    LINE_NOAH_SPRUNG.split(' ').forEach((san, ply) => {
+        if (ply > setPlies && g.turn() === 'b') TRAP_REPLIES.set(boardOf(g.fen()), san);
+        g.move(san);
+    });
+})();
 
 // Badge definitions with extended descriptions
 const BADGES = {
@@ -26,7 +139,7 @@ const BADGES = {
         name: 'Morphy',
         icon: '🎩',
         title: 'Morphy Verdediging',
-        description: 'Swart speel 3...a6 - die mees gewilde verdediging in die Ruy Lopez. Dit is vernoem na die Amerikaanse skaakgenie Paul Morphy. Die skuif dwing Wit se loper om te besluit: bly op b5, ruil op c6, of terugtrek na a4. Hierdie buigsaamheid maak dit \'n gunsteling onder spelers van alle vlakke.'
+        description: 'Swart speel 3...a6 - die mees gewilde verdediging in die Ruy Lopez. Dit is vernoem na die Amerikaanse skaakgenie Paul Morphy. Die loper word aangeval en kan nie op b5 bly nie: Wit moet op c6 ruil of terugtrek, gewoonlik na a4. Hierdie buigsaamheid maak dit \'n gunsteling onder spelers van alle vlakke.'
     },
     berlin: {
         name: 'Berlin',
@@ -140,13 +253,13 @@ const BADGES = {
         name: 'Worrall',
         icon: '👸',
         title: 'Worrall Aanval',
-        description: "Wit speel 5.Qe2 of 6.Qe2 - 'n rustiger benadering waar die dame die e4-pion steun sonder om eers Re1 te speel! Dit is vernoem na die Engelse speler Thomas Worrall. Die idee is om vinnig te rokeer en dan 'n stadige, geduldige aanval op te bou. 'n Goeie keuse as jy van strategiese spel hou!"
+        description: "Wit speel 6.Qe2 - 'n rustiger benadering waar die dame die e4-pion steun in plaas van Re1! Dit is vernoem na die Engelse speler Thomas Worrall. Die idee is om 'n stadige, geduldige aanval op te bou. 'n Goeie keuse as jy van strategiese spel hou!"
     },
     anti_marshall: {
         name: 'Anti-Marshall',
         icon: '🛑',
         title: 'Anti-Marshall Stelsel',
-        description: 'Wit speel 8.a4 om die gevaarlike Marshall Aanval te vermy! Baie topspelers verkies hierdie benadering omdat die Marshall so gevaarlik is. Met a4 stop Wit die ...b5 uitbreiding en hou die spel in rustiger waters. \'n Slim, praktiese keuse wat dikwels in grootmeester-spelle gesien word!'
+        description: 'Wit speel 8.a4 om die gevaarlike Marshall Aanval te vermy! Baie topspelers verkies hierdie benadering omdat die Marshall so gevaarlik is. Met a4 val Wit die b5-pion aan en hou die spel in rustiger waters. \'n Slim, praktiese keuse wat dikwels in grootmeester-spelle gesien word!'
     },
     delayed_exchange: {
         name: 'Uitg. Ruil',
@@ -155,7 +268,7 @@ const BADGES = {
         description: "Wit wag met Bxc6 tot ná 4.Ba4 (of selfs ná ...Nf6 en O-O) voordat die loper op c6 geruil word - later as die vinnige Ruil Variasie! Wit kry steeds Swart se dubbele c-pionne, maar eers nadat ander stukke ontwikkel is. Dit gee 'n effens ander speelplan met dieselfde strategiese idee. Bobby Fischer het ook hierdie stadiger benadering gebruik!"
     },
 
-    // Achievement Badges (14) - Spanish themed with Afrikaans descriptions
+    // Achievement Badges (13) - Spanish themed with Afrikaans descriptions
     queen_capture: {
         name: 'Paella!',
         icon: '🥘',
@@ -178,13 +291,7 @@ const BADGES = {
         name: '12 Perfek',
         icon: '🌠',
         title: 'Twaalf Sterre - ¡Doce Estrellas!',
-        description: "Jy het 5 punte op 12 verskillende skuiwe gekry - 'n indrukwekkende prestasie! ¡Magnífico! Jy speel op grootmeester-vlak vir die grootste deel van die spel. Hou so aan en die sestien sterre wag vir jou!"
-    },
-    sixteen_perfect: {
-        name: '16 Perfek',
-        icon: '⭐',
-        title: 'Sestien Sterre - ¡Dieciséis Estrellas!',
-        description: 'Jy het 5 punte op 16 verskillende skuiwe gekry - sestien sterre van grootmeester-vlak spel! ¡Extraordinario! Dit is \'n ongelooflike prestasie wat wys dat jy byna elke skuif perfek gespeel het. Jy speel soos die legendariese Spaanse grootmeesters! ¡Eres una estrella!'
+        description: "Jy het 5 punte op 12 verskillende skuiwe gekry - 'n indrukwekkende prestasie! ¡Magnífico! Jy speel op grootmeester-vlak vir die grootste deel van die spel. Hou so aan en die perfekte spel wag vir jou!"
     },
     perfect_game: {
         name: 'Perfecto!',
@@ -214,7 +321,7 @@ const BADGES = {
         name: 'Noah\'s Ark',
         icon: '🚢',
         title: 'Ark Oorleef - ¡Arca de Noé!',
-        description: "Jy het die beroemde Noah's Ark-val vermy deur jou loper betyds van b3 af weg te beweeg voordat Swart met ...c4 kon toeslaan! ¡Muy inteligente! Hierdie ou val probeer Wit se loper vaskeer met ...a6, ...b5, en ...c4 - as die loper op b3 vasgekeer word, is dit verlore. Dit is een van die oudste en bekendste valle in die Ruy Lopez. Deur betyds weg te beweeg, wys jy dat jy die opening se gevare ken!"
+        description: "Jy het die beroemde Noah's Ark-val raakgesien en nie die d4-pion met jou dame gevat nie! ¡Muy inteligente! Hierdie ou val lok Wit se dame na d4. Dan speel Swart ...c5 en ...c4, en die loper op b3 sit vas agter die pionne op a6, b5 en c4. Dit is een van die oudste en bekendste valle in die Ruy Lopez. Deur dit te vermy, wys jy dat jy die opening se gevare ken!"
     },
     gajewski: {
         name: 'Fuego!',
@@ -226,7 +333,7 @@ const BADGES = {
         name: 'Flamenco',
         icon: '💃',
         title: 'Dansende Loper - ¡Flamenco!',
-        description: "Jou ligte loper voltooi die volle Spaanse dans: Bb5 → a4 → b3 → c2! ¡Qué elegante! Na drie skuiwe se retreat beland die loper op c2, reg gemik op Swart se koning by h7. Soos 'n flamenco-danser wat drie passe neem voor die groot finale, is hierdie hergroepering vol grasie en verborge krag - dit is die klassieke plan agter baie Ruy Lopez-meesterstukke!"
+        description: "Jou ligte loper voltooi die volle Spaanse dans: Bb5 → a4 → b3 → c2! ¡Qué elegante! Na drie skuiwe terug beland die loper op c2, reg gemik op Swart se koning by h7. Soos 'n flamenco-danser wat drie passe neem voor die groot finale, is hierdie hergroepering vol grasie en verborge krag - dit is die klassieke plan agter baie Ruy Lopez-meesterstukke!"
     },
     carbon: {
         name: 'Carbón',
@@ -247,11 +354,11 @@ const EDUCATIONAL_MESSAGES = [
     '🇪🇸 Die Ruy Lopez is vernoem na \'n Spaanse priester uit Zafra, Spanje - 16de eeu!',
     '📜 Ruy López de Segura het \'n boek oor skaak geskryf in 1561 - een van die oudste!',
     '⏳ Die Ruy Lopez is een van die oudste en mees gerespekteerde openings in skaak.',
-    '♗ Die loper op b5 bedreig om die c6 ridder te neem en die e5 pion te wen.',
+    '♗ Die loper op b5 druk op die c6 ridder, die verdediger van e5. Maar dadelik Bxc6 en Nxe5 wen nog nie \'n pion nie: ...Qd4 vat dit terug!',
     '🎯 Die doel van d4 is om die sentrum te beheer - Plaza Mayor!',
-    '🤔 3...a6 dwing die loper om te besluit: bly, ruil, of terugtrek na a4.',
+    '🤔 3...a6 val die loper aan, en hy kan nie bly staan nie: ruil op c6, of trek terug na a4.',
     '🐻 Die Berlin Verdediging is baie gewild - selfs Magnus Carlsen speel dit!',
-    '⚔️ Frank Marshall het sy gambiet eers in 1918 teen Capablanca gespeel - \'n verassing!',
+    '⚔️ Frank Marshall het sy gambiet eers in 1918 teen Capablanca gespeel - \'n verrassing!',
     '🚢 Die Noah\'s Ark-val vang Wit se loper met ...a6, ...b5, ...c4. Pasop!',
     '🏰 Rokering is belangrik - beskerm jou koning in die castillo!',
     '🐴 Probeer om jou ridders na die sentrum te bring - hulle is sterker daar.',
@@ -262,7 +369,7 @@ const EDUCATIONAL_MESSAGES = [
     '🔄 Breyer se idee is om die ridder via d7 te herposisioneer - Nb8-d7!',
     '📖 Die Zaitsev variasie is dinamies en gewild onder moderne grootmeesters.',
     '👑 Anatoly Karpov het baie Ruy Lopez spelle gespeel - \'n ware kenner!',
-    '🔥 Garry Kasparov was \'n meester van die Marshall Aanval - vurig!',
+    '🛑 Garry Kasparov het die Marshall met 8.a4 ontduik toe hy Nigel Short in 1993 geklop het - slim!',
     '🇺🇸 Bobby Fischer het dikwels die Ruil Variasie gespeel met groot sukses.',
     '🎰 Die Schliemann Gambiet (3...f5) is riskant maar skerp - vir die dapperes!',
     '🎯 Wit se strategie behels dikwels die d4-stoot om die sentrum te open.',
@@ -271,7 +378,7 @@ const EDUCATIONAL_MESSAGES = [
     '⚡ Pas op vir taktiek op die e-lêer - dit kan gevaarlik wees!',
     '♟️ Die a6-b5 pion ketting gee Swart ruimte op die damevleuel.',
     '🐴 Wit se maneuver Nbd2-f1-g3 is tipies - die ridder soek \'n beter plek.',
-    '🗼 Die Re1-skuif steun die e4 pion en bevry die d1-veld vir die dame.',
+    '🗼 Die Re1-skuif steun die e4 pion en maak f1 oop vir die ridder se reis: Nbd2-f1-g3.',
     '📚 Leer van die grootmeesters deur hul Ruy Lopez spelle te bestudeer!',
     '🧠 Elke skuif tel - dink voordat jy beweeg! ¡Piensa antes de mover!'
 ];
@@ -286,6 +393,10 @@ let stockfishEngine = null;
 let stockfishReady = false;
 let activeCallback = null;  // The single in-flight request's UCI line handler
 let engineBusy = Promise.resolve();  // Promise-chain mutex serialising engine access
+let engineDepth = ENGINE_DEPTH;
+let engineStale = 0;  // 1: a search was abandoned and is still running. 2: swallow one more bestmove.
+let markEngineSettled;
+const engineSettled = new Promise((resolve) => { markEngineSettled = resolve; });  // Stockfish loaded, or failed to
 
 // Runs fn (a zero-arg function returning a Promise) once the engine is free,
 // queuing it behind any request already in flight so UCI commands never interleave.
@@ -298,7 +409,7 @@ function withEngine(fn) {
 // API response cache to reduce duplicate calls
 const apiCache = {
     lichess: new Map(),
-    cloudEval: new Map()
+    engineEval: new Map()  // fen -> { multiPv, search }, one search per position per game
 };
 const CACHE_MAX_SIZE = 50;
 const CACHE_TTL = 300000; // 5 minutes
@@ -315,18 +426,19 @@ let moveHistory = [];
 let positionHistory = [];
 let isGameActive = false;
 let isReviewMode = false;
-let reviewPosition = 0;
+let reviewRun = 0;  // Bumped to stop a running review
+let reviewArrows = [];  // What's on the board now, redrawn if the board resizes
+let gameBadgeLog = [];  // { ply, badge } for every badge this game touched, earned before or not
 
 let selectedSquare = null;  // For tap-to-move
 let firstCaptureOccurred = false;
 let perfectMoves = 0;
-let lastHintInfo = null;  // Track hint for debugging
+let lastHintInfo = null;  // Hint state for the current position: { fen, stage, engineMoves, ... }
+let lastMoveNote = null;  // Why the last move's score was capped: { evalLabel, hintCapped }
 
 // Track specific variations
 let variationState = {
-    morphyPlayed: false,
-    openDefenseEntered: false,
-    closedDefenseEntered: false
+    morphyPlayed: false
 };
 
 // ============================================
@@ -372,8 +484,8 @@ async function runEvaluationTests() {
         failed++;
     }
 
-    // Test 2: Lichess Cloud Eval API (common position)
-    console.log('\nTest 2: Lichess Cloud Eval API');
+    // Test 2: Engine eval (Stockfish, or cloud eval if Stockfish couldn't load)
+    console.log('\nTest 2: Engine eval');
     try {
         const ruyFen = 'r1bqkbnr/pppp1ppp/2n5/1B2p3/4P3/5N2/PPPP1PPP/RNBQK2R b KQkq - 3 3';
         const result = await getStockfishEval(ruyFen, 2);
@@ -495,6 +607,7 @@ function initGame() {
 
     $(window).resize(function() {
         board.resize();
+        if (isReviewMode) drawReviewArrows(reviewArrows);
     });
 
     // Auto-start a new game when app loads
@@ -505,139 +618,173 @@ function initGame() {
 
 function initStockfish() {
     $('#loading-overlay').removeClass('hidden');
-
-    // Load Stockfish.js from CDN and create blob worker (avoids CORS issues)
-    fetch('https://cdnjs.cloudflare.com/ajax/libs/stockfish.js/10.0.2/stockfish.js')
-        .then(response => {
-            if (!response.ok) throw new Error('Network error');
-            return response.blob();
-        })
-        .then(blob => {
-            try {
-                const url = URL.createObjectURL(blob);
-                stockfishEngine = new Worker(url);
-
-                stockfishEngine.onmessage = function(event) {
-                    const line = event.data;
-
-                    if (line === 'uciok') {
-                        stockfishReady = true;
-                        console.log('Stockfish.js ready!');
-                        $('#loading-overlay').addClass('hidden');
-                    }
-
-                    // Pass message to whichever request currently owns the engine
-                    if (activeCallback) {
-                        activeCallback(line);
-                    }
-                };
-
-                stockfishEngine.onerror = function(error) {
-                    console.error('Stockfish worker error:', error);
-                    stockfishEngine = null;
-                    $('#loading-overlay').addClass('hidden');
-                };
-
-                stockfishEngine.postMessage('uci');
-                console.log('Stockfish.js engine loaded...');
-
-            } catch (error) {
-                console.error('Failed to create Stockfish worker:', error);
-                stockfishEngine = null;
-                $('#loading-overlay').addClass('hidden');
-            }
-        })
-        .catch(error => {
-            console.error('Failed to fetch Stockfish.js:', error);
-            stockfishEngine = null;
-            $('#loading-overlay').addClass('hidden');
-        });
+    startEngine(typeof WebAssembly === 'object');
 }
 
-// Get analysis from local Stockfish.js
-function getLocalStockfishEval(fen, depth = 10, multipv = 2) {
+// The WebAssembly build is the same Stockfish and searches the same moves, but it is around ten
+// times faster and has no slow warm-up. The older JavaScript build is the fallback.
+async function loadEngineWorker(useWasm) {
+    const response = await fetch(STOCKFISH_CDN + (useWasm ? 'stockfish.wasm.js' : 'stockfish.js'));
+    if (!response.ok) throw new Error('Network error');
+
+    // Load as a blob worker to avoid CORS issues. From a blob, the WebAssembly build can't
+    // work out where its .wasm file lives, so point its fetch at the CDN.
+    const parts = [await response.blob()];
+    if (useWasm) {
+        parts.unshift(`(function(){var f=self.fetch;self.fetch=function(u,o){return f(String(u).indexOf('stockfish.wasm')>=0?'${STOCKFISH_CDN}stockfish.wasm':u,o)}})();\n`);
+    }
+    return new Worker(URL.createObjectURL(new Blob(parts, { type: 'application/javascript' })));
+}
+
+function startEngine(useWasm) {
+    let settled = false;
+    let loadTimer = null;
+
+    const fail = (reason) => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(loadTimer);
+        console.error('Stockfish failed to start:', reason);
+        if (stockfishEngine) stockfishEngine.terminate();
+        stockfishEngine = null;
+        if (useWasm) {
+            startEngine(false);
+        } else {
+            markEngineSettled();
+            $('#loading-overlay').addClass('hidden');
+        }
+    };
+
+    loadTimer = setTimeout(() => fail('timed out'), ENGINE_LOAD_LIMIT);
+
+    loadEngineWorker(useWasm).then((worker) => {
+        if (settled) {
+            worker.terminate();
+            return;
+        }
+        stockfishEngine = worker;
+
+        worker.onmessage = function(event) {
+            const line = event.data;
+
+            // A new search takes over a running one, and the engine then answers with two bestmoves.
+            // Without this the second would end whichever search comes next.
+            if (engineStale > 0 && typeof line === 'string' && line.startsWith('bestmove')) {
+                if (engineStale === 2 || !activeCallback) {
+                    engineStale = 0;
+                    return;
+                }
+                engineStale = 2;
+            }
+
+            // Pass message to whichever request currently owns the engine
+            if (activeCallback) {
+                activeCallback(line);
+            }
+
+            if (line === 'uciok' && !settled) {
+                settled = true;
+                clearTimeout(loadTimer);
+
+                // Stockfish 10's default contempt tilts its score toward whichever side is
+                // to move, so the eval saw-tooths by about a pawn every half-move
+                worker.postMessage('setoption name Contempt value 0');
+                engineDepth = useWasm ? ENGINE_DEPTH : ENGINE_DEPTH_FALLBACK;
+                stockfishReady = true;
+                markEngineSettled();
+                console.log('Stockfish ready:', useWasm ? 'WebAssembly' : 'JavaScript');
+
+                // The eval for the starting position, before the loading screen goes
+                getStockfishEval(new Chess().fen(), 4).finally(() => {
+                    $('#loading-overlay').addClass('hidden');
+                });
+            }
+        };
+
+        worker.onerror = function(error) {
+            console.error('Stockfish worker error:', error);
+            if (settled) {
+                stockfishEngine = null;  // Crashed mid-game: the rest of it uses cloud eval
+                stockfishReady = false;
+            } else {
+                fail('worker error');
+            }
+        };
+
+        worker.postMessage('uci');
+    }).catch((error) => fail(error.message));
+}
+
+// One Stockfish search, at most ENGINE_TIME_LIMIT long. cp and mate are side-to-move.
+function getLocalStockfishEval(fen, depth = engineDepth, multipv = 2) {
     if (!stockfishEngine || !stockfishReady) {
         console.log('Stockfish engine not available');
         return Promise.resolve(null);
     }
 
     return withEngine(() => new Promise((resolve) => {
-        let results = [];
+        const results = [];
         let resolved = false;
+        let softStop = null;
+        let hardStop = null;
 
-        const callback = (line) => {
+        const finish = () => {
             if (resolved) return;
+            resolved = true;
+            activeCallback = null;
+            clearTimeout(softStop);
+            clearTimeout(hardStop);
+            results.sort((a, b) => a.multipv - b.multipv);
+            resolve(results.length > 0 ? results : null);
+        };
 
-            // Parse info lines for PV data
-            if (line.startsWith && line.startsWith('info') && line.includes(' pv ')) {
-                const depthMatch = line.match(/depth (\d+)/);
+        // This request now owns the engine
+        activeCallback = (line) => {
+            if (typeof line !== 'string') return;
+
+            // Bound lines are provisional scores from an unfinished search of that move
+            if (line.startsWith('info') && line.includes(' pv ') && !line.includes('bound')) {
                 const multipvMatch = line.match(/multipv (\d+)/);
                 const scoreMatch = line.match(/score (cp|mate) (-?\d+)/);
-                const pvMatch = line.match(/ pv (.+)/);
+                const pvMatch = line.match(/ pv (\S+)/);
 
-                if (depthMatch && pvMatch && scoreMatch) {
-                    const d = parseInt(depthMatch[1]);
+                if (pvMatch && scoreMatch) {
                     const mpv = multipvMatch ? parseInt(multipvMatch[1]) : 1;
-                    const scoreType = scoreMatch[1];
-                    const scoreValue = parseInt(scoreMatch[2]);
-                    const pv = pvMatch[1].split(' ')[0]; // Just first move (UCI)
-
-                    if (d >= depth - 2) {
-                        const result = {
-                            multipv: mpv,
-                            moves: pv,
-                            cp: scoreType === 'cp' ? scoreValue : undefined,
-                            mate: scoreType === 'mate' ? scoreValue : undefined
-                        };
-
-                        const existingIdx = results.findIndex(r => r.multipv === mpv);
-                        if (existingIdx >= 0) {
-                            results[existingIdx] = result;
-                        } else {
-                            results.push(result);
-                        }
+                    const value = parseInt(scoreMatch[2]);
+                    const result = {
+                        multipv: mpv,
+                        moves: pvMatch[1],
+                        cp: scoreMatch[1] === 'cp' ? value : undefined,
+                        mate: scoreMatch[1] === 'mate' ? value : undefined
+                    };
+                    const existingIdx = results.findIndex(r => r.multipv === mpv);
+                    if (existingIdx >= 0) {
+                        results[existingIdx] = result;
+                    } else {
+                        results.push(result);
                     }
                 }
             }
 
             // Bestmove signals end of analysis
-            if (line.startsWith && line.startsWith('bestmove')) {
-                resolved = true;
-                activeCallback = null;
-
-                if (results.length > 0) {
-                    results.sort((a, b) => a.multipv - b.multipv);
-                    resolve(results);
-                } else {
-                    resolve(null);
-                }
+            if (line.startsWith('bestmove')) {
+                finish();
             }
         };
 
-        // This request now owns the engine
-        activeCallback = callback;
-
-        // Send commands
-        stockfishEngine.postMessage('ucinewgame');
         stockfishEngine.postMessage(`setoption name MultiPV value ${multipv}`);
         stockfishEngine.postMessage(`position fen ${fen}`);
         stockfishEngine.postMessage(`go depth ${depth}`);
 
-        // Timeout after 6 seconds
-        setTimeout(() => {
-            if (!resolved) {
-                resolved = true;
-                activeCallback = null;
-                stockfishEngine.postMessage('stop');
-
-                if (results.length > 0) {
-                    results.sort((a, b) => a.multipv - b.multipv);
-                    resolve(results);
-                } else {
-                    resolve(null);
-                }
-            }
-        }, 6000);
+        // A stopped search still answers with bestmove. Waiting for it keeps that line from
+        // ending the next search. The hard stop is for an engine too busy to answer in time.
+        softStop = setTimeout(() => {
+            if (!resolved && stockfishEngine) stockfishEngine.postMessage('stop');
+        }, ENGINE_TIME_LIMIT);
+        hardStop = setTimeout(() => {
+            engineStale = 1;
+            finish();
+        }, ENGINE_TIME_LIMIT + 2000);
     }));
 }
 
@@ -661,11 +808,8 @@ function setupEventListeners() {
         enterReviewMode();
     });
 
-    // Review controls
-    $('#review-start').on('click', () => goToPosition(0));
-    $('#review-back').on('click', () => goToPosition(reviewPosition - 1));
-    $('#review-forward').on('click', () => goToPosition(reviewPosition + 1));
-    $('#review-end').on('click', () => goToPosition(positionHistory.length - 1));
+    // Leave the review at any time
+    $('#review-continue-btn').on('click', startNewGame);
 
     // Badge hover tooltips
     $('.badge').on('mouseenter', function() {
@@ -743,6 +887,11 @@ function savePlayerData() {
 
 function startNewGame() {
     gameGeneration++;
+    reviewRun++;
+    clearReviewArrows();
+    showReviewControls(false);
+    $('#score-popup').addClass('hidden');
+    gameBadgeLog = [];
 
     game = new Chess();
     board.position('start');
@@ -754,32 +903,40 @@ function startNewGame() {
     sessionBadges = [];
     isGameActive = true;
     lastHintInfo = null;
+    lastMoveNote = null;
     isReviewMode = false;
     firstCaptureOccurred = false;
     perfectMoves = 0;
     selectedSquare = null;
 
     variationState = {
-        morphyPlayed: false,
-        openDefenseEntered: false,
-        closedDefenseEntered: false
+        morphyPlayed: false
     };
 
     updateUI();
     $('#move-history').empty();
     $('#analysis-panel').removeClass('hidden');
-    $('#review-panel').addClass('hidden');
     $('#move-suggestions').html('<p class="waiting-message">Speel e4 om te begin...</p>');
     resetAnalysisPanel();
     $('#hint-btn').prop('disabled', true);
 
-    // Reset position eval to starting position (slight advantage for White)
-    $('#position-eval').text('+0.3');
-    $('#position-eval').removeClass('negative').addClass('positive');
-
-    // Clear API cache for fresh game
-    apiCache.cloudEval.clear();
+    // Clear API cache for fresh game. The starting position stays: it never changes, and on
+    // first load its search may still be running behind the loading screen.
+    const startKey = engineKey(new Chess().fen());
+    const startSearch = apiCache.engineEval.get(startKey);
+    apiCache.engineEval.clear();
+    if (startSearch) apiCache.engineEval.set(startKey, startSearch);
     apiCache.lichess.clear();
+
+    if (stockfishEngine && stockfishReady) {
+        withEngine(() => {
+            stockfishEngine.postMessage('ucinewgame');
+            return Promise.resolve();
+        });
+    }
+
+    // Start with the engine's own eval of the starting position
+    updatePositionEval();
 
     showEducationalMessage();
 }
@@ -930,6 +1087,7 @@ function getDrawMessage() {
 // ============================================
 
 async function scoreMove(move, positionBefore) {
+    lastMoveNote = null;
     try {
         console.log('=== SCORING MOVE ===');
         console.log('Move played:', move.san);
@@ -948,15 +1106,15 @@ async function scoreMove(move, positionBefore) {
             console.log('Score FEN:', positionBefore);
         }
 
-        // Get both Cloud Eval and Lichess Opening Explorer data
-        const [cloudEvalResult, lichessResult] = await Promise.all([
+        // Get both the engine's analysis and Lichess Opening Explorer data
+        const [engineResult, lichessResult] = await Promise.all([
             getStockfishEval(positionBefore, 4),
             getLichessPopularity(positionBefore)
         ]);
 
         // Extra validation: compare scoring engine result with hint
-        if (hintMatches && cloudEvalResult?.moves?.length > 0) {
-            const scoringBest = cloudEvalResult.moves[0].san;
+        if (hintMatches && engineResult?.moves?.length > 0) {
+            const scoringBest = engineResult.moves[0].san;
             const hintBest = lastHintInfo.engineMoves[0];
             if (scoringBest !== hintBest) {
                 console.log('WARNING: Scoring engine best differs from hint!');
@@ -967,12 +1125,13 @@ async function scoreMove(move, positionBefore) {
 
         let engineScore = 0;  // Start at 0, not 1 - we'll set properly below
         let lichessScore = 0;
+        let popularBest = null;
         let analysisHtml = '';
 
-        // Score based on Lichess Cloud Eval (engine analysis)
-        if (cloudEvalResult && cloudEvalResult.moves && cloudEvalResult.moves.length > 0) {
-            console.log('Engine moves:', cloudEvalResult.moves.map(m => m.san).join(', '));
-            const moveRank = cloudEvalResult.moves.findIndex(m => m.san === move.san);
+        // Score based on the engine's analysis
+        if (engineResult && engineResult.moves && engineResult.moves.length > 0) {
+            console.log('Engine moves:', engineResult.moves.map(m => m.san).join(', '));
+            const moveRank = engineResult.moves.findIndex(m => m.san === move.san);
             console.log('Player move', move.san, 'rank:', moveRank);
 
             if (moveRank === 0) engineScore = 5;
@@ -983,7 +1142,7 @@ async function scoreMove(move, positionBefore) {
             // If moveRank === -1 (not found), engineScore stays 0
 
             analysisHtml += '<p style="color:var(--spanish-red);margin-bottom:5px;"><strong>Enjin Analise:</strong></p>';
-            cloudEvalResult.moves.slice(0, 3).forEach((m, i) => {
+            engineResult.moves.slice(0, 3).forEach((m, i) => {
                 const pts = [5, 4, 3][i] || 2;
                 const highlight = (m.san === move.san) ? 'style="background:rgba(198,11,30,0.3);"' : '';
                 analysisHtml += `<div class="suggestion-row stockfish" ${highlight}>
@@ -1001,6 +1160,8 @@ async function scoreMove(move, positionBefore) {
             const sortedMoves = [...lichessResult.moves].sort((a, b) =>
                 (b.white + b.draws + b.black) - (a.white + a.draws + a.black)
             );
+
+            if (totalGames >= 20 && sortedMoves.length > 0) popularBest = sortedMoves[0].san;
 
             console.log('Popular moves:', sortedMoves.slice(0, 5).map(m => m.san).join(', '));
             const moveIndex = sortedMoves.findIndex(m => m.san === move.san);
@@ -1048,17 +1209,34 @@ async function scoreMove(move, positionBefore) {
             if (finalScore === 0) finalScore = 1;
         }
 
-        // SAFEGUARD: If player followed the hint's #1 engine move, ensure they get full credit
-        if (hintMatches && lastHintInfo.engineMoves[0] === move.san && finalScore < 5) {
-            console.log('SAFEGUARD: Player played hint #1 move but scored', finalScore, '- upgrading to 5');
-            finalScore = 5;
-            engineScore = 5;  // For display purposes
+        // Eval-loss cap: rank and popularity can't hide a move that throws the position away
+        // (8.Qxd4 in the Noah's Ark line is the most played move there, and it loses a bishop)
+        const evalLoss = await assessEvalLoss(move.san, engineResult, positionBefore);
+        const evalLabel = evalLoss && evalLoss.band ? evalLoss.band.label : null;
+        if (evalLabel && evalLoss.band.cap < finalScore) {
+            console.log('Eval loss', evalLoss.loss.toFixed(2), '- capping', finalScore, 'to', evalLoss.band.cap);
+            finalScore = evalLoss.band.cap;
         }
+
+        const rawScore = finalScore;  // What the move itself earned, before any hint cost
+
+        // Hint cost: a hinted move can never be a perfect move. Playing the suggested best move
+        // still earns the full capped score, even if this scoring call ranks it differently.
+        let hintCapped = false;
+        if (hintMatches && lastHintInfo.stage > 0) {
+            const hintCap = lastHintInfo.stage === 2 ? HINT_MOVE_CAP : HINT_IDEA_CAP;
+            if (lastHintInfo.engineMoves[0] === move.san || finalScore > hintCap) {
+                finalScore = hintCap;
+                hintCapped = true;
+            }
+        }
+        lastMoveNote = { evalLabel, hintCapped, rawScore, popularBest, hintStage: hintMatches ? lastHintInfo.stage : 0 };
 
         console.log('Final score:', finalScore, '(engine:', engineScore, ', lichess:', lichessScore, ')');
 
         // Show analysis
         if (analysisHtml) {
+            analysisHtml += evalLossNote(evalLoss);
             analysisHtml += `<p style="margin-top:10px;color:var(--spanish-yellow);"><strong>Jou telling: ${finalScore}</strong></p>`;
             $('#move-suggestions').html(analysisHtml);
         } else {
@@ -1080,80 +1258,174 @@ async function scoreMove(move, positionBefore) {
     }
 }
 
-// Returns per-move cp from Lichess Cloud Eval (White-POV, see updatePositionEval) or
-// local Stockfish (side-to-move-POV). Callers (scoreMove, showMoveAnalysis, showHint) only
-// ever pass a White-to-move fen, so no perspective flip is needed on the result here either way.
+// One line of engine output as a single cp number. Mate uses the same 10000-based scale
+// as updatePositionEval.
+function pvToCp(pv) {
+    if (!pv) return null;
+    if (pv.mate !== undefined && pv.mate !== null) {
+        return pv.mate > 0 ? 10000 - pv.mate * 10 : -10000 - pv.mate * 10;
+    }
+    return pv.cp !== undefined ? pv.cp : null;
+}
+
+// Lichess's win-chance curve: -1 (Black winning) to +1 (White winning)
+function winChance(cp) {
+    const clamped = Math.max(-1000, Math.min(1000, cp));
+    return 2 / (1 + Math.exp(-0.00368208 * clamped)) - 1;
+}
+
+function formatEval(cp) {
+    if (Math.abs(cp) >= 9000) return cp > 0 ? '+mat' : '-mat';
+    return `${cp >= 0 ? '+' : ''}${(cp / 100).toFixed(1)}`;
+}
+
+// Eval of a position from White's side. White-to-move positions ask for the same four-line
+// search that scoring and hints use, so all of them show the same number.
+async function getWhitePovEval(fen) {
+    const result = await getStockfishEval(fen, fen.includes(' w ') ? 4 : 1);
+    if (!result || !result.moves || result.moves.length === 0) return null;
+    const cp = pvToCp(result.moves[0]);
+    if (cp === null) return null;
+    // Cloud eval is already White-POV; raw UCI scores are side-to-move
+    const flip = result.source === 'local' && fen.includes(' b ');
+    return { cp: flip ? -cp : cp, source: result.source };
+}
+
+// The position after a move, from White's side
+async function evalAfterMove(fen, san) {
+    const after = new Chess(fen);
+    if (!after.move(san)) return null;
+    if (after.in_checkmate()) return { cp: 10000 };
+    if (after.game_over()) return { cp: 0 };
+    return getWhitePovEval(after.fen());
+}
+
+// How much a move gives away compared with the engine's best, comparing the position after each,
+// searched alike. Comparing with the score at the root reads too harshly, because the root search
+// ends a half-move earlier.
+async function moveLoss(fen, bestSan, san) {
+    const [afterBest, afterMove] = await Promise.all([evalAfterMove(fen, bestSan), evalAfterMove(fen, san)]);
+    if (!afterBest || !afterMove) return null;
+    return { loss: winChance(afterBest.cp) - winChance(afterMove.cp), afterCp: afterMove.cp };
+}
+
+// Returns null when there is nothing to compare, or the move is the engine's best. afterCp is the
+// same search the Evaluering display shows after this move, so the two always agree.
+async function assessEvalLoss(san, engineResult, positionBefore) {
+    const top = engineResult && engineResult.moves;
+    if (!top || top.length === 0 || top[0].san === san) return null;
+
+    const rootCp = pvToCp(top[0]);
+    const result = await moveLoss(positionBefore, top[0].san, san);
+    if (rootCp === null || !result) return null;
+
+    const band = EVAL_LOSS_BANDS.find((b) => result.loss >= b.minLoss) || null;
+    return { bestCp: rootCp, afterCp: result.afterCp, loss: result.loss, band };
+}
+
+// The move a hint's idea is about: what strong players choose, if the engine finds it sound
+// (the same test scoring uses), so a hint keeps him on the main line. Otherwise the engine's best.
+async function pickIdeaMove(fen, engineBest, popularBest) {
+    if (!engineBest || !popularBest || engineBest === popularBest) return engineBest || popularBest;
+    const result = await moveLoss(fen, engineBest, popularBest);
+    const smallestBand = EVAL_LOSS_BANDS[EVAL_LOSS_BANDS.length - 1].minLoss;
+    return result && result.loss < smallestBand ? popularBest : engineBest;
+}
+
+function evalLossNote(evalLoss) {
+    if (!evalLoss || !evalLoss.band) return '';
+    const from = formatEval(evalLoss.bestCp);
+    const to = formatEval(evalLoss.afterCp);
+    let text = `Die evaluering sak van ${from} na ${to}.`;
+    if (evalLoss.band.label === 'flater') text = `Flater! Die evaluering val van ${from} na ${to}.`;
+    if (evalLoss.band.label === 'fout') text = `Dit kos jou: die evaluering val van ${from} na ${to}.`;
+    return `<p style="margin-top:10px;color:var(--spanish-yellow);"><strong>${text}</strong></p>`;
+}
+
+function engineKey(fen) {
+    return fen.split(' ').slice(0, 4).join(' ');
+}
+
+// The engine's view of a position: Stockfish at ENGINE_DEPTH, first move to last. Each position
+// is searched once, and the eval display, scoring, hints and analysis all share that search.
+// Lines carry cp/mate side-to-move, so a Black-to-move fen needs getWhitePovEval for its number.
 async function getStockfishEval(fen, multiPv = 4) {
-    // Check cache first
-    const cacheKey = fen.split(' ').slice(0, 4).join(' ') + '_' + multiPv;
-    const cached = apiCache.cloudEval.get(cacheKey);
-    if (cached && Date.now() - cached.time < CACHE_TTL) {
-        return cached.data;
+    const key = engineKey(fen);
+    const known = apiCache.engineEval.get(key);
+    if (known && known.multiPv >= multiPv) {
+        return known.search;
     }
 
-    // Try Lichess Cloud Eval first (fast, cached positions)
-    try {
-        const response = await fetch(`https://lichess.org/api/cloud-eval?fen=${encodeURIComponent(fen)}&multiPv=${multiPv}`);
-        if (response.ok) {
-            const data = await response.json();
-            if (data.pvs && data.pvs.length > 0) {
-                const moves = convertPvsToMoves(data.pvs, fen);
-                if (moves.length > 0) {
-                    console.log('Lichess cloud eval:', moves.map(m => m.san).join(', '));
-                    const result = { moves, source: 'cloud' };
-                    // Cache the result
-                    if (apiCache.cloudEval.size >= CACHE_MAX_SIZE) {
-                        const firstKey = apiCache.cloudEval.keys().next().value;
-                        apiCache.cloudEval.delete(firstKey);
-                    }
-                    apiCache.cloudEval.set(cacheKey, { data: result, time: Date.now() });
-                    return result;
-                }
-            }
-        }
-    } catch (e) {
-        console.log('Cloud eval failed:', e.message);
-    }
+    const search = runEngineSearch(fen, multiPv);
+    apiCache.engineEval.set(key, { multiPv, search });
+    search.then((result) => {
+        if (!result) apiCache.engineEval.delete(key);  // Let a failed search be retried
+    });
+    return search;
+}
 
-    // Fallback to local Stockfish.js
+async function runEngineSearch(fen, multiPv) {
+    await engineSettled;
+
     if (stockfishEngine && stockfishReady) {
         try {
-            console.log('Using local Stockfish.js...');
-            const results = await getLocalStockfishEval(fen, 10, multiPv);
+            const results = await getLocalStockfishEval(fen, engineDepth, multiPv);
             if (results && results.length > 0) {
                 const moves = convertPvsToMoves(results, fen);
-                if (moves.length > 0) {
-                    console.log('Local Stockfish:', moves.map(m => m.san).join(', '));
-                    return { moves, source: 'local' };
-                }
+                if (moves.length > 0) return { moves, source: 'local' };
             }
         } catch (e) {
             console.error('Local Stockfish error:', e);
         }
     }
 
+    // Only if Stockfish couldn't load: Lichess Cloud Eval, which is White-POV
+    try {
+        const response = await fetch(`https://lichess.org/api/cloud-eval?fen=${encodeURIComponent(fen)}&multiPv=${multiPv}`);
+        if (response.ok) {
+            const data = await response.json();
+            if (data.pvs && data.pvs.length > 0) {
+                const moves = convertPvsToMoves(data.pvs, fen);
+                if (moves.length > 0) return { moves, source: 'cloud' };
+            }
+        }
+    } catch (e) {
+        console.log('Cloud eval failed:', e.message);
+    }
+
     return null;
 }
+
+const CASTLING_UCI = { e1h1: 'e1g1', e1a1: 'e1c1', e8h8: 'e8g8', e8a8: 'e8c8' };
 
 // Convert PV data (with UCI moves) to moves array with SAN
 function convertPvsToMoves(pvs, fen) {
     const moves = [];
 
     for (const pv of pvs) {
-        const uciMove = pv.moves ? pv.moves.split(' ')[0] : null;
+        let uciMove = pv.moves ? pv.moves.split(' ')[0] : null;
         if (uciMove && uciMove.length >= 4) {
+            const tempGame = new Chess(fen);
+
+            // Cloud eval writes castling as king-takes-rook (e1h1). chess.js rejects that, so
+            // castling used to vanish from the engine's list, even when it was the best move.
+            const kingOnFrom = tempGame.get(uciMove.substring(0, 2));
+            if (kingOnFrom && kingOnFrom.type === 'k' && CASTLING_UCI[uciMove]) {
+                uciMove = CASTLING_UCI[uciMove];
+            }
+
             const from = uciMove.substring(0, 2);
             const to = uciMove.substring(2, 4);
             const promotion = uciMove.length > 4 ? uciMove[4] : undefined;
 
             // Convert UCI to SAN
-            const tempGame = new Chess(fen);
             const move = tempGame.move({ from, to, promotion });
             if (move) {
                 moves.push({
                     move: uciMove,
                     san: move.san,
-                    cp: pv.cp
+                    cp: pv.cp,
+                    mate: pv.mate
                 });
             }
         }
@@ -1172,6 +1444,7 @@ function resetAnalysisPanel() {
 }
 
 async function showMoveAnalysis(fenBeforeMove, playedMove) {
+    const note = lastMoveNote;
     const sfDiv = document.getElementById('stockfish-analysis');
     const lcDiv = document.getElementById('lichess-analysis');
     const ymSection = document.getElementById('your-move-analysis-section');
@@ -1188,12 +1461,10 @@ async function showMoveAnalysis(fenBeforeMove, playedMove) {
     try {
         const result = await getStockfishEval(fenBeforeMove, 4);
         if (result && result.moves && result.moves.length > 0) {
-            sfMoves = result.moves.slice(0, 2).map(m => ({
-                san: m.san,
-                eval: m.cp !== undefined
-                    ? `${m.cp >= 0 ? '+' : ''}${(m.cp / 100).toFixed(1)}`
-                    : '?'
-            }));
+            sfMoves = result.moves.slice(0, 2).map(m => {
+                const cp = pvToCp(m);
+                return { san: m.san, eval: cp !== null ? formatEval(cp) : '?' };
+            });
         }
     } catch (e) {
         console.error('showMoveAnalysis Stockfish error:', e);
@@ -1256,6 +1527,12 @@ async function showMoveAnalysis(fenBeforeMove, playedMove) {
             cls = 'your-move-weak';
             text = `<strong>${playedMove}</strong> — Nie in top 2 nie.`;
         }
+        if (note && note.evalLabel) {
+            const popular = inLc ? 'gewild, maar ' : '';
+            const verdicts = { flater: "'n flater!", fout: 'dit kos jou.', onakkuraat: 'die evaluering sak effens.' };
+            cls = note.evalLabel === 'onakkuraat' ? 'your-move-ok' : 'your-move-weak';
+            text = `<strong>${playedMove}</strong>: ${popular}${verdicts[note.evalLabel]}`;
+        }
         ymInfo.innerHTML = `<span class="${cls}">${text}</span>`;
     }
 }
@@ -1295,55 +1572,17 @@ async function getLichessPopularity(fen) {
     return null;
 }
 
-async function updatePositionEval() {
-    const fen = game.fen();
-    let evalCp = null;
+// A position's eval from White's side. Uses the same search as scoring.
+async function positionEvalCp(position) {
+    if (position.in_checkmate()) return position.turn() === 'b' ? 10000 : -10000;
+    if (position.game_over()) return 0;
+    const result = await getWhitePovEval(position.fen());
+    return result ? result.cp : null;
+}
 
-    // Try Lichess Cloud Eval first (fast)
-    try {
-        const response = await fetch(`https://lichess.org/api/cloud-eval?fen=${encodeURIComponent(fen)}`);
-        if (response.ok) {
-            const data = await response.json();
-            if (data.pvs && data.pvs[0]) {
-                // Lichess Cloud Eval's cp/mate are already White-POV (verified empirically:
-                // a Black-to-move position after 1.e4 e5 2.Nf3, where White is slightly
-                // better, returns a positive cp). Do NOT flip these for Black to move -
-                // that would double-flip and produce a sign that alternates every half-move.
-                // This is the opposite convention from local Stockfish's raw UCI output below,
-                // which is side-to-move-relative and does need the flip.
-                if (data.pvs[0].cp !== undefined) {
-                    evalCp = data.pvs[0].cp;
-                } else if (data.pvs[0].mate !== undefined) {
-                    const mateIn = data.pvs[0].mate;
-                    evalCp = mateIn > 0 ? 10000 - (mateIn * 10) : -10000 - (mateIn * 10);
-                }
-                if (evalCp !== null) {
-                    console.log('Position eval from cloud (White POV):', evalCp);
-                }
-            }
-        }
-    } catch (e) {
-        console.log('Cloud eval failed, trying local Stockfish');
-    }
-
-    // Fallback to local Stockfish if cloud eval didn't work
-    if (evalCp === null && stockfishEngine && stockfishReady) {
-        try {
-            const result = await getLocalStockfishEvalForDisplay(fen);
-            if (result !== null) {
-                evalCp = result;
-                console.log('Position eval from local Stockfish:', evalCp);
-            }
-        } catch (e) {
-            console.log('Local Stockfish eval failed:', e);
-        }
-    }
-
-    // Update display
+function showPositionEval(evalCp) {
     if (evalCp !== null) {
-        const evalValue = (evalCp / 100).toFixed(1);
-        const display = evalCp >= 0 ? `+${evalValue}` : evalValue;
-        $('#position-eval').text(display);
+        $('#position-eval').text(formatEval(evalCp));
         $('#position-eval').removeClass('positive negative');
         $('#position-eval').addClass(evalCp >= 0 ? 'positive' : 'negative');
     } else {
@@ -1352,79 +1591,12 @@ async function updatePositionEval() {
     }
 }
 
-// Lighter version of Stockfish eval just for position display
-function getLocalStockfishEvalForDisplay(fen) {
-    if (!stockfishEngine || !stockfishReady) {
-        return Promise.resolve(null);
-    }
-
-    return withEngine(() => new Promise((resolve) => {
-        let bestCp = null;
-        let resolved = false;
-
-        const callback = (line) => {
-            if (resolved) return;
-
-            // Parse info lines for score
-            if (line.startsWith && line.startsWith('info') && line.includes('score cp')) {
-                const depthMatch = line.match(/depth (\d+)/);
-                const scoreMatch = line.match(/score cp (-?\d+)/);
-
-                if (depthMatch && scoreMatch) {
-                    const depth = parseInt(depthMatch[1]);
-                    if (depth >= 6) {  // Only use results from decent depth
-                        bestCp = parseInt(scoreMatch[1]);
-                        // Flip sign if Black to move - UCI score is side-to-move perspective
-                        if (fen.includes(' b ')) {
-                            bestCp = -bestCp;
-                        }
-                    }
-                }
-            }
-
-            // Check for mate score
-            if (line.startsWith && line.startsWith('info') && line.includes('score mate')) {
-                const mateMatch = line.match(/score mate (-?\d+)/);
-                if (mateMatch) {
-                    const mateIn = parseInt(mateMatch[1]);
-                    // Convert mate to large centipawn value (side-to-move perspective)
-                    // mateIn > 0: side to move mates; mateIn < 0: side to move is mated
-                    bestCp = mateIn > 0 ? 10000 - (mateIn * 10) : -10000 - (mateIn * 10);
-                    // Flip sign if Black to move - UCI score is side-to-move perspective
-                    // (unlike Lichess Cloud Eval below, which is already White-POV)
-                    if (fen.includes(' b ')) {
-                        bestCp = -bestCp;
-                    }
-                }
-            }
-
-            // Bestmove signals end of analysis
-            if (line.startsWith && line.startsWith('bestmove')) {
-                resolved = true;
-                activeCallback = null;
-                resolve(bestCp);
-            }
-        };
-
-        // This request now owns the engine
-        activeCallback = callback;
-
-        // Quick analysis - depth 8 is fast but reasonable
-        stockfishEngine.postMessage('ucinewgame');
-        stockfishEngine.postMessage('setoption name MultiPV value 1');
-        stockfishEngine.postMessage(`position fen ${fen}`);
-        stockfishEngine.postMessage('go depth 8');
-
-        // Timeout after 3 seconds
-        setTimeout(() => {
-            if (!resolved) {
-                resolved = true;
-                activeCallback = null;
-                stockfishEngine.postMessage('stop');
-                resolve(bestCp);
-            }
-        }, 3000);
-    }));
+// The Evaluering display during play
+async function updatePositionEval() {
+    const fen = game.fen();
+    const evalCp = await positionEvalCp(game);
+    if (fen !== game.fen()) return;  // The game has moved on; a newer eval is coming
+    showPositionEval(evalCp);
 }
 
 // ============================================
@@ -1455,6 +1627,25 @@ async function makeAIBlackMove() {
 
     const gen = gameGeneration;
     const fen = game.fen();
+
+    // Steer toward a named line this player hasn't earned yet
+    const steerSan = pickSteerMove();
+    if (steerSan) {
+        const move = game.move(steerSan);
+        if (move) {
+            positionHistory.push(game.fen());
+            board.position(game.fen(), true);  // Animate
+
+            const lastMoveNum = moveHistory.length > 0 ? moveHistory[moveHistory.length - 1].moveNum : currentMoveNumber;
+            updateMoveHistoryWithBlack(lastMoveNum, move.san);
+
+            checkBadges(move, true);
+            updatePositionEval();  // Update eval after Black's move
+            updateUI();  // Re-enable hint button now that it's White's turn again
+            checkGameEnd();
+            return;
+        }
+    }
 
     // Try Lichess explorer first
     try {
@@ -1545,6 +1736,17 @@ async function makeAIBlackMove() {
     }
 }
 
+// Black's next move toward a locked named line, or null to play by popularity as usual.
+// Each locked line counts once, so a move leading to many locked badges is more likely.
+function pickSteerMove() {
+    const key = boardOf(game.fen());
+    if (TRAP_REPLIES.has(key)) return TRAP_REPLIES.get(key);
+
+    const locked = (STEER_MAP.get(key) || []).filter((c) => !earnedBadges.includes(c.badge));
+    if (locked.length === 0 || Math.random() >= STEER_CHANCE) return null;
+    return locked[Math.floor(Math.random() * locked.length)].san;
+}
+
 function checkGameEnd() {
     if (game.game_over() || currentMoveNumber >= MAX_MOVES) {
         const gen = gameGeneration;
@@ -1583,8 +1785,13 @@ function checkBadges(move, isBlackMove = false) {
     const san = move.san;
     const history = game.history();
     const moveNum = Math.ceil(history.length / 2);
-    const fen = game.fen();
-    const has = (s) => history.indexOf(s) >= 0;
+
+    // Named variations: earned on reaching the exact position (see BADGE_LINES)
+    (LINE_AWARDS.get(boardOf(game.fen())) || []).forEach((badge) => awardBadge(badge));
+
+    if (isBlackMove && moveNum === 3 && san === 'a6') {
+        variationState.morphyPlayed = true;
+    }
 
     // Achievement badges (White's moves)
     if (!isBlackMove) {
@@ -1609,16 +1816,6 @@ function checkBadges(move, isBlackMove = false) {
             awardBadge('exchange');
         }
 
-        // Worrall Attack (5.Qe2 or 6.Qe2 - Qe2 in place of Re1, either move order)
-        if ((moveNum === 5 || moveNum === 6) && san === 'Qe2') {
-            awardBadge('worrall');
-        }
-
-        // Anti-Marshall (8.a4 to prevent Marshall Attack)
-        if (moveNum === 8 && san === 'a4') {
-            awardBadge('anti_marshall');
-        }
-
         // Delayed Exchange (Bxc6 on moves 5-10, after ...a6 - e.g. 4.Ba4 Nf6 5.Bxc6, or 6.Bxc6 after O-O Be7)
         if (san === 'Bxc6' && variationState.morphyPlayed && moveNum >= 5 && moveNum <= 10) {
             awardBadge('delayed_exchange');
@@ -1640,103 +1837,26 @@ function checkBadges(move, isBlackMove = false) {
                 awardBadge('cinderella');
             }
         }
-    }
 
-    // Opening Variation badges (Black's moves)
-    if (isBlackMove) {
-        // Move 3 variations
-        if (moveNum === 3) {
-            if (san === 'a6') { variationState.morphyPlayed = true; awardBadge('morphy'); }
-            if (san === 'Nf6') awardBadge('berlin');
-            if (san === 'Nd4') awardBadge('bird');
-            if (san === 'd6') awardBadge('steinitz');
-            if (san === 'f5') awardBadge('schliemann');
-            if (san === 'Nge7') awardBadge('cozio');
-            if (san === 'Bc5') awardBadge('classical');
-        }
-
-        // Open Game (Black plays ...Nxe4) — opening only, mutually exclusive with Closed
-        if (san === 'Nxe4' && !variationState.closedDefenseEntered && moveNum <= 10) {
-            variationState.openDefenseEntered = true;
-            awardBadge('open');
-        }
-
-        // Closed Game (Black plays ...Be7) — opening only, mutually exclusive with Open
-        if (san === 'Be7' && !variationState.openDefenseEntered && moveNum <= 10) {
-            variationState.closedDefenseEntered = true;
-            awardBadge('closed');
-        }
-
-        // Move 6 Averbakh (6...d6)
-        if (moveNum === 6 && san === 'd6') {
-            awardBadge('averbakh');
-        }
-
-        // Move 9 variations
-        if (moveNum === 9) {
-            if (san === 'Nb8') awardBadge('breyer');
-            if (san === 'Bb7') awardBadge('zaitsev');
-            if (san === 'Na5') awardBadge('chigorin');
-            if (san === 'h6') awardBadge('smyslov');
-            if (san === 'Be6') awardBadge('kholmov');
-            // Nd7 is the Karpov Variation, a5 is the true Keres - both share this badge slot (see CLAUDE.md)
-            if (san === 'Nd7' || san === 'a5') awardBadge('keres');
-        }
-
-        // Marshall Attack (8...d5 - requires BOTH sides castled kingside and White's c3, exact tokens only)
-        if (san === 'd5' && moveNum >= 8 && moveNum <= 10) {
-            const castlingIndices = history
-                .map((m, i) => m === 'O-O' ? i : -1)
-                .filter(i => i >= 0);
-            const whiteCastled = castlingIndices.some(i => i % 2 === 0);
-            const blackCastled = castlingIndices.some(i => i % 2 === 1);
-            if (whiteCastled && blackCastled && has('c3')) {
-                awardBadge('marshall');
-            }
-        }
-
-        // Archangel Variation (4...Nf6 5.O-O b5 6.Bb3 Bb7 pattern - all three must be Black's moves, in order)
-        const nf6Idx = history.indexOf('Nf6');
-        const b5Idx = history.indexOf('b5');
-        const bb7Idx = history.indexOf('Bb7');
-        if (nf6Idx >= 0 && nf6Idx % 2 === 1 &&
-            b5Idx > nf6Idx && b5Idx % 2 === 1 &&
-            bb7Idx > b5Idx && bb7Idx % 2 === 1 &&
-            moveNum <= 10) {
-            awardBadge('archangel');
-        }
-
-        // Noah's Ark Survivor - White's light-squared bishop escaped b3 before Black's ...c4 trap closes.
-        // Awarded on the move that WOULD spring the trap, only if it doesn't (bishop already stepped aside).
-        if (san === 'c4' && moveNum >= 8 && moveNum <= 12) {
-            const b3Piece = game.get('b3');
-            const bishopOnB3 = b3Piece && b3Piece.type === 'b' && b3Piece.color === 'w';
-            const board = game.board();
-            let whiteLightBishopRemains = false;
-            for (let r = 0; r < 8; r++) {
-                for (let c = 0; c < 8; c++) {
-                    const sq = board[r][c];
-                    if (sq && sq.type === 'b' && sq.color === 'w' && (r + c) % 2 === 0) {
-                        whiteLightBishopRemains = true;
-                    }
-                }
-            }
-            if (!bishopOnB3 && whiteLightBishopRemains) {
+        // Noah's Ark: the trap was set and White left the poisoned d4-pawn alone
+        if (moveNum === 8 && san !== 'Qxd4') {
+            const before = new Chess();
+            history.slice(0, -1).forEach((m) => before.move(m));
+            if (boardOf(before.fen()) === NOAH_TRAP_BOARD) {
                 awardBadge('noahs_ark');
             }
-        }
-    }
-
-    // Gajewski Gambit detection — middlegame, capped at move 15, exact tokens, d5 must be Black's
-    if (!isBlackMove && moveNum <= 15) {
-        const d5Idx = history.indexOf('d5');
-        if (d5Idx >= 0 && d5Idx % 2 === 1 && has('exd5') && has('Bg4')) {
-            awardBadge('gajewski');
         }
     }
 }
 
 function awardBadge(badgeKey) {
+    // The review replays every badge this game touched, earned before or not. Chorizo only counts
+    // games played, so it only shows the time it is earned.
+    const alreadyLogged = gameBadgeLog.some((entry) => entry.badge === badgeKey);
+    if (!alreadyLogged && (badgeKey !== 'chorizo' || !earnedBadges.includes(badgeKey))) {
+        gameBadgeLog.push({ ply: game.history().length, badge: badgeKey });
+    }
+
     if (earnedBadges.includes(badgeKey)) return;
 
     earnedBadges.push(badgeKey);
@@ -1796,7 +1916,7 @@ function updateUI() {
     }
 
     // Enable hint button after forced moves - only on White's turn, never during Black's reply window
-    $('#hint-btn').prop('disabled', !(canUseHint() && game.turn() === 'w'));
+    updateHintButton();
 }
 
 function addMoveToHistory(moveNum, san, score, isForced) {
@@ -1815,7 +1935,7 @@ function addMoveToHistory(moveNum, san, score, isForced) {
     $('#move-history').append(moveRow);
     $('#move-history').scrollTop($('#move-history')[0].scrollHeight);
 
-    moveHistory.push({ moveNum, whiteSan: san, blackSan: null, score, isForced });
+    moveHistory.push({ moveNum, whiteSan: san, blackSan: null, score, isForced, note: isForced ? null : lastMoveNote });
 }
 
 function updateMoveHistoryWithBlack(moveNum, san) {
@@ -1847,7 +1967,12 @@ function showScorePopup(score) {
         1: "Jy is rof! (+1)"
     };
 
-    textEl.text(scoreMessages[score] || `+${score}`);
+    let message = scoreMessages[score] || `+${score}`;
+    if (lastMoveNote && lastMoveNote.evalLabel === 'flater') message = `Flater! (+${score})`;
+    else if (lastMoveNote && lastMoveNote.evalLabel === 'fout') message = `Dit kos jou (+${score})`;
+    else if (lastMoveNote && lastMoveNote.hintCapped) message = `Met 'n wenk (+${score})`;
+
+    textEl.text(message);
     popup.removeClass('score-1 score-2 score-3 score-4 score-5 score-forced').addClass(`score-${score}`);
 
     // Show popup using requestAnimationFrame for smoother rendering
@@ -1884,6 +2009,7 @@ function canUseHint() {
     return isGameActive && currentMoveNumber >= 3 && currentMoveNumber < hintLimit;
 }
 
+// First press: the idea, no move. Second press: the move itself. Both cap the move's score.
 async function showHint() {
     if (!canUseHint() || game.turn() !== 'w') {
         const hintLimit = getHintLimit();
@@ -1893,17 +2019,17 @@ async function showHint() {
         return;
     }
 
-    $('#hint-btn').prop('disabled', true);
-    showMessage('Soek wenke...');
-
     // Use the current game position (should match what will be used for scoring)
     const fen = game.fen();
-    const positionCheck = positionHistory[positionHistory.length - 1];
+    const gen = gameGeneration;
 
-    console.log('=== HINT REQUEST ===');
-    console.log('game.fen():', fen.split(' ')[0].substring(0, 30) + '...');
-    console.log('positionHistory[last]:', positionCheck ? positionCheck.split(' ')[0].substring(0, 30) + '...' : 'undefined');
-    console.log('Positions match:', fen === positionCheck);
+    if (lastHintInfo && lastHintInfo.fen === fen && lastHintInfo.stage === 1) {
+        revealHintMove();
+        return;
+    }
+
+    $('#hint-btn').prop('disabled', true);
+    showMessage('Soek wenke...');
 
     try {
         // Get both data sources - use same multiPv=4 as scoring for consistency
@@ -1911,75 +2037,130 @@ async function showHint() {
             getStockfishEval(fen, 4),
             getLichessPopularity(fen)
         ]);
+        if (gen !== gameGeneration || game.fen() !== fen) return;  // The position moved on
 
-        console.log('=== HINT ANALYSIS ===');
-        console.log('Position FEN:', fen);
-        console.log('Engine moves:', engineResult ? engineResult.moves?.map(m => m.san).join(', ') : 'none');
-        console.log('Lichess moves:', lichessResult ? lichessResult.moves?.slice(0, 5).map(m => m.san).join(', ') : 'none');
+        const engineMoves = engineResult?.moves?.map(m => m.san) || [];
+        const sortedPopular = lichessResult?.moves
+            ? [...lichessResult.moves].sort((a, b) => (b.white + b.draws + b.black) - (a.white + a.draws + a.black))
+            : [];
+        const popularBest = sortedPopular[0] || null;
+        const engineBestMove = engineMoves[0] || null;
+        const popularBestMove = popularBest ? popularBest.san : null;
 
-        let engineBestMove = null;
-        let popularBestMove = null;
-
-        // Store hint info for debugging
-        lastHintInfo = {
-            fen: fen,
-            engineMoves: engineResult?.moves?.map(m => m.san) || [],
-            lichessMoves: lichessResult?.moves?.slice(0, 5).map(m => m.san) || []
-        };
-        let engineInfo = '';
-        let popularInfo = '';
-
-        // Get engine best move
-        if (engineResult && engineResult.moves && engineResult.moves.length > 0) {
-            engineBestMove = engineResult.moves[0].san;
-            engineInfo = `Enjin: ${engineBestMove}`;
-        }
-
-        // Get most popular move
-        if (lichessResult && lichessResult.moves && lichessResult.moves.length > 0) {
-            const sortedMoves = [...lichessResult.moves].sort((a, b) =>
-                (b.white + b.draws + b.black) - (a.white + a.draws + a.black)
-            );
-            if (sortedMoves.length > 0) {
-                popularBestMove = sortedMoves[0].san;
-                const games = sortedMoves[0].white + sortedMoves[0].draws + sortedMoves[0].black;
-                popularInfo = `Populêr: ${popularBestMove} (${games} spelle)`;
-            }
-        }
-
-        // Show prominent hint message
-        if (engineBestMove && popularBestMove) {
-            if (engineBestMove === popularBestMove) {
-                showHintMessage(`Beste skuif: ${engineBestMove}`, 'both');
-            } else {
-                showHintMessage(`${engineInfo} | ${popularInfo}`, 'different');
-            }
-        } else if (engineBestMove) {
-            showHintMessage(engineInfo, 'engine');
-        } else if (popularBestMove) {
-            showHintMessage(popularInfo, 'popular');
-        } else {
+        if (!engineBestMove && !popularBestMove) {
+            lastHintInfo = null;
             showMessage('Geen wenke beskikbaar nie');
+            updateHintButton();
+            return;
         }
 
-        // Highlight the best moves on the board
-        highlightBestMoves(engineBestMove, popularBestMove);
+        const ideaMove = await pickIdeaMove(fen, engineBestMove, popularBestMove);
+        if (gen !== gameGeneration || game.fen() !== fen) return;  // The position moved on
 
-        // Remove highlights after 3 seconds
-        setTimeout(() => {
-            removeBestMoveHighlights();
-            hideHintMessage();
-            $('#hint-btn').prop('disabled', !(canUseHint() && game.turn() === 'w'));
-        }, 3000);
+        lastHintInfo = {
+            fen,
+            stage: 1,
+            engineMoves,
+            lichessMoves: sortedPopular.slice(0, 5).map(m => m.san),
+            engineBestMove,
+            popularBestMove,
+            popularGames: popularBest ? popularBest.white + popularBest.draws + popularBest.black : 0
+        };
+
+        showHintMessage(
+            `💡 ${describeMoveIdea(fen, ideaMove)}`,
+            'idea',
+            `Hierdie skuif kan nou hoogstens ${HINT_IDEA_CAP} punte kry. Druk weer vir die skuif self (hoogstens ${HINT_MOVE_CAP}).`
+        );
+        updateHintButton();
 
     } catch (e) {
         console.error('Hint error:', e);
         showMessage('Kon nie wenke kry nie');
-        $('#hint-btn').prop('disabled', !(canUseHint() && game.turn() === 'w'));
+        updateHintButton();
     }
 }
 
-function showHintMessage(text, type) {
+function revealHintMove() {
+    const hint = lastHintInfo;
+    hint.stage = 2;
+
+    const engineInfo = hint.engineBestMove ? `Enjin: ${hint.engineBestMove}` : '';
+    const popularInfo = hint.popularBestMove ? `Populêr: ${hint.popularBestMove} (${hint.popularGames} spelle)` : '';
+    const cost = `Hierdie skuif kan nou hoogstens ${HINT_MOVE_CAP} punte kry.`;
+
+    if (hint.engineBestMove && hint.popularBestMove) {
+        if (hint.engineBestMove === hint.popularBestMove) {
+            showHintMessage(`Beste skuif: ${hint.engineBestMove}`, 'both', cost);
+        } else {
+            showHintMessage(`${engineInfo} | ${popularInfo}`, 'different', cost);
+        }
+    } else if (hint.engineBestMove) {
+        showHintMessage(engineInfo, 'engine', cost);
+    } else {
+        showHintMessage(popularInfo, 'popular', cost);
+    }
+
+    highlightBestMoves(hint.engineBestMove, hint.popularBestMove);
+    updateHintButton();
+}
+
+// The thinking behind a move, without naming the move
+function describeMoveIdea(fen, san) {
+    const fallback = 'Wat wil Swart se laaste skuif doen? Begin daar.';
+    const before = new Chess(fen);
+    if (before.in_check()) return 'Jy staan in skaak. Watter antwoord is die sterkste?';
+
+    const after = new Chess(fen);
+    const move = after.move(san);
+    if (!move) return fallback;
+
+    const names = { p: 'pion', n: 'ridder', b: 'loper', r: 'toring', q: 'dame', k: 'koning' };
+    const piece = names[move.piece];
+
+    if (after.in_checkmate()) return 'Daar is skaakmat op die bord! Kyk na al jou skake.';
+    if (move.captured) return 'Soek \'n vangskuif: watter stuk van Swart kan jy vat?';
+    if (after.in_check()) return "'n Skaak kan hier sterk wees. Watter een?";
+
+    // Is the piece that should move under attack right now?
+    const parts = fen.split(' ');
+    parts[1] = 'b';
+    parts[3] = '-';
+    const blackView = new Chess(parts.join(' '));
+    const attacked = blackView.moves({ verbose: true }).some((m) => m.to === move.from);
+    if (attacked && move.piece === 'b') {
+        return 'Jou loper word aangeval. Hou hom! In die Spaanse opening is hy een van jou beste stukke.';
+    }
+    if (attacked) return `Jou ${piece} word aangeval. Waarheen kan hy veilig gaan?`;
+
+    if (san === 'O-O') return 'Jou koning staan nog in die middel. Kry hom veilig agter sy pionne.';
+    if (san === 'Re1') return "Jou e4-pion kort nog 'n verdediger. Watter stuk kan hom van ver af help?";
+    if (san === 'c3') return 'Berei die d4-stoot voor: watter pion moet eers skuif sodat d4 gesteun word?';
+    if (san === 'h3' && before.get('c8') && before.get('c8').type === 'b') {
+        return 'Swart se loper op c8 wil dalk na g4 toe kom en jou ridder vaspen. Kan jy dit stop?';
+    }
+    if (move.piece === 'n' && move.from === 'd2' && move.to === 'f1') {
+        return 'Jou ridder is op reis: Nbd2-f1-g3. Wat is die volgende stap?';
+    }
+    if (move.piece === 'p' && 'de'.includes(move.to[0])) {
+        return 'Dink aan die sentrum. Watter pionskuif maak dit joune?';
+    }
+    const homeSquares = { n: ['b1', 'g1'], b: ['c1', 'f1'] };
+    if ((homeSquares[move.piece] || []).includes(move.from)) {
+        return 'Watter stuk staan nog by die huis? Bring hom in die spel.';
+    }
+    if (move.piece === 'r') return "Jou toring wil op 'n oop of half-oop lêer staan. Watter een?";
+    if (move.piece === 'p') return "'n Klein pionskuif op die vleuel help hier. Watter een?";
+    return `Jou ${piece} kan beter staan. Waar sal hy die meeste doen?`;
+}
+
+function updateHintButton() {
+    const stage = lastHintInfo && lastHintInfo.fen === game.fen() ? lastHintInfo.stage : 0;
+    $('#hint-btn').text(stage === 1 ? 'Wys die skuif' : 'Wenk');
+    $('#hint-btn').prop('disabled', !(canUseHint() && game.turn() === 'w' && stage < 2));
+}
+
+function showHintMessage(text, type, cost) {
     let bgColor = 'var(--spanish-yellow)';
     let textColor = 'var(--spanish-dark-red)';
 
@@ -1994,6 +2175,12 @@ function showHintMessage(text, type) {
         textColor = 'white';
     }
 
+    const legend = type === 'idea'
+        ? ''
+        : `<p style="text-align: center; font-size: 0.8rem; color: #95a5a6; margin-top: 5px;">
+            🟢 Groen = Enjin | 🔵 Blou = Populêr | 🟣 Pers = Albei
+        </p>`;
+
     $('#move-suggestions').html(`
         <div class="hint-prominent" style="
             background: ${bgColor};
@@ -2001,21 +2188,16 @@ function showHintMessage(text, type) {
             padding: 15px;
             border-radius: 10px;
             text-align: center;
-            font-size: 1.2rem;
+            font-size: ${type === 'idea' ? '1rem' : '1.2rem'};
             font-weight: bold;
             margin: 10px 0;
             box-shadow: 0 4px 15px rgba(0,0,0,0.3);
         ">
             ${text}
         </div>
-        <p style="text-align: center; font-size: 0.8rem; color: #95a5a6; margin-top: 5px;">
-            🟢 Groen = Enjin | 🔵 Blou = Populêr | 🟣 Pers = Albei
-        </p>
+        ${legend}
+        <p style="text-align: center; font-size: 0.8rem; color: #95a5a6; margin-top: 5px;">${cost}</p>
     `);
-}
-
-function hideHintMessage() {
-    $('#move-suggestions').html('<p class="waiting-message">Maak jou skuif...</p>');
 }
 
 // ============================================
@@ -2047,13 +2229,10 @@ function endGame(checkmateMessage = null) {
         awardBadge('twelve_perfect');
     }
 
-    // Check for 16 perfect moves badge
-    if (perfectMoves >= 16) {
-        awardBadge('sixteen_perfect');
-    }
-
-    // Carbón badge for low score (less than 50%)
-    if (currentScore < 50) {
+    // Carbón badge for low score (less than 50%). Not after mating Black: an early win
+    // leaves few moves to score, so the low total says nothing about the play.
+    const whiteMatedBlack = game.in_checkmate() && game.turn() === 'b';
+    if (currentScore < 50 && !whiteMatedBlack) {
         awardBadge('carbon');
     }
 
@@ -2109,21 +2288,267 @@ function showGameOverModal(checkmateMessage = null, previousHigh = highScore) {
 
 function enterReviewMode() {
     isReviewMode = true;
-    reviewPosition = 0;
-
     $('#analysis-panel').addClass('hidden');
-    $('#review-panel').removeClass('hidden');
-
-    goToPosition(0);
+    showReviewControls(true);
+    runReview();
 }
 
-function goToPosition(index) {
-    if (index < 0) index = 0;
-    if (index >= positionHistory.length) index = positionHistory.length - 1;
+function showReviewControls(inReview) {
+    $('#review-continue-btn, #review-legend').toggleClass('hidden', !inReview);
+    $('#new-game-btn, #hint-btn').toggleClass('hidden', inReview);
+}
 
-    reviewPosition = index;
-    board.position(positionHistory[index]);
-    $('#review-position').text(`${index}/${positionHistory.length - 1}`);
+// The review plays the whole game by itself. Each move: arrows up, a pause, the move plays, then
+// any popups it earned. Gaan voort bumps reviewRun, which stops this at its next check.
+async function runReview() {
+    const run = ++reviewRun;
+    const plies = game.history({ verbose: true });
+    const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+    // Work out each step just before it's needed, so leaving early leaves little for the engine to finish
+    const steps = new Map();
+    const stepFor = (ply) => {
+        if (!steps.has(ply) && plies[ply]) steps.set(ply, prepareReviewStep(ply, plies[ply]));
+        return steps.get(ply);
+    };
+
+    // The Evaluering display follows the replay
+    let shownPly = 0;
+    const showEvalAt = async (ply) => {
+        shownPly = ply;
+        const evalCp = await positionEvalCp(new Chess(positionHistory[ply]));
+        if (run === reviewRun && shownPly === ply) showPositionEval(evalCp);
+    };
+
+    clearReviewArrows();
+    board.position(positionHistory[0], false);
+    showEvalAt(0);
+
+    for (let ply = 0; ply < plies.length; ply++) {
+        const move = plies[ply];
+        const isWhite = move.color === 'w';
+        const record = isWhite ? moveHistory[ply / 2] : null;
+        const forced = isWhite ? (!record || record.isForced) : ply < 4;
+
+        stepFor(ply + 1);
+        const step = (await Promise.race([stepFor(ply), wait(REVIEW_PREP_LIMIT)])) || {};
+        if (run !== reviewRun) return;
+
+        const look = reviewArrowsFor(ply, move, step);
+        let legend = '';
+        if (isWhite) legend = forced ? '🟢 Jou skuif' : '🟠 Beste skuiwe   🟢 Jou skuif';
+        else if (look.length > 0) legend = '🟠 Swart se ander keuses';
+        $('#review-legend').text(legend);
+        drawReviewArrows(look);
+
+        let pause = REVIEW_FORCED_MS;
+        if (isWhite && !forced) pause = REVIEW_WHITE_MS;
+        if (!isWhite && look.length > 0) pause = REVIEW_BLACK_MS;
+        await wait(pause);
+        if (run !== reviewRun) return;
+
+        clearReviewArrows();
+        board.position(positionHistory[ply + 1], true);
+        showEvalAt(ply + 1);
+        await wait(REVIEW_MOVE_MS);
+        if (run !== reviewRun) return;
+
+        for (const popup of reviewPopupsFor(ply, record, step)) {
+            showReviewPopup(popup);
+            await wait(REVIEW_POPUP_MS);
+            if (run !== reviewRun) return;
+            $('#score-popup').addClass('hidden');
+            await wait(150);
+            if (run !== reviewRun) return;
+        }
+    }
+
+    $('#review-legend').text('Klaar!');
+}
+
+async function prepareReviewStep(ply, move) {
+    const fen = positionHistory[ply];
+
+    if (move.color === 'b') {
+        return { others: ply < 4 ? [] : await reviewBlackOptions(fen, move.san) };
+    }
+
+    const record = moveHistory[ply / 2];
+    if (!record || record.isForced) return { best: [] };
+
+    const note = record.note || {};
+    const best = await reviewBestMoves(fen, note);
+    const sacrifice = !note.evalLabel && note.rawScore !== 5 && await isSoundSacrifice(fen, move);
+    return { best, sacrifice };
+}
+
+// The best move or moves, at most three: the engine's lines close to its top line, plus the main-line
+// move if it is sound, since that also scores full marks (the same test as scoring and hints).
+async function reviewBestMoves(fen, note) {
+    const result = await getStockfishEval(fen, 4);
+    if (!result || !result.moves || result.moves.length === 0) return [];
+
+    const topCp = pvToCp(result.moves[0]);
+    if (topCp === null) return [];
+    const best = result.moves
+        .filter((line) => {
+            const cp = pvToCp(line);
+            return cp !== null && winChance(topCp) - winChance(cp) < REVIEW_BEST_MARGIN;
+        })
+        .map((line) => line.san)
+        .slice(0, 3);
+
+    if (note.popularBest && !best.includes(note.popularBest)) {
+        const check = await moveLoss(fen, result.moves[0].san, note.popularBest);
+        const smallestBand = EVAL_LOSS_BANDS[EVAL_LOSS_BANDS.length - 1].minLoss;
+        if (check && check.loss < smallestBand) {
+            if (best.length === 3) best[2] = note.popularBest;
+            else best.push(note.popularBest);
+        }
+    }
+    return best;
+}
+
+// Black's other options, at most two, leaving out anything far worse than the engine's top line
+async function reviewBlackOptions(fen, playedSan) {
+    const result = await getStockfishEval(fen, 3);
+    if (!result || !result.moves || result.moves.length === 0) return [];
+
+    // Scores from Black's side: local lines already are, cloud lines are White-POV
+    const sign = result.source === 'cloud' ? -1 : 1;
+    const topCp = pvToCp(result.moves[0]);
+    if (topCp === null) return [];
+    return result.moves
+        .filter((line) => {
+            const cp = pvToCp(line);
+            return cp !== null && line.san !== playedSan &&
+                winChance(sign * topCp) - winChance(sign * cp) < REVIEW_OPTION_MARGIN;
+        })
+        .map((line) => line.san)
+        .slice(0, 2);
+}
+
+// A "brilliant" move: it gives up material on purpose and the engine still approves. Black's best
+// reply takes the piece that just moved, it costs more than it captured, and White can't take back.
+async function isSoundSacrifice(fen, move) {
+    const after = new Chess(fen);
+    if (!after.move(move.san)) return false;
+
+    const reply = await getStockfishEval(after.fen(), 1);
+    const answer = reply && reply.moves && reply.moves[0];
+    if (!answer || answer.move.substring(2, 4) !== move.to) return false;
+
+    const values = { p: 1, n: 3, b: 3, r: 5, q: 9 };
+    const captured = move.captured ? values[move.captured] : 0;
+    if (!values[move.piece] || values[move.piece] <= captured) return false;
+
+    if (!after.move(answer.san)) return false;
+    return !after.moves({ verbose: true }).some((m) => m.to === move.to && m.captured);
+}
+
+function reviewArrowsFor(ply, move, step) {
+    const fen = positionHistory[ply];
+    const squares = (san) => {
+        const m = new Chess(fen).move(san);
+        return m ? { from: m.from, to: m.to } : null;
+    };
+    const orange = (list) => list.map(squares).filter(Boolean).map((a) => ({ ...a, kind: 'best' }));
+
+    if (move.color === 'b') return orange(step.others || []);
+
+    const best = step.best || [];
+    return [
+        ...orange(best.filter((san) => san !== move.san)),
+        // A green arrow edged in orange: he chose one of the best
+        { from: move.from, to: move.to, kind: 'chosen', edged: best.includes(move.san) }
+    ];
+}
+
+function reviewPopupsFor(ply, record, step) {
+    const popups = [];
+    const note = record && record.note;
+    if (note) {
+        if (note.evalLabel === 'flater') {
+            popups.push({ text: 'Oepsie', kind: 'score-1' });
+        } else if (note.hintStage < 2 && (note.rawScore === 5 || step.sacrifice)) {
+            popups.push({ text: 'Mooi skuif!', kind: 'score-5' });
+        }
+    }
+    gameBadgeLog
+        .filter((entry) => entry.ply === ply + 1)
+        .forEach((entry) => {
+            const badge = BADGES[entry.badge];
+            popups.push({ text: `${badge.icon} ${badge.name} gespeel`, kind: 'score-3' });
+        });
+    return popups;
+}
+
+function showReviewPopup(popup) {
+    $('#score-popup-text').text(popup.text);
+    $('#score-popup')
+        .removeClass('score-1 score-2 score-3 score-4 score-5 score-forced')
+        .addClass(popup.kind)
+        .removeClass('hidden');
+}
+
+function clearReviewArrows() {
+    reviewArrows = [];
+    const layer = document.getElementById('review-arrows');
+    if (layer) {
+        layer.innerHTML = '';
+        layer.classList.add('hidden');
+    }
+}
+
+// One arrow as a polygon, on a board 800 units wide (100 a square, a8 at the top left)
+function arrowPolygon(from, to, shaft, headWidth, headLength) {
+    const centre = (sq) => ({ x: (sq.charCodeAt(0) - 97) * 100 + 50, y: (8 - Number(sq[1])) * 100 + 50 });
+    const a = centre(from);
+    const b = centre(to);
+    const length = Math.hypot(b.x - a.x, b.y - a.y);
+    const ux = (b.x - a.x) / length;
+    const uy = (b.y - a.y) / length;
+    const point = (along, across) => {
+        const x = a.x + ux * along - uy * across;
+        const y = a.y + uy * along + ux * across;
+        return `${x.toFixed(1)},${y.toFixed(1)}`;
+    };
+    const tip = length - 8;
+    const neck = tip - headLength;
+    return [
+        point(18, -shaft / 2), point(neck, -shaft / 2), point(neck, -headWidth / 2),
+        point(tip, 0),
+        point(neck, headWidth / 2), point(neck, shaft / 2), point(18, shaft / 2)
+    ].join(' ');
+}
+
+function drawReviewArrows(arrows) {
+    reviewArrows = arrows;
+    const layer = document.getElementById('review-arrows');
+    const a8 = document.querySelector('#board .square-a8');
+    const h1 = document.querySelector('#board .square-h1');
+    if (!layer || !a8 || !h1) return;
+
+    // Sit exactly over the squares, whatever size the board is
+    const box = layer.parentElement.getBoundingClientRect();
+    const first = a8.getBoundingClientRect();
+    const last = h1.getBoundingClientRect();
+    layer.style.left = `${first.left - box.left}px`;
+    layer.style.top = `${first.top - box.top}px`;
+    layer.style.width = `${last.right - first.left}px`;
+    layer.style.height = `${last.bottom - first.top}px`;
+
+    const ORANGE = '#ff9800';
+    const GREEN = '#2ecc71';
+    const polygon = (arrow, colour, shaft, headWidth, headLength) =>
+        `<polygon data-kind="${arrow.kind}" data-from="${arrow.from}" data-to="${arrow.to}" fill="${colour}" fill-opacity="0.9" points="${arrowPolygon(arrow.from, arrow.to, shaft, headWidth, headLength)}"></polygon>`;
+
+    layer.innerHTML = arrows.map((arrow) => {
+        if (arrow.kind === 'best') return polygon(arrow, ORANGE, 16, 42, 42);
+        const edge = arrow.edged ? polygon({ ...arrow, kind: 'edge' }, ORANGE, 30, 60, 54) : '';
+        return edge + polygon(arrow, GREEN, 18, 46, 44);
+    }).join('');
+    layer.classList.toggle('hidden', arrows.length === 0);
 }
 
 // ============================================

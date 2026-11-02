@@ -9,7 +9,7 @@ Extends the shared conventions in `../CLAUDE.md`. Read that first.
 | Key | Value |
 |-----|-------|
 | Storage prefix | `ruylopez_trainer_` |
-| Badge version | `2` (stored as `BADGE_VERSION`) - bumped in Card 3 since several badge conditions were chess-theoretically wrong and had to change; existing players' earned badges reset on next load, high score and games-played survive |
+| Badge version | `2` (stored as `BADGE_VERSION`) - bumped in Card 3 since several badge conditions were chess-theoretically wrong and had to change; existing players' earned badges reset on next load, high score and games-played survive. Deliberately not bumped in Nov 2026: the badge fixes would have wiped the children's collections, so any badge earned falsely before then stays earned |
 | Max moves | 20 (moves 1–3 are forced) |
 | Target score | 100 pts (17 free moves × up to 5 pts each + 3 forced × 5 pts) |
 | Players | J, L, KC, CA, MB, T |
@@ -38,28 +38,56 @@ The Cloud Eval endpoint (`lichess.org/api/cloud-eval`) does **not** need auth an
 
 ## Eval Pipeline
 
-Currently **two-tier** (the Stockfish.online middle tier from the shared CLAUDE.md spec is **not implemented**):
+Stockfish, at one depth, for every position from the first move to the last. This differs on purpose from the cloud-first waterfall in the shared `../CLAUDE.md`. The eval used to switch from deep cloud eval in the opening to local Stockfish at depth 8 later on, and the display jumped when it did.
 
 ```
 getStockfishEval(fen, multiPv)
-  └─ 1. Lichess Cloud Eval   (no auth needed)
-  └─ 2. Local Stockfish.js   (blob worker, depth 10)
+  └─ 1. Stockfish 10, WebAssembly build, depth ENGINE_DEPTH (14), blob worker from cdnjs
+        └─ if that can't start within ENGINE_LOAD_LIMIT: the older JavaScript build, at depth 10
+  └─ 2. Lichess Cloud Eval, only if Stockfish can't load at all or crashes mid-game
 ```
 
-For this opening the missing middle tier has minimal impact — Cloud Eval covers virtually every Ruy Lopez position. If it ever becomes a problem, add the Stockfish.online tier between the two:
+- **One search per position.** `apiCache.engineEval` holds the search itself, so the Evaluering display, scoring, hints, the analysis panel and Black's engine moves all share one result and can't disagree. White-to-move positions get four lines, Black-to-move positions one.
+- **Contempt is off** (`setoption name Contempt value 0`). Stockfish 10 defaults to 24, which tilts the score toward whichever side is to move, so the eval saw-tooths by about a pawn every half-move.
+- **Hash carries through a game.** `ucinewgame` is sent only at Nuwe Spel.
+- **Bound lines are ignored.** `upperbound`/`lowerbound` scores are provisional.
+- **WebAssembly, not the JavaScript build.** Same search (identical node counts) and much faster: in a test browser the first search at depth 10 took 0.2 s against 3.6 s, and later searches ran roughly three to six times faster. Don't time the engine in the Claude desktop app's browser pane: on the same Mac it measured 400,000 nodes a second at one moment and 8,000 at another, probably because the pane or app was in the background. From a blob worker this build can't find its `.wasm` file, so `loadEngineWorker` prepends a small fetch redirect. `Module.locateFile` does not work in this build.
+- **The first search runs behind the loading screen,** and gives the eval for the starting position.
+- **Stopping:** a search gets `ENGINE_TIME_LIMIT` (8 s), then `stop`, and still waits for `bestmove` so that line can't end the next search. A hard stop 2 s later covers an engine too busy to answer. A new `go` then takes over the running search and the engine answers with two `bestmove` lines, so `engineStale` swallows the extra one.
+- **The JavaScript build runs at depth 10** (`ENGINE_DEPTH_FALLBACK`), because it can't finish a cold depth 14 search within the limits. It is a last resort for browsers without WebAssembly. The eval-loss bands are set for depth 14, so it reads a little harsher.
 
-```
-GET https://stockfish.online/api/s/v2.php?fen=...&depth=...   (max depth 15, 6s timeout)
-```
+Measured on three full games (Steinitz, Chigorin, Marshall), counting half-move eval changes of a pawn or more:
 
-### Eval perspective convention (verified empirically, Card 2 Task 2.2)
+| Setup | Changes of a pawn or more | Largest change |
+|-------|---------------------------|----------------|
+| Depth 10, contempt on | 6, 3, 8 | 1.6 |
+| Depth 12, contempt off | 0, 0, 1 | 1.2 |
+| Depth 14, contempt off (used) | 0, 0, 1 | 1.0 |
 
-The two eval sources use **different** POV conventions for `cp`/`mate` — this is the opposite of what the shared `../CLAUDE.md` "cp is always from White's absolute perspective" convention describes for the other games, so don't assume Spanish_Opening matches them without checking:
+The one remaining change is in the Marshall, around ...Qh3, where the attack comes into the search's view.
 
-- **Lichess Cloud Eval** (`lichess.org/api/cloud-eval`): already **White-POV**. Verified by fetching the FEN after `1.e4 e5 2.Nf3` (Black to move, White slightly better) — `pvs[0].cp` came back **positive** (+18), not negative. Do not flip this for Black to move; `updatePositionEval`'s cloud branch no longer does.
-- **Local Stockfish.js** (raw UCI `score cp`/`score mate`): genuinely **side-to-move-relative**, as UCI always is. `updatePositionEval`'s local branch and `getLocalStockfishEvalForDisplay` still flip on `fen.includes(' b ')` — that flip is correct and must stay.
-- `getStockfishEval()` (used by `scoreMove`, `showMoveAnalysis`, `showHint`) returns cp from either source depending on which one answered, but every caller only ever passes a **White-to-move** FEN — so White-POV and side-to-move-POV coincide there and no flip is needed either way.
-- Both mate-to-cp conversions use the same `10000 - mateIn*10` formula, but `mateIn` means different things in each: Cloud Eval's `mate` is White-POV directly (no flip needed, same as `cp`); local Stockfish's `mate` is side-to-move (needs the flip, same as `cp`). Don't "fix" one to match the other's formula — they're intentionally different inputs to the same conversion.
+**Trade-off:** depth 14 is shallower than cloud eval, so the engine's first choice isn't always the book move (at 5...Be7 it can prefer 6.Bxc6 to 6.Re1). Popularity still scores main-line moves at full marks, and `pickIdeaMove` keeps hints on the main line when the engine finds the popular move sound.
+
+### Scoring: rank and popularity, capped by eval loss
+
+A move first scores the higher of its engine rank and its Lichess popularity rank (see `scoreMove`). That alone rewards popular blunders: 8.Qxd4 in the Noah's Ark line is the most played move at that node and loses a bishop. So `assessEvalLoss()` then caps the score by what the move gave away, on the win-chance scale Lichess uses for its own move labels (`winChance()`, -1 to +1):
+
+| Win-chance loss | Label | Score cap | Example at depth 14 |
+|-----------------|-------|-----------|---------------------|
+| 0.40 or more | `flater` | 1 | 3...a6 4.O-O leaves the bishop hanging (0.80); 8.Qxd4 in the Noah's Ark (0.45) |
+| 0.25 or more | `fout` | 2 | 9.a4 against the Marshall (0.38); 5.Nxe5 in the Exchange (0.25) |
+| 0.15 or more | `onakkuraat` | 3 | 4.Bc4 after 3...a6 (0.17); 6.c3 after 5...Be7 (0.16) |
+
+- The engine's best move is never capped.
+- Loss compares the position after the best move with the position after the played move, searched alike (`moveLoss`). Comparing with the score at the root reads too harshly, because that search ends a half-move earlier.
+- The bands are set for depth 14, which reads losses a little larger than a deep search does. If `ENGINE_DEPTH` changes, recheck them: every blunder tested sat at 0.45 or more, and no main-line move above 0.06.
+- The note is stored in `lastMoveNote`, which `showScorePopup` and `showMoveAnalysis` read so the popup and the Jou Skuif panel agree with the capped score. The "val van X na Y" note shows the Evaluering before and after the move.
+
+### Eval perspective convention
+
+- **Local Stockfish** (raw UCI `score cp`/`score mate`): side-to-move-relative.
+- **Lichess Cloud Eval** (fallback only): White-POV. Verified empirically in Card 2.
+- `getStockfishEval()` returns lines as the source gave them, which agree only when White is to move. For a Black-to-move FEN use `getWhitePovEval()`, which flips local results. `makeAIBlackMove` passes a Black-to-move FEN but only reads the move.
 
 ---
 
@@ -86,57 +114,51 @@ Forced moves auto-score 5 pts with no popup. Free play starts at move 4.
 | `perfect_game` | `currentScore >= 100` (all 20 moves top-scored) |
 | `seven_perfect` | ≥ 7 free moves scored 5 pts |
 | `twelve_perfect` | ≥ 12 free moves scored 5 pts |
-| `sixteen_perfect` | ≥ 16 free moves scored 5 pts |
 | `carbon` | `currentScore < 50` |
 | `chorizo` | 5+ total games played |
 
-### Move-number windows for all other badges
+### Named variations: earned on an exact position
 
-Opening badges are locked to realistic move ranges. `moveNum = Math.ceil(game.history().length / 2)` — includes the current move.
+`BADGE_LINES` in `app.js` lists each named variation as a move sequence. A badge is earned when the board matches the position at the end of its line (`LINE_AWARDS`), checked after every move. This replaced the old move-number windows and loose move-name checks, which awarded badges in unrelated lines. Any move order that reaches the position counts.
 
-**Card 3 note:** several conditions below were chess-theoretically wrong before Card 3 and were corrected there — see "Badges whose meaning changed (Card 3)" at the bottom of this section before writing tooltip text (Card 4) or reasoning about historical badge-earning data.
+| Badge | Line (from 1.e4 e5 2.Nf3 Nc6 3.Bb5) |
+|-------|-------------------------------------|
+| `morphy`, `berlin`, `bird`, `steinitz`, `schliemann`, `cozio`, `classical` | 3...a6, 3...Nf6, 3...Nd4, 3...d6, 3...f5, 3...Nge7, 3...Bc5 |
+| `open` | 3...a6 4.Ba4 Nf6 5.O-O Nxe4, or with 5...b5 6.Bb3 Nxe4 |
+| `closed` | 3...a6 4.Ba4 Nf6 5.O-O Be7, or with 5...b5 6.Bb3 Be7 |
+| `averbakh` | ...5.O-O Be7 6.Re1 d6 |
+| `archangel` | ...5.O-O b5 6.Bb3 Bb7 |
+| `worrall` | ...5.O-O Be7 6.Qe2 (Lichess names 5.Qe2 the Wormald, which earns nothing) |
+| `marshall` | ...6.Re1 b5 7.Bb3 O-O 8.c3 d5 |
+| `anti_marshall` | ...7.Bb3 O-O 8.a4 |
+| `breyer`, `zaitsev`, `chigorin`, `smyslov`, `kholmov` | after 8...d6 9.h3: 9...Nb8, 9...Bb7, 9...Na5, 9...h6, 9...Be6 |
+| `keres` | after 9.h3: 9...a5 or 9...Nd7 (see naming note) |
+| `gajewski` | after 9...Na5 10.Bc2: 10...d5 |
 
-**White's moves (inside `!isBlackMove`):**
+### Other badges
 
 | Badge | Condition |
 |-------|-----------|
-| `first_blood` | First capture, any move |
-| `queen_capture` | Captures queen (`move.captured === 'q'`), any move |
-| `castled` | `O-O` or `O-O-O`, any move |
+| `first_blood` | White's first capture, any move |
+| `queen_capture` | White captures the queen (`move.captured === 'q'`), any move |
+| `castled` | White plays `O-O` or `O-O-O`, any move |
 | `center_control` | White pawns on e4 AND d4 simultaneously, any move |
-| `exchange` | `Bxc6` at **moveNum === 4** exactly, after Black's `a6` — the textbook Exchange Variation (3...a6 4.Bxc6) |
-| `delayed_exchange` | `Bxc6` at **moveNum 5–10**, after Black's `a6` — Bxc6 played later than move 4 (e.g. 4.Ba4 Nf6 5.Bxc6, or 6.Bxc6 after ...Be7) |
-| `cinderella` | `Bc2`, with exact tokens `Ba4` then `Bb3` both already in history — the Spanish bishop's full retreat dance Bb5→a4→b3→c2, **moveNum ≤ 14** |
-| `worrall` | `Qe2` at **moveNum === 5 or 6** |
-| `anti_marshall` | `a4` at **moveNum === 8** exactly |
-| `gajewski` | exact tokens `d5` (must be Black's move), `exd5`, `Bg4` all in history — **moveNum ≤ 15** |
+| `exchange` | `Bxc6` at **moveNum === 4**, after Black's `a6` (3...a6 4.Bxc6) |
+| `delayed_exchange` | `Bxc6` at **moveNum 5 to 10**, after Black's `a6` |
+| `cinderella` | `Bc2`, with `Ba4` then `Bb3` already in history, **moveNum <= 14** |
+| `noahs_ark` | The trap position is on the board (3...a6 4.Ba4 d6 5.d4 b5 6.Bb3 Nxd4 7.Nxd4 exd4) and White plays anything except 8.Qxd4 |
+| `checkmate` | White delivers checkmate |
 
-Note: `Bxc6` with no `a6` having been played first (e.g. 3...Nf6 4.Bxc6) earns neither `exchange` nor `delayed_exchange` — it isn't either named variation.
+`carbon` is not awarded after White mates Black, because an early win leaves few moves to score.
 
-**Black's moves (inside `isBlackMove`):**
+### Black steers toward locked lines
 
-| Badge | Condition |
-|-------|-----------|
-| `morphy` | `a6` at **moveNum === 3** |
-| `berlin` | `Nf6` at **moveNum === 3** |
-| `bird` | `Nd4` at **moveNum === 3** |
-| `steinitz` | `d6` at **moveNum === 3** |
-| `schliemann` | `f5` at **moveNum === 3** |
-| `cozio` | `Nge7` at **moveNum === 3** |
-| `classical` | `Bc5` at **moveNum === 3** |
-| `open` | `Nxe4`, **moveNum ≤ 10**, mutually exclusive with `closed` |
-| `closed` | `Be7`, **moveNum ≤ 10**, mutually exclusive with `open` |
-| `averbakh` | `d6` at **moveNum === 6** exactly |
-| `breyer` | `Nb8` at **moveNum === 9** exactly |
-| `zaitsev` | `Bb7` at **moveNum === 9** exactly |
-| `chigorin` | `Na5` at **moveNum === 9** exactly |
-| `smyslov` | `h6` at **moveNum === 9** exactly |
-| `kholmov` | `Be6` at **moveNum === 9** exactly |
-| `keres` | `Nd7` or `a5` at **moveNum === 9** exactly — see naming note below |
-| `archangel` | exact tokens `Nf6` → `b5` → `Bb7` in order, **all three must be Black's moves (odd history index)**, **moveNum ≤ 10** |
-| `marshall` | `d5` at **moveNum 8–10**, requires exact token `c3` in history, White castled (`O-O` at an even index), **and** Black castled (`O-O` at an odd index) — the Marshall proper has both kings castled |
-| `noahs_ark` | `c4`, **moveNum 8–12** — awarded only if White's light-squared bishop is NOT on b3 (and at least one white bishop remains on a light square) at that moment. This fires on the move that *would* spring the Noah's Ark Trap, rewarding the case where White saw it coming and stepped the bishop aside (e.g. to c2, or traded it off) |
-| `checkmate` | White delivers checkmate (any move) |
+Black used to pick only from the top five moves by popularity. That made 3...Nd4, 3...f5, 9...a5 and 9...Nd7 impossible, and the deep lines very rare. Now `pickSteerMove()` runs first in `makeAIBlackMove`:
+
+- `STEER_CHANCE` (0.6) of the time, if the position lies on a line whose badge this player hasn't earned, Black plays the next move of such a line. Each locked line counts once, so a move leading to many locked badges is more likely. Otherwise Black plays by popularity as before.
+- White must still play the line's moves. If he leaves it, the board stops matching and Black plays normally.
+- After 8.Qxd4 in the Noah's Ark line, Black always springs the trap (`TRAP_REPLIES`), so the lesson lands.
+- Simulated with live Explorer shares, a player who always follows the main lines earns the whole set in a median of about 46 games, against never before.
 
 **Naming note (`keres`):** this single badge slot fires for both `9...a5` (the true **Keres Variation**) and `9...Nd7` (conventionally the **Karpov Variation**, not Keres). This is a deliberate simplification to avoid adding a new badge slot — the `description` text (Card 4) now credits both names correctly rather than calling both lines "Keres"; the `name`/`title` fields were deliberately left as `Keres` / `Keres Lyn` to avoid UI width/consistency issues, so the short badge label still only shows one name.
 
@@ -153,30 +175,46 @@ Chess-theoretic errors in the original conditions above (this file was wrong, no
 
 Not a meaning change, but also fixed in Card 3: `marshall`, `archangel`, and `gajewski` previously used substring matching (`history.join(' ').includes(...)`) that could false-positive on tokens like `Nc3` matching a `'c3'` substring search, or `Nd5`/`cxd5` matching a `'d5'` search. These now use exact-token history checks, and `marshall`/`gajewski` also gained new structural requirements (both sides castled; `d5` specifically played by Black) that make them fire less often but only in genuinely correct positions — this narrows *when* they fire but doesn't redefine what they represent, so no tooltip rewrite is needed for these three.
 
-### `open` / `closed` mutual exclusivity
-
-Tracked via `variationState`:
-
-```js
-variationState = {
-    morphyPlayed: false,        // set when Black plays a6 on move 3
-    openDefenseEntered: false,  // set when open badge fires
-    closedDefenseEntered: false // set when closed badge fires
-};
-```
-
-`open` only fires if `closedDefenseEntered === false`, and vice versa. Whichever move comes first in the game locks out the other. Reset at `startNewGame()`.
-
 ---
 
 ## Hint System
 
-- Players J and L: hints available moves 4–10 only
-- All other players: hints available moves 4–16
-- Hint highlights engine best (green) and most popular (blue) destination squares; both combined = purple
-- `lastHintInfo` caches hint data and is used as a scoring safeguard: if the player plays the hinted #1 engine move, they are guaranteed 5 pts regardless of what the scoring API returns
+- Players J and L: hints available moves 4 to 10 only
+- All other players: hints available moves 4 to 16
+- Two steps, on the same button:
+  1. **Wenk** shows the idea behind the best move (`describeMoveIdea`), not the move. The move can now score at most `HINT_IDEA_CAP` (4).
+  2. **Wys die skuif** shows the move and highlights its destination: engine best (green), most popular (blue), both (purple). The move can now score at most `HINT_MOVE_CAP` (3).
+- A hinted move can never score 5, so the Perfek badges can't be earned through hints. Playing the suggested best move always earns the full capped score, even if the scoring call ranks it differently.
+- `lastHintInfo` holds the hint for the current FEN, including its `stage`. It only applies if the FEN still matches when the move is scored.
+- The hint stays on screen until a move is played. The old 3-second timer is gone, because it wiped the score breakdown if the player moved quickly.
 - `canUseHint()` gates on `currentMoveNumber < getHintLimit()` (not `<=`) — `currentMoveNumber` counts moves already played, so at the decision point for move N it still reads N−1. The last hintable decision is move `hintLimit` itself (move 10 for J/L, move 16 for others); the following move (11 / 17) is refused.
-- The hint button, and `showHint()` itself, additionally gate on `game.turn() === 'w'`. Right after White's move is scored, `updateUI()` runs while it's still Black's turn to reply — without the turn check the hint would analyse Black's position and cache `lastHintInfo` under a FEN that scoring can never match. The button is re-enabled by calling `updateUI()` again once Black's reply lands (in `makeBlackMove()` and at every success path of `makeAIBlackMove()`).
+- `updateHintButton()` sets the label and enabled state, and additionally gates on `game.turn() === 'w'`. It runs from `updateUI()`, including once Black's reply lands.
+
+---
+
+## Review Screen
+
+The review plays the whole game by itself, like a GIF (`runReview`). Hersien Spel on the game-over modal starts it, and **Gaan voort** leaves for a new game at any time, including during a popup.
+
+Each half-move runs: arrows up, a pause, the move plays, then any popups it earned.
+
+| Step | Arrows | Pause |
+|------|--------|-------|
+| White, free move | Orange: the best moves, at most 3. Green: the move he chose. If his move is one of the best, the green arrow gets an orange edge | `REVIEW_WHITE_MS` (2 s) |
+| White, forced moves 1 to 3 | Green only, because there was no choice | `REVIEW_FORCED_MS` |
+| Black | Orange: his other options, at most 2. No arrow for the move he then plays | `REVIEW_BLACK_MS` (1.5 s), or `REVIEW_FORCED_MS` if there are none |
+
+**The best moves** (`reviewBestMoves`): the engine's lines within `REVIEW_BEST_MARGIN` of its top line, so a poor second choice never gets an arrow, plus the main-line move if it is sound. That is the same test scoring and hints use, because depth 14 doesn't always rank the book move first. **Black's options** (`reviewBlackOptions`) work the same way with `REVIEW_OPTION_MARGIN`, leaving out the move he played.
+
+**Popups** pause the run for `REVIEW_POPUP_MS` (`reviewPopupsFor`), in this order after the move:
+
+- **Oepsie:** the move was a `flater` (see the eval-loss bands).
+- **Mooi skuif!:** the move earned 5 before any hint cost (the engine's best, or the main-line move and sound), or it was a sound sacrifice (`isSoundSacrifice`). Not if a hint revealed the move.
+- **{badge name} gespeel:** every badge this game touched, earned before or not, from `gameBadgeLog`. `awardBadge` logs each key once per game at the current half-move, before its already-earned check. End-of-game badges show after the last move. Chorizo only counts games played, so it shows only the time it is earned.
+
+The Evaluering display follows the replay (`showEvalAt`), using the searches from the game. Skuif and Telling stay on the final values.
+
+The arrows are an SVG over the board (`#review-arrows`, 800 units wide, 100 a square), repositioned on every draw and on resize so they stay on the squares. To stop a running review, bump `reviewRun` (`startNewGame` does); the loop checks it after every wait. Each step is prepared one half-move ahead, so leaving early leaves little queued for the engine, and a step that isn't ready in `REVIEW_PREP_LIMIT` runs without its orange arrows rather than holding up the run.
 
 ---
 
@@ -191,6 +229,30 @@ variationState = {
 ---
 
 ## Changelog
+
+### 2026-11-02 (later): 35 badges
+
+Dropped `sixteen_perfect`, which sat one move away from `perfect_game` (16 of the 17 free moves, against all 17). 35 badges fill every row: 5 across on desktop and phone, 7 across at tablet widths. A saved `sixteen_perfect` in a player's data is harmless and simply no longer shows.
+
+### 2026-11-02 (later): Self-playing review
+
+Replaced the old step-through review panel (buttons and "Posisie: 2/40") with the self-playing review. See "Review Screen".
+
+### 2026-11-02 (later): Stockfish from the first move to the last
+
+See "Eval Pipeline". One engine at depth 14 for the display, scoring, hints and analysis; contempt off; WebAssembly build with the JavaScript build and then cloud eval as fallbacks; the display opens on Stockfish's own eval rather than a fixed +0.3. Eval-loss bands reset for this engine, and loss now compares like with like. Hint ideas prefer the popular move when the engine finds it sound. Removed `getLocalStockfishEvalForDisplay`.
+
+### 2026-11-02: Teaching and badge pass
+
+- **Text:** corrected the bishop "bly op b5" claim (it would be lost to ...axb5), the Re1 message (it frees f1, not d1), the Anti-Marshall tooltip (8.a4 attacks b5, it doesn't stop ...b5), the Kasparov message (he dodged the Marshall with 8.a4), the unqualified "wins e5" message, "verassing" and "retreat".
+- **Cache:** added the one-time `?v=2` on `app.js` and `styles.css` that was specified in July but never went in.
+- **Scoring:** added the eval-loss cap. See "Scoring" above.
+- **Castling bug:** Lichess cloud eval writes castling as e1h1, which chess.js rejects, so castling vanished from the engine's list even when it was best, and hints named a different move. Black's engine fallback could also end up on a different move for the same reason. `convertPvsToMoves` now normalises it (`CASTLING_UCI`) and also keeps mate scores.
+- **Badges:** named variations now require the exact position, removing false awards (Zaitsev also earning Archangel, Averbakh on 5...b5 6.Bb3 d6, Smyslov on 9...h6 in the Berlin, Closed on any ...Be7, Open on 4...Nxe4 in the Berlin, Marshall on the Gajewski, Gajewski on any ...d5 exd5 ...Bg4). Noah's Ark now rewards declining 8.Qxd4. Worrall is 6.Qe2 only. Carbón no longer follows a win by mate.
+- **Steering:** Black steers toward locked lines, so Bird, Schliemann and Keres are reachable and the deep lines come up.
+- **Hints:** two steps with a score cost; timer bug fixed. See "Hint System".
+- `BADGE_VERSION` deliberately not bumped, so the children keep their badges.
+- A backup of the folder from before this pass is in `../Spanish_Opening_backup_2026-11-02`.
 
 ### 2026-07-15 — Four-card remediation (Cards 1–4)
 

@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Ruy Lopez Oefening</title>
     <link rel="stylesheet" href="https://unpkg.com/@chrisoakman/chessboardjs@1.0.0/dist/chessboard-1.0.0.min.css">
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="styles.css?v=2">
 </head>
 <body>
     <div class="container">
@@ -103,7 +103,7 @@
                     <span class="badge-name">Uitg. Ruil</span>
                 </div>
 
-                <!-- Achievement Badges (14) - Spanish themed -->
+                <!-- Achievement Badges (13) - Spanish themed -->
                 <div class="badge locked" data-badge="queen_capture" title="Dame Gevang!">
                     <span class="badge-icon">🥘</span>
                     <span class="badge-name">Paella!</span>
@@ -119,10 +119,6 @@
                 <div class="badge locked" data-badge="twelve_perfect" title="12 Perfekte Skuiwe">
                     <span class="badge-icon">🌠</span>
                     <span class="badge-name">12 Perfek</span>
-                </div>
-                <div class="badge locked" data-badge="sixteen_perfect" title="16 Perfekte Skuiwe">
-                    <span class="badge-icon">⭐</span>
-                    <span class="badge-name">16 Perfek</span>
                 </div>
                 <div class="badge locked" data-badge="perfect_game" title="Perfekte Spel">
                     <span class="badge-icon">💯</span>
@@ -210,6 +206,7 @@
 
             <div class="board-container">
                 <div id="board"></div>
+                <svg class="review-arrows hidden" id="review-arrows" viewBox="0 0 800 800" aria-hidden="true"></svg>
             </div>
 
             <!-- Score Popup -->
@@ -217,9 +214,12 @@
                 <span class="score-popup-text" id="score-popup-text"></span>
             </div>
 
+            <p class="review-legend hidden" id="review-legend"></p>
+
             <div class="controls">
                 <button id="new-game-btn" class="btn btn-primary">Nuwe Spel</button>
                 <button id="hint-btn" class="btn btn-secondary" disabled>Wenk</button>
+                <button id="review-continue-btn" class="btn btn-primary hidden">Gaan voort</button>
             </div>
 
             <div class="educational-message" id="educational-message">
@@ -259,18 +259,6 @@
                 </div>
             </div>
 
-            <div class="review-panel hidden" id="review-panel">
-                <h3>Hersiening</h3>
-                <div class="review-controls">
-                    <button id="review-start" class="btn btn-small">⏮</button>
-                    <button id="review-back" class="btn btn-small">◀</button>
-                    <button id="review-forward" class="btn btn-small">▶</button>
-                    <button id="review-end" class="btn btn-small">⏭</button>
-                </div>
-                <div class="review-info" id="review-info">
-                    <p>Posisie: <span id="review-position">0</span></p>
-                </div>
-            </div>
         </div>
     </div>
 
@@ -312,6 +300,6 @@
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://unpkg.com/@chrisoakman/chessboardjs@1.0.0/dist/chessboard-1.0.0.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js"></script>
-    <script src="app.js"></script>
+    <script src="app.js?v=2"></script>
 </body>
 </html>
